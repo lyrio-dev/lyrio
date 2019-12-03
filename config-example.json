@@ -1,0 +1,23 @@
+{
+    "server": {
+        "hostname": "127.0.0.1",
+        "port": 2002
+    },
+    "database": {
+        "type": "mariadb",
+        "host": "127.0.0.1",
+        "port": 3306,
+        "username": "syzoj-ng",
+        "password": "syzoj-ng",
+        "database": "syzoj-ng"
+    },
+    "security": {
+        "crossOrigin": {
+            "enabled": true,
+            "whiteList": [
+                "http://syzoj-ng-app.test"
+            ]
+        },
+        "sessionSecret": "don't leak this"
+    }
+}
