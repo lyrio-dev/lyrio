@@ -3,20 +3,16 @@ import {
   IsIP,
   IsString,
   IsIn,
-  IsInt,
-  Min,
-  Max,
   IsBoolean
 } from "class-validator";
 import { Type } from "class-transformer";
+import { IsPortNumber } from "src/common/validators";
 
 class ServerConfig {
   @IsIP()
   readonly hostname: string;
 
-  @IsInt()
-  @Min(1)
-  @Max(65535)
+  @IsPortNumber()
   readonly port: number;
 }
 
@@ -27,9 +23,7 @@ class DatabaseConfig {
   @IsString()
   readonly host: string;
 
-  @IsInt()
-  @Min(1)
-  @Max(65535)
+  @IsPortNumber()
   readonly port: number;
 
   @IsString()
