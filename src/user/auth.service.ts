@@ -23,13 +23,10 @@ export class AuthService {
   }
 
   async register(
-    currentUser: UserEntity,
     username: string,
     email: string,
     password: string
   ): Promise<[UserRegisterResponseError, UserEntity]> {
-    if (currentUser) return [UserRegisterResponseError.ALREADY_LOGGEDIN, null];
-
     // There's a race condition on user inserting. If we do checking before inserting,
     // inserting will still fail if another with same username is inserted after we check
     try {
@@ -65,12 +62,9 @@ export class AuthService {
   }
 
   async login(
-    currentUser: UserEntity,
     username: string,
     password: string
   ): Promise<[UserLoginResponseError, UserEntity]> {
-    if (currentUser) return [UserLoginResponseError.ALREADY_LOGGEDIN, null];
-
     const user: UserEntity = await this.userRepository.findOne({
       username: username
     });

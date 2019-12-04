@@ -7,7 +7,9 @@ import {
   UserRegisterRequestDto,
   UserGetSelfMetaResponseDto,
   UserLoginResponseDto,
-  UserRegisterResponseDto
+  UserLoginResponseError,
+  UserRegisterResponseDto,
+  UserRegisterResponseError
 } from "./dto";
 import { ConfigService } from "src/config/config.service";
 import { AuthService } from "./auth.service";
@@ -56,8 +58,12 @@ export class AuthController {
     @CurrentUser() currentUser: UserEntity,
     @Body() userLoginRequestDto: UserLoginRequestDto
   ): Promise<UserLoginResponseDto> {
+    if (currentUser)
+      return {
+        error: UserLoginResponseError.ALREADY_LOGGEDIN
+      };
+
     const [error, user] = await this.authService.login(
-      currentUser,
       userLoginRequestDto.username,
       userLoginRequestDto.password
     );
@@ -97,8 +103,12 @@ export class AuthController {
     @CurrentUser() currentUser: UserEntity,
     @Body() userRegisterRequestDto: UserRegisterRequestDto
   ): Promise<UserRegisterResponseDto> {
+    if (currentUser)
+      return {
+        error: UserRegisterResponseError.ALREADY_LOGGEDIN
+      };
+
     const [error, user] = await this.authService.register(
-      currentUser,
       userRegisterRequestDto.username,
       userRegisterRequestDto.email,
       userRegisterRequestDto.password
