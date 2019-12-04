@@ -11,7 +11,7 @@ import {
   UserRegisterResponseDto,
   UserRegisterResponseError
 } from "./dto";
-import { ConfigService } from "src/config/config.service";
+import { ConfigService } from "../config/config.service";
 import { AuthService } from "./auth.service";
 import { CurrentUser } from "../common/user.decorator";
 import { UserEntity } from "./user.entity";
