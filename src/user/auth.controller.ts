@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Body } from "@nestjs/common";
-import { ApiResponse } from "@nestjs/swagger";
+import { ApiResponse, ApiBearerAuth } from "@nestjs/swagger";
 import * as jwt from "jsonwebtoken";
 
 import {
@@ -24,6 +24,7 @@ export class AuthController {
   ) {}
 
   @Get("getSelfMeta")
+  @ApiBearerAuth()
   @ApiResponse({
     status: 200,
     type: AuthGetSelfMetaResponseDto,
@@ -49,6 +50,7 @@ export class AuthController {
   }
 
   @Post("login")
+  @ApiBearerAuth()
   @ApiResponse({
     status: 200,
     type: AuthLoginResponseDto,
@@ -90,11 +92,13 @@ export class AuthController {
   }
 
   @Post("logout")
+  @ApiBearerAuth()
   async logout(): Promise<object> {
     return {};
   }
 
   @Post("register")
+  @ApiBearerAuth()
   @ApiResponse({
     status: 200,
     type: AuthRegisterResponseDto,

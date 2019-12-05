@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Body, Query } from "@nestjs/common";
-import { ApiResponse } from "@nestjs/swagger";
+import { ApiResponse, ApiBearerAuth } from "@nestjs/swagger";
 
 import { CurrentUser } from "@/common/user.decorator";
 import { UserEntity } from "./user.entity";
@@ -20,6 +20,7 @@ export class UserController {
   ) {}
 
   @Get("getUserMeta")
+  @ApiBearerAuth()
   @ApiResponse({
     status: 200,
     type: UserGetUserMetaResponseDto,
@@ -61,6 +62,7 @@ export class UserController {
   }
 
   @Post("setUserPrivileges")
+  @ApiBearerAuth()
   @ApiResponse({
     status: 200,
     type: UserSetUserPrivilegesResponseDto,
