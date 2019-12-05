@@ -67,7 +67,7 @@ export class GroupService {
           const groupMembership = new GroupMembershipEntity();
           groupMembership.userId = ownerId;
           groupMembership.groupId = group.id;
-          groupMembership.isAdmin = false;
+          groupMembership.isGroupAdmin = false;
           await transactionalEntityManager.save(groupMembership);
         }
       );
@@ -114,7 +114,7 @@ export class GroupService {
       const groupMembership = new GroupMembershipEntity();
       groupMembership.userId = userId;
       groupMembership.groupId = groupId;
-      groupMembership.isAdmin = false;
+      groupMembership.isGroupAdmin = false;
       await this.groupMembershipRepository.save(groupMembership);
     } catch (e) {
       if (

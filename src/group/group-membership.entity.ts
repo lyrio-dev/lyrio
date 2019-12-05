@@ -12,7 +12,7 @@ import { GroupEntity } from "./group.entity";
 
 @Entity("group_membership")
 @Index(["userId", "groupId"], { unique: true })
-@Index(["groupId", "isAdmin"], { unique: true })
+@Index(["groupId", "isGroupAdmin"], { unique: true })
 export class GroupMembershipEntity {
   @PrimaryGeneratedColumn()
   id: number;
@@ -38,5 +38,5 @@ export class GroupMembershipEntity {
   groupId: number;
 
   @Column({ type: "boolean" })
-  isAdmin: boolean;
+  isGroupAdmin: boolean;
 }
