@@ -235,4 +235,53 @@ export class GroupController {
 
     return {};
   }
+
+  @Post("setGroupAdmin")
+  @ApiResponse({
+    status: 200,
+    type: SetGroupAdminResponseDto,
+    description: "Set if or not a member of a group is group admin"
+  })
+  async setGroupAdmin(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() setGroupAdminRequestDto: SetGroupAdminRequestDto
+  ): Promise<SetGroupAdminResponseDto> {
+    if (!currentUser)
+      return {
+        error: SetGroupAdminResponseError.PERMISSION_DENIED
+      };
+
+    const group = await this.groupService.findGroupById(
+      setGroupAdminRequestDto.groupId
+    );
+    if (!group)
+      return {
+        error: SetGroupAdminResponseError.NO_SUCH_GROUP
+      };
+
+    if (
+      !(
+        currentUser.id === group.ownerId ||
+        (await this.userPrivilegeService.userHasPrivilege(
+          currentUser,
+          UserPrivilegeType.MANAGE_USER_GROUP
+        ))
+      )
+    )
+      return {
+        error: SetGroupAdminResponseError.PERMISSION_DENIED
+      };
+
+    const error = await this.groupService.setIsGroupAdmin(
+      setGroupAdminRequestDto.userId,
+      setGroupAdminRequestDto.groupId,
+      setGroupAdminRequestDto.isGroupAdmin
+    );
+    if (error)
+      return {
+        error: error
+      };
+
+    return {};
+  }
 }

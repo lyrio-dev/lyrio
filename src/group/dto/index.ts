@@ -14,3 +14,6 @@ export * from "./remove-user-from-group-response.dto";
 
 export * from "./add-user-to-group-request.dto";
 export * from "./add-user-to-group-response.dto";
+
+export * from "./set-group-admin-request.dto";
+export * from "./set-group-admin-response.dto";
