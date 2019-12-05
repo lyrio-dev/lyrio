@@ -12,4 +12,7 @@ export class UserMetaDto {
 
   @ApiModelProperty()
   readonly bio: string;
+
+  @ApiModelProperty()
+  readonly isAdmin: boolean;
 }

@@ -34,6 +34,7 @@ export class AuthService {
           user.username = username;
           user.email = email;
           user.bio = "";
+          user.isAdmin = false;
           await transactionalEntityManager.save(user);
 
           const userAuth = new UserAuthEntity();

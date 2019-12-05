@@ -24,6 +24,9 @@ export class UserEntity {
   @Column({ type: "text" })
   bio: string;
 
+  @Column({ type: "boolean" })
+  isAdmin: boolean;
+
   @OneToOne(
     type => UserAuthEntity,
     userAuth => userAuth.user
