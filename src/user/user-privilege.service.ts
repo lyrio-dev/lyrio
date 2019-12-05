@@ -10,6 +10,8 @@ import {
 import { UserSetUserPrivilegesResponseError } from "./dto";
 import { UserService } from "./user.service";
 
+export { UserPrivilegeType } from "./user-privilege.entity";
+
 // NOTE: This implementation of user privilege is ugly.
 //       Does anyone have better ideas?
 
