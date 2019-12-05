@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Body, Query } from "@nestjs/common";
-import { ApiResponse, ApiBearerAuth } from "@nestjs/swagger";
+import { ApiResponse, ApiBearerAuth, ApiUseTags } from "@nestjs/swagger";
 
 import { CurrentUser } from "@/common/user.decorator";
 import { UserEntity } from "./user.entity";
@@ -13,6 +13,7 @@ import {
   UserSetUserPrivilegesResponseError
 } from "./dto";
 
+@ApiUseTags("User")
 @Controller("user")
 export class UserController {
   constructor(

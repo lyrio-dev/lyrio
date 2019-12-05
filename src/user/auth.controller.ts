@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Body } from "@nestjs/common";
-import { ApiResponse, ApiBearerAuth } from "@nestjs/swagger";
+import { ApiResponse, ApiBearerAuth, ApiUseTags } from "@nestjs/swagger";
 import * as jwt from "jsonwebtoken";
 
 import {
@@ -16,6 +16,7 @@ import { AuthService } from "./auth.service";
 import { CurrentUser } from "@/common/user.decorator";
 import { UserEntity } from "./user.entity";
 
+@ApiUseTags("Auth")
 @Controller("auth")
 export class AuthController {
   constructor(

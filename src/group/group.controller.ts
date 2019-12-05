@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Body, Query } from "@nestjs/common";
-import { ApiResponse, ApiBearerAuth } from "@nestjs/swagger";
+import { ApiResponse, ApiBearerAuth, ApiUseTags } from "@nestjs/swagger";
 
 import {
   GetGroupMetaRequestDto,
@@ -29,6 +29,7 @@ import {
   UserPrivilegeType
 } from "@/user/user-privilege.service";
 
+@ApiUseTags("Group")
 @Controller("group")
 export class GroupController {
   constructor(
