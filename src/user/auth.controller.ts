@@ -3,13 +3,13 @@ import { ApiResponse } from "@nestjs/swagger";
 import * as jwt from "jsonwebtoken";
 
 import {
-  UserLoginRequestDto,
-  UserRegisterRequestDto,
-  UserGetSelfMetaResponseDto,
-  UserLoginResponseDto,
-  UserLoginResponseError,
-  UserRegisterResponseDto,
-  UserRegisterResponseError
+  AuthLoginRequestDto,
+  AuthRegisterRequestDto,
+  AuthGetSelfMetaResponseDto,
+  AuthLoginResponseDto,
+  AuthLoginResponseError,
+  AuthRegisterResponseDto,
+  AuthRegisterResponseError
 } from "./dto";
 import { ConfigService } from "@/config/config.service";
 import { AuthService } from "./auth.service";
@@ -26,13 +26,13 @@ export class AuthController {
   @Get("getSelfMeta")
   @ApiResponse({
     status: 200,
-    type: UserGetSelfMetaResponseDto,
+    type: AuthGetSelfMetaResponseDto,
     description: "Get the metadata of the current logged-in user"
   })
   async getSelfMeta(
     @CurrentUser() currentUser: UserEntity
-  ): Promise<UserGetSelfMetaResponseDto> {
-    const result: UserGetSelfMetaResponseDto = new UserGetSelfMetaResponseDto();
+  ): Promise<AuthGetSelfMetaResponseDto> {
+    const result: AuthGetSelfMetaResponseDto = new AuthGetSelfMetaResponseDto();
     if (currentUser) {
       result.userMeta = {
         id: currentUser.id,
@@ -50,17 +50,17 @@ export class AuthController {
   @Post("login")
   @ApiResponse({
     status: 200,
-    type: UserLoginResponseDto,
+    type: AuthLoginResponseDto,
     description:
       "Login, return the logged-in user's metadata and token if success"
   })
   async login(
     @CurrentUser() currentUser: UserEntity,
-    @Body() userLoginRequestDto: UserLoginRequestDto
-  ): Promise<UserLoginResponseDto> {
+    @Body() userLoginRequestDto: AuthLoginRequestDto
+  ): Promise<AuthLoginResponseDto> {
     if (currentUser)
       return {
-        error: UserLoginResponseError.ALREADY_LOGGEDIN
+        error: AuthLoginResponseError.ALREADY_LOGGEDIN
       };
 
     const [error, user] = await this.authService.login(
@@ -95,17 +95,17 @@ export class AuthController {
   @Post("register")
   @ApiResponse({
     status: 200,
-    type: UserRegisterResponseDto,
+    type: AuthRegisterResponseDto,
     description:
       "Register then login, return the new user's metadata and token if success"
   })
   async register(
     @CurrentUser() currentUser: UserEntity,
-    @Body() userRegisterRequestDto: UserRegisterRequestDto
-  ): Promise<UserRegisterResponseDto> {
+    @Body() userRegisterRequestDto: AuthRegisterRequestDto
+  ): Promise<AuthRegisterResponseDto> {
     if (currentUser)
       return {
-        error: UserRegisterResponseError.ALREADY_LOGGEDIN
+        error: AuthRegisterResponseError.ALREADY_LOGGEDIN
       };
 
     const [error, user] = await this.authService.register(
