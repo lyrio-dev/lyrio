@@ -22,7 +22,7 @@ export class GroupController {
   async getGroupMeta(
     @Query() getGroupMetaRequestDto: GetGroupMetaRequestDto
   ): Promise<GetGroupMetaResponseDto> {
-    const group = await this.groupService.findById(parseInt(getGroupMetaRequestDto.groupId));
+    const group = await this.groupService.findGroupById(parseInt(getGroupMetaRequestDto.groupId));
     if (!group) return {
       error: GetGroupMetaResponseError.NO_SUCH_GROUP
     };
