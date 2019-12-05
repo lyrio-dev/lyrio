@@ -44,10 +44,10 @@ export class GroupController {
     description: "Get the metadata of a group by its ID"
   })
   async getGroupMeta(
-    @Query() getGroupMetaRequestDto: GetGroupMetaRequestDto
+    @Query() request: GetGroupMetaRequestDto
   ): Promise<GetGroupMetaResponseDto> {
     const group = await this.groupService.findGroupById(
-      parseInt(getGroupMetaRequestDto.groupId)
+      parseInt(request.groupId)
     );
     if (!group)
       return {
@@ -71,7 +71,7 @@ export class GroupController {
   })
   async create(
     @CurrentUser() currentUser: UserEntity,
-    @Body() createGroupRequestDto: CreateGroupRequestDto
+    @Body() request: CreateGroupRequestDto
   ): Promise<CreateGroupResponseDto> {
     if (
       !(
@@ -88,7 +88,7 @@ export class GroupController {
 
     const [error, group] = await this.groupService.createGroup(
       currentUser.id,
-      createGroupRequestDto.groupName
+      request.groupName
     );
     if (error)
       return {
@@ -109,7 +109,7 @@ export class GroupController {
   })
   async delete(
     @CurrentUser() currentUser: UserEntity,
-    @Body() deleteGroupRequestDto: DeleteGroupRequestDto
+    @Body() request: DeleteGroupRequestDto
   ): Promise<DeleteGroupResponseDto> {
     if (
       !(
@@ -127,8 +127,8 @@ export class GroupController {
     // TODO: Check permission
 
     const error = await this.groupService.deleteGroup(
-      deleteGroupRequestDto.groupId,
-      deleteGroupRequestDto.force
+      request.groupId,
+      request.force
     );
     if (error)
       return {
@@ -146,7 +146,7 @@ export class GroupController {
   })
   async addMember(
     @CurrentUser() currentUser: UserEntity,
-    @Body() addUserToGroupRequestDto: AddUserToGroupRequestDto
+    @Body() request: AddUserToGroupRequestDto
   ): Promise<AddUserToGroupResponseDto> {
     if (!currentUser)
       return {
@@ -154,7 +154,7 @@ export class GroupController {
       };
 
     const group = await this.groupService.findGroupById(
-      addUserToGroupRequestDto.groupId
+      request.groupId
     );
     if (!group)
       return {
@@ -176,7 +176,7 @@ export class GroupController {
       };
 
     const error = await this.groupService.addUserToGroup(
-      addUserToGroupRequestDto.userId,
+      request.userId,
       group
     );
     if (error)
@@ -195,7 +195,7 @@ export class GroupController {
   })
   async removeMember(
     @CurrentUser() currentUser: UserEntity,
-    @Body() removeUserFromGroupRequestDto: RemoveUserFromGroupRequestDto
+    @Body() request: RemoveUserFromGroupRequestDto
   ): Promise<RemoveUserFromGroupResponseDto> {
     if (!currentUser)
       return {
@@ -203,7 +203,7 @@ export class GroupController {
       };
 
     const group = await this.groupService.findGroupById(
-      removeUserFromGroupRequestDto.groupId
+      request.groupId
     );
     if (!group)
       return {
@@ -225,7 +225,7 @@ export class GroupController {
       };
 
     const error = await this.groupService.removeUserFromGroup(
-      removeUserFromGroupRequestDto.userId,
+      request.userId,
       group
     );
     if (error)
@@ -244,7 +244,7 @@ export class GroupController {
   })
   async setGroupAdmin(
     @CurrentUser() currentUser: UserEntity,
-    @Body() setGroupAdminRequestDto: SetGroupAdminRequestDto
+    @Body() request: SetGroupAdminRequestDto
   ): Promise<SetGroupAdminResponseDto> {
     if (!currentUser)
       return {
@@ -252,7 +252,7 @@ export class GroupController {
       };
 
     const group = await this.groupService.findGroupById(
-      setGroupAdminRequestDto.groupId
+      request.groupId
     );
     if (!group)
       return {
@@ -273,9 +273,9 @@ export class GroupController {
       };
 
     const error = await this.groupService.setIsGroupAdmin(
-      setGroupAdminRequestDto.userId,
-      setGroupAdminRequestDto.groupId,
-      setGroupAdminRequestDto.isGroupAdmin
+      request.userId,
+      request.groupId,
+      request.isGroupAdmin
     );
     if (error)
       return {
