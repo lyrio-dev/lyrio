@@ -26,16 +26,16 @@ export class UserController {
     description: "Get a user's metadata with its ID or username"
   })
   async getUserMeta(
-    @Query() userGetUserMetaRequestDto: UserGetUserMetaRequestDto
+    @Query() request: UserGetUserMetaRequestDto
   ): Promise<UserGetUserMetaResponseDto> {
     let user: UserEntity;
-    if (userGetUserMetaRequestDto.userId) {
+    if (request.userId) {
       user = await this.userService.findUserById(
-        parseInt(userGetUserMetaRequestDto.userId)
+        parseInt(request.userId)
       );
-    } else if (userGetUserMetaRequestDto.username) {
+    } else if (request.username) {
       user = await this.userService.findUserByUsername(
-        userGetUserMetaRequestDto.username
+        request.username
       );
     }
 
@@ -51,7 +51,7 @@ export class UserController {
       }
     };
 
-    if (userGetUserMetaRequestDto.getPrivileges) {
+    if (request.getPrivileges) {
       result.privileges = await this.userPrivilegeService.getUserPrivileges(
         user.id
       );
@@ -68,14 +68,14 @@ export class UserController {
   })
   async setUserPrivileges(
     @CurrentUser() currentUser: UserEntity,
-    @Body() userSetUserPrivilegesRequestDto: UserSetUserPrivilegesRequestDto
+    @Body() request: UserSetUserPrivilegesRequestDto
   ): Promise<UserSetUserPrivilegesResponseDto> {
     // TODO: Check permission
 
     return {
       error: await this.userPrivilegeService.setUserPrivileges(
-        userSetUserPrivilegesRequestDto.userId,
-        userSetUserPrivilegesRequestDto.privileges
+        request.userId,
+        request.privileges
       )
     };
   }

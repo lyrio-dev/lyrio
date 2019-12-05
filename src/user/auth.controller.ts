@@ -57,7 +57,7 @@ export class AuthController {
   })
   async login(
     @CurrentUser() currentUser: UserEntity,
-    @Body() userLoginRequestDto: AuthLoginRequestDto
+    @Body() request: AuthLoginRequestDto
   ): Promise<AuthLoginResponseDto> {
     if (currentUser)
       return {
@@ -65,8 +65,8 @@ export class AuthController {
       };
 
     const [error, user] = await this.authService.login(
-      userLoginRequestDto.username,
-      userLoginRequestDto.password
+      request.username,
+      request.password
     );
 
     if (error)
@@ -103,7 +103,7 @@ export class AuthController {
   })
   async register(
     @CurrentUser() currentUser: UserEntity,
-    @Body() userRegisterRequestDto: AuthRegisterRequestDto
+    @Body() request: AuthRegisterRequestDto
   ): Promise<AuthRegisterResponseDto> {
     if (currentUser)
       return {
@@ -111,9 +111,9 @@ export class AuthController {
       };
 
     const [error, user] = await this.authService.register(
-      userRegisterRequestDto.username,
-      userRegisterRequestDto.email,
-      userRegisterRequestDto.password
+      request.username,
+      request.email,
+      request.password
     );
 
     if (error)
