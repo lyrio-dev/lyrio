@@ -15,6 +15,12 @@ export class UserService {
     return await this.userRepository.findOne(id);
   }
 
+  async findUserByUsername(username: string): Promise<UserEntity> {
+    return await this.userRepository.findOne({
+      username: username
+    });
+  }
+
   async userExists(id: number): Promise<boolean> {
     return (await this.userRepository.count({ id: id })) != 0;
   }
