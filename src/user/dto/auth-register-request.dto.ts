@@ -2,7 +2,7 @@ import { ApiModelProperty } from "@nestjs/swagger";
 import { IsEmail, Length } from "class-validator";
 import { IsUsername } from "@/common/validators";
 
-export class UserRegisterRequestDto {
+export class AuthRegisterRequestDto {
   @ApiModelProperty()
   @IsUsername()
   readonly username: string;

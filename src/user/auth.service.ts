@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
-import { UserLoginResponseError, UserRegisterResponseError } from "./dto";
+import { AuthLoginResponseError, AuthRegisterResponseError } from "./dto";
 import { Repository, Connection } from "typeorm";
 import * as bcrypt from "bcrypt";
 
@@ -26,7 +26,7 @@ export class AuthService {
     username: string,
     email: string,
     password: string
-  ): Promise<[UserRegisterResponseError, UserEntity]> {
+  ): Promise<[AuthRegisterResponseError, UserEntity]> {
     // There's a race condition on user inserting. If we do checking before inserting,
     // inserting will still fail if another with same username is inserted after we check
     try {
@@ -50,10 +50,10 @@ export class AuthService {
       return [null, user];
     } catch (e) {
       if (await this.userRepository.count({ username: username }))
-        return [UserRegisterResponseError.DUPLICATE_USERNAME, null];
+        return [AuthRegisterResponseError.DUPLICATE_USERNAME, null];
 
       if (await this.userRepository.count({ email: email }))
-        return [UserRegisterResponseError.DUPLICATE_EMAIL, null];
+        return [AuthRegisterResponseError.DUPLICATE_EMAIL, null];
 
       // Unknown error
       // (or the duplicate user's username is just changed?)
@@ -64,16 +64,16 @@ export class AuthService {
   async login(
     username: string,
     password: string
-  ): Promise<[UserLoginResponseError, UserEntity]> {
+  ): Promise<[AuthLoginResponseError, UserEntity]> {
     const user: UserEntity = await this.userRepository.findOne({
       username: username
     });
 
-    if (!user) return [UserLoginResponseError.NO_SUCH_USER, null];
+    if (!user) return [AuthLoginResponseError.NO_SUCH_USER, null];
 
     const userAuth: UserAuthEntity = await user.userAuth;
     if (!(await bcrypt.compare(password, userAuth.password)))
-      return [UserLoginResponseError.WRONG_PASSWORD, null];
+      return [AuthLoginResponseError.WRONG_PASSWORD, null];
 
     return [null, user];
   }
