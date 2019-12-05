@@ -142,7 +142,8 @@ export class GroupService {
     const group = await this.groupRepository.findOne(groupId);
     if (!group) return RemoveUserFromGroupResponseError.NO_SUCH_GROUP;
 
-    if (userId === group.ownerId) return RemoveUserFromGroupResponseError.OWNER_CAN_NOT_BE_REMOVED;
+    if (userId === group.ownerId)
+      return RemoveUserFromGroupResponseError.OWNER_CAN_NOT_BE_REMOVED;
 
     const groupMembership = await this.groupMembershipRepository.findOne({
       userId: userId,
