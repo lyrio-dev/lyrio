@@ -9,7 +9,8 @@ import {
   UserGetUserMetaResponseDto,
   UserGetUserMetaRequestDto,
   UserSetUserPrivilegesResponseDto,
-  UserSetUserPrivilegesRequestDto
+  UserSetUserPrivilegesRequestDto,
+  UserSetUserPrivilegesResponseError
 } from "./dto";
 
 @Controller("user")
@@ -72,7 +73,9 @@ export class UserController {
     @CurrentUser() currentUser: UserEntity,
     @Body() request: UserSetUserPrivilegesRequestDto
   ): Promise<UserSetUserPrivilegesResponseDto> {
-    // TODO: Check permission
+    if (!currentUser.isAdmin) return {
+      error: UserSetUserPrivilegesResponseError.PERMISSION_DENIED
+    };
 
     return {
       error: await this.userPrivilegeService.setUserPrivileges(
