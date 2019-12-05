@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Body, Query } from "@nestjs/common";
-import { ApiResponse } from "@nestjs/swagger";
+import { ApiResponse, ApiBearerAuth } from "@nestjs/swagger";
 
 import {
   GetGroupMetaRequestDto,
@@ -38,6 +38,7 @@ export class GroupController {
 
   // TODO: Find an elegant way to validate GET's input data
   @Get("getGroupMeta")
+  @ApiBearerAuth()
   @ApiResponse({
     status: 200,
     type: GetGroupMetaResponseDto,
@@ -64,6 +65,7 @@ export class GroupController {
   }
 
   @Post("create")
+  @ApiBearerAuth()
   @ApiResponse({
     status: 200,
     type: CreateGroupResponseDto,
@@ -101,6 +103,7 @@ export class GroupController {
   }
 
   @Post("delete")
+  @ApiBearerAuth()
   @ApiResponse({
     status: 200,
     type: DeleteGroupResponseDto,
@@ -139,6 +142,7 @@ export class GroupController {
   }
 
   @Post("addMember")
+  @ApiBearerAuth()
   @ApiResponse({
     status: 200,
     type: AddUserToGroupResponseDto,
@@ -188,6 +192,7 @@ export class GroupController {
   }
 
   @Post("removeMember")
+  @ApiBearerAuth()
   @ApiResponse({
     status: 200,
     type: RemoveUserFromGroupResponseDto,
@@ -237,6 +242,7 @@ export class GroupController {
   }
 
   @Post("setGroupAdmin")
+  @ApiBearerAuth()
   @ApiResponse({
     status: 200,
     type: SetGroupAdminResponseDto,
