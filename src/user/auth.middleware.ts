@@ -1,13 +1,13 @@
 import { NestMiddleware, Injectable } from "@nestjs/common";
 import * as jwt from "jsonwebtoken";
 
-import { AuthService } from "./auth.service";
+import { UserService } from "./user.service";
 import { ConfigService } from "@/config/config.service";
 
 @Injectable()
 export class AuthMiddleware implements NestMiddleware {
   constructor(
-    private readonly authService: AuthService,
+    private readonly userService: UserService,
     private readonly configService: ConfigService
   ) {}
 
@@ -20,7 +20,7 @@ export class AuthMiddleware implements NestMiddleware {
           token,
           this.configService.config.security.sessionSecret
         ) as string;
-        req.user = this.authService.findById(parseInt(decoded));
+        req.user = this.userService.findUserById(parseInt(decoded));
       } catch (e) {}
     }
     next();
