@@ -3,7 +3,7 @@ import { ApiResponse } from "@nestjs/swagger";
 import * as fs from "fs-extra";
 import * as serialize from "serialize-javascript";
 
-import { ConfigService } from "../config/config.service";
+import { ConfigService } from "@/config/config.service";
 
 const getXdomainProxyHtml = whiteList =>
   `<!doctype html>

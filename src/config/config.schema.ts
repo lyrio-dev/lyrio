@@ -6,7 +6,7 @@ import {
   IsBoolean
 } from "class-validator";
 import { Type } from "class-transformer";
-import { IsPortNumber } from "../common/validators";
+import { IsPortNumber } from "@/common/validators";
 
 class ServerConfig {
   @IsIP()

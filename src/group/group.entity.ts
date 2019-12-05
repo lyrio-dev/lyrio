@@ -7,7 +7,7 @@ import {
   JoinColumn
 } from "typeorm";
 
-import { UserEntity } from "../user/user.entity";
+import { UserEntity } from "@/user/user.entity";
 
 @Entity("group")
 export class GroupEntity {
