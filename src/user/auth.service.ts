@@ -18,10 +18,6 @@ export class AuthService {
     private readonly userAuthRepository: Repository<UserAuthEntity>
   ) {}
 
-  async findById(id: number): Promise<UserEntity> {
-    return await this.userRepository.findOne(id);
-  }
-
   async register(
     username: string,
     email: string,
