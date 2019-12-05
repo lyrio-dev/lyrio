@@ -10,11 +10,11 @@ import {
 import { UserEntity } from "@/user/user.entity";
 
 export enum UserPrivilegeType {
-  MANAGE_USER,
-  MANAGE_PROBLEM,
-  MANAGE_CONTEST,
-  MANAGE_DISCUSSION
-};
+  MANAGE_USER = "MANAGE_USER",
+  MANAGE_PROBLEM = "MANAGE_PROBLEM",
+  MANAGE_CONTEST = "MANAGE_CONTEST",
+  MANAGE_DISCUSSION = "MANAGE_DISCUSSION"
+}
 
 @Entity("user-privilege")
 @Index(["userId", "privilegeType"], { unique: true })
@@ -37,5 +37,5 @@ export class UserPrivilegeEntity {
     enum: UserPrivilegeType
   })
   @Index()
-  privilegeType: UserPrivilegeType
+  privilegeType: UserPrivilegeType;
 }

@@ -4,7 +4,7 @@ import { GroupMetaDto } from "./group-meta.dto";
 
 export enum GetGroupMetaResponseError {
   NO_SUCH_GROUP = "NO_SUCH_GROUP"
-};
+}
 
 export class GetGroupMetaResponseDto {
   @ApiModelProperty()
