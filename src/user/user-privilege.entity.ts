@@ -16,7 +16,7 @@ export enum UserPrivilegeType {
   MANAGE_DISCUSSION = "MANAGE_DISCUSSION"
 }
 
-@Entity("user-privilege")
+@Entity("user_privilege")
 @Index(["userId", "privilegeType"], { unique: true })
 export class UserPrivilegeEntity {
   @PrimaryGeneratedColumn()

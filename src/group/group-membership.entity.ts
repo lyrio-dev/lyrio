@@ -10,7 +10,7 @@ import {
 import { UserEntity } from "@/user/user.entity";
 import { GroupEntity } from "./group.entity";
 
-@Entity("group-membership")
+@Entity("group_membership")
 @Index(["userId", "groupId"], { unique: true })
 @Index(["groupId", "isAdmin"], { unique: true })
 export class GroupMembershipEntity {

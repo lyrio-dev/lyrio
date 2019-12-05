@@ -2,7 +2,7 @@ import { Entity, PrimaryColumn, OneToOne, Column, JoinColumn } from "typeorm";
 
 import { UserEntity } from "./user.entity";
 
-@Entity("user-auth")
+@Entity("user_auth")
 export class UserAuthEntity {
   @OneToOne(type => UserEntity)
   @JoinColumn()
