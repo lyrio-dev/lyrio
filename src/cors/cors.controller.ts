@@ -1,5 +1,5 @@
 import { Controller, Get, Header } from "@nestjs/common";
-import { ApiResponse } from "@nestjs/swagger";
+import { ApiResponse, ApiUseTags } from "@nestjs/swagger";
 import * as fs from "fs-extra";
 import * as serialize from "serialize-javascript";
 
@@ -17,6 +17,7 @@ const getXdomainProxyHtml = whiteList =>
   </script>
 </head>`;
 
+@ApiUseTags("CORS")
 @Controller("cors")
 export class CorsController {
   constructor(private readonly configService: ConfigService) {}
