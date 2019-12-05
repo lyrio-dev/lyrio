@@ -4,27 +4,37 @@ import { ApiResponse } from "@nestjs/swagger";
 import {
   GetGroupMetaRequestDto,
   GetGroupMetaResponseDto,
+  GetGroupMetaResponseError,
+  CreateGroupRequestDto,
   CreateGroupResponseDto,
   CreateGroupResponseError,
-  CreateGroupRequestDto,
-  DeleteGroupResponseDto,
   DeleteGroupRequestDto,
+  DeleteGroupResponseDto,
   DeleteGroupResponseError,
   AddUserToGroupRequestDto,
-  AddUserToGroupResponseError,
   AddUserToGroupResponseDto,
+  AddUserToGroupResponseError,
   RemoveUserFromGroupRequestDto,
   RemoveUserFromGroupResponseDto,
   RemoveUserFromGroupResponseError,
-  GetGroupMetaResponseError
+  SetGroupAdminRequestDto,
+  SetGroupAdminResponseDto,
+  SetGroupAdminResponseError
 } from "./dto";
 import { GroupService } from "./group.service";
 import { CurrentUser } from "@/common/user.decorator";
 import { UserEntity } from "@/user/user.entity";
+import {
+  UserPrivilegeService,
+  UserPrivilegeType
+} from "@/user/user-privilege.service";
 
 @Controller("group")
 export class GroupController {
-  constructor(private readonly groupService: GroupService) {}
+  constructor(
+    private readonly groupService: GroupService,
+    private readonly userPrivilegeService: UserPrivilegeService
+  ) {}
 
   // TODO: Find an elegant way to validate GET's input data
   @Get("getGroupMeta")
@@ -63,12 +73,18 @@ export class GroupController {
     @CurrentUser() currentUser: UserEntity,
     @Body() createGroupRequestDto: CreateGroupRequestDto
   ): Promise<CreateGroupResponseDto> {
-    if (!currentUser)
+    if (
+      !(
+        currentUser &&
+        (await this.userPrivilegeService.userHasPrivilege(
+          currentUser,
+          UserPrivilegeType.MANAGE_USER_GROUP
+        ))
+      )
+    )
       return {
         error: CreateGroupResponseError.PERMISSION_DENIED
       };
-
-    // TODO: Check permission
 
     const [error, group] = await this.groupService.createGroup(
       currentUser.id,
@@ -95,7 +111,15 @@ export class GroupController {
     @CurrentUser() currentUser: UserEntity,
     @Body() deleteGroupRequestDto: DeleteGroupRequestDto
   ): Promise<DeleteGroupResponseDto> {
-    if (!currentUser)
+    if (
+      !(
+        currentUser &&
+        (await this.userPrivilegeService.userHasPrivilege(
+          currentUser,
+          UserPrivilegeType.MANAGE_USER_GROUP
+        ))
+      )
+    )
       return {
         error: DeleteGroupResponseError.PERMISSION_DENIED
       };
@@ -129,11 +153,31 @@ export class GroupController {
         error: AddUserToGroupResponseError.PERMISSION_DENIED
       };
 
-    // TODO: Check permission
+    const group = await this.groupService.findGroupById(
+      addUserToGroupRequestDto.groupId
+    );
+    if (!group)
+      return {
+        error: AddUserToGroupResponseError.NO_SUCH_GROUP
+      };
+
+    if (
+      !(
+        currentUser.id === group.ownerId ||
+        (await this.userPrivilegeService.userHasPrivilege(
+          currentUser,
+          UserPrivilegeType.MANAGE_USER_GROUP
+        )) ||
+        (await this.groupService.isGroupAdmin(currentUser.id, group.id))
+      )
+    )
+      return {
+        error: AddUserToGroupResponseError.PERMISSION_DENIED
+      };
 
     const error = await this.groupService.addUserToGroup(
       addUserToGroupRequestDto.userId,
-      addUserToGroupRequestDto.groupId
+      group
     );
     if (error)
       return {
@@ -158,11 +202,31 @@ export class GroupController {
         error: RemoveUserFromGroupResponseError.PERMISSION_DENIED
       };
 
-    // TODO: Check permission
+    const group = await this.groupService.findGroupById(
+      removeUserFromGroupRequestDto.groupId
+    );
+    if (!group)
+      return {
+        error: RemoveUserFromGroupResponseError.NO_SUCH_GROUP
+      };
+
+    if (
+      !(
+        currentUser.id === group.ownerId ||
+        (await this.userPrivilegeService.userHasPrivilege(
+          currentUser,
+          UserPrivilegeType.MANAGE_USER_GROUP
+        )) ||
+        (await this.groupService.isGroupAdmin(currentUser.id, group.id))
+      )
+    )
+      return {
+        error: RemoveUserFromGroupResponseError.PERMISSION_DENIED
+      };
 
     const error = await this.groupService.removeUserFromGroup(
       removeUserFromGroupRequestDto.userId,
-      removeUserFromGroupRequestDto.groupId
+      group
     );
     if (error)
       return {

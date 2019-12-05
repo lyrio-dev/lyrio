@@ -2,10 +2,13 @@ import { Injectable } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
 import { Repository, Connection } from "typeorm";
 
-import { CreateGroupResponseError } from "./dto/create-group-response.dto";
-import { AddUserToGroupResponseError } from "./dto/add-user-to-group-response.dto";
-import { RemoveUserFromGroupResponseError } from "./dto/remove-user-from-group-response.dto";
-import { DeleteGroupResponseError } from "./dto/delete-group-response.dto";
+import {
+  CreateGroupResponseError,
+  AddUserToGroupResponseError,
+  RemoveUserFromGroupResponseError,
+  DeleteGroupResponseError,
+  SetGroupAdminResponseError
+} from "./dto";
 
 import { UserService } from "@/user/user.service";
 import { GroupEntity } from "./group.entity";
@@ -31,6 +34,16 @@ export class GroupService {
 
   async findGroupById(id: number): Promise<GroupEntity> {
     return await this.groupRepository.findOne(id);
+  }
+
+  async isGroupAdmin(userId: number, groupId: number): Promise<boolean> {
+    return (
+      (await this.groupMembershipRepository.count({
+        userId: userId,
+        groupId: groupId,
+        isGroupAdmin: true
+      })) != 0
+    );
   }
 
   async findMembersipsByUserId(
@@ -103,24 +116,22 @@ export class GroupService {
 
   async addUserToGroup(
     userId: number,
-    groupId: number
+    group: GroupEntity
   ): Promise<AddUserToGroupResponseError> {
-    if (!(await this.groupExists(groupId)))
-      return AddUserToGroupResponseError.NO_SUCH_GROUP;
     if (!(await this.userService.userExists(userId)))
       return AddUserToGroupResponseError.NO_SUCH_USER;
 
     try {
       const groupMembership = new GroupMembershipEntity();
       groupMembership.userId = userId;
-      groupMembership.groupId = groupId;
+      groupMembership.groupId = group.id;
       groupMembership.isGroupAdmin = false;
       await this.groupMembershipRepository.save(groupMembership);
     } catch (e) {
       if (
         await this.groupMembershipRepository.count({
           userId: userId,
-          groupId: groupId
+          groupId: group.id
         })
       ) {
         return AddUserToGroupResponseError.USER_ALREADY_IN_GROUP;
@@ -134,24 +145,24 @@ export class GroupService {
 
   async removeUserFromGroup(
     userId: number,
-    groupId: number
+    group: GroupEntity
   ): Promise<RemoveUserFromGroupResponseError> {
     if (!(await this.userService.userExists(userId)))
       return RemoveUserFromGroupResponseError.NO_SUCH_USER;
 
-    const group = await this.groupRepository.findOne(groupId);
-    if (!group) return RemoveUserFromGroupResponseError.NO_SUCH_GROUP;
-
     if (userId === group.ownerId)
-      return RemoveUserFromGroupResponseError.OWNER_CAN_NOT_BE_REMOVED;
+      return RemoveUserFromGroupResponseError.OWNER_OR_GROUP_ADMIN_CAN_NOT_BE_REMOVED;
 
     const groupMembership = await this.groupMembershipRepository.findOne({
       userId: userId,
-      groupId: groupId
+      groupId: group.id
     });
 
     if (!groupMembership)
       return RemoveUserFromGroupResponseError.USER_NOT_IN_GROUP;
+
+    if (groupMembership.isGroupAdmin)
+      return RemoveUserFromGroupResponseError.OWNER_OR_GROUP_ADMIN_CAN_NOT_BE_REMOVED;
 
     await this.groupMembershipRepository.delete(groupMembership);
 
