@@ -168,4 +168,27 @@ export class GroupService {
 
     return null;
   }
+
+  async setIsGroupAdmin(
+    userId: number,
+    groupId: number,
+    isGroupAdmin: boolean
+  ): Promise<SetGroupAdminResponseError> {
+    if (!(await this.userService.userExists(userId)))
+      return SetGroupAdminResponseError.NO_SUCH_USER;
+    if (!(await this.groupExists(groupId)))
+      return SetGroupAdminResponseError.NO_SUCH_GROUP;
+
+    const groupMembership = await this.groupMembershipRepository.findOne({
+      userId: userId,
+      groupId: groupId
+    });
+
+    if (!groupMembership) return SetGroupAdminResponseError.USER_NOT_IN_GROUP;
+
+    groupMembership.isGroupAdmin = isGroupAdmin;
+    await this.groupMembershipRepository.save(groupMembership);
+
+    return null;
+  }
 }
