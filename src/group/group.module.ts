@@ -5,7 +5,7 @@ import { GroupService } from "./group.service";
 import { GroupController } from "./group.controller";
 import { GroupEntity } from "./group.entity";
 import { GroupMembershipEntity } from "./group-membership.entity";
-import { UserModule } from "../user/user.module";
+import { UserModule } from "@/user/user.module";
 
 @Module({
   imports: [

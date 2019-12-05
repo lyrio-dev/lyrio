@@ -6,7 +6,7 @@ import { UserAuthEntity } from "./user-auth.entity";
 import { AuthService } from "./auth.service";
 import { UserService } from "./user.service";
 import { AuthController } from "./auth.controller";
-import { ConfigModule } from "../config/config.module";
+import { ConfigModule } from "@/config/config.module";
 
 @Module({
   imports: [

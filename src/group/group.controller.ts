@@ -3,8 +3,8 @@ import { ApiResponse } from "@nestjs/swagger";
 
 import { GetGroupMetaRequestDto, GetGroupMetaResponseDto, CreateGroupResponseDto, CreateGroupResponseError, CreateGroupRequestDto, DeleteGroupResponseDto, DeleteGroupRequestDto, DeleteGroupResponseError, AddUserToGroupRequestDto, AddUserToGroupResponseError, AddUserToGroupResponseDto, RemoveUserFromGroupRequestDto, RemoveUserFromGroupResponseDto, RemoveUserFromGroupResponseError, GetGroupMetaResponseError } from "./dto";
 import { GroupService } from "./group.service";
-import { CurrentUser } from "../common/user.decorator";
-import { UserEntity } from "../user/user.entity";
+import { CurrentUser } from "@/common/user.decorator";
+import { UserEntity } from "@/user/user.entity";
 
 @Controller("group")
 export class GroupController {

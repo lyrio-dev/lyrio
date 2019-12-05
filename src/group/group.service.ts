@@ -7,7 +7,7 @@ import { AddUserToGroupResponseError } from "./dto/add-user-to-group-response.dt
 import { RemoveUserFromGroupResponseError } from "./dto/remove-user-from-group-response.dto";
 import { DeleteGroupResponseError } from "./dto/delete-group-response.dto";
 
-import { UserService } from "../user/user.service";
+import { UserService } from "@/user/user.service";
 import { GroupEntity } from "./group.entity";
 import { GroupMembershipEntity } from "./group-membership.entity";
 

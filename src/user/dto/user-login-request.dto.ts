@@ -1,6 +1,6 @@
 import { ApiModelProperty } from "@nestjs/swagger";
 import { Length } from "class-validator";
-import { IsUsername } from "../../common/validators";
+import { IsUsername } from "@/common/validators";
 
 export class UserLoginRequestDto {
   @ApiModelProperty()
