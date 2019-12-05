@@ -12,7 +12,7 @@ import { GroupEntity } from "./group.entity";
 
 @Entity("group_membership")
 @Index(["userId", "groupId"], { unique: true })
-@Index(["groupId", "isGroupAdmin"], { unique: true })
+@Index(["groupId", "isGroupAdmin"])
 export class GroupMembershipEntity {
   @PrimaryGeneratedColumn()
   id: number;
