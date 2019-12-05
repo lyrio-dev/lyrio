@@ -7,3 +7,9 @@ export * from "./auth-register-request.dto";
 export * from "./auth-register-response.dto";
 
 export * from "./auth-get-self-meta-response.dto";
+
+export * from "./user-get-user-meta-request.dto";
+export * from "./user-get-user-meta-response.dto";
+
+export * from "./user-set-user-privileges-request.dto";
+export * from "./user-set-user-privileges-response.dto";
