@@ -23,6 +23,5 @@ export class GroupEntity {
   owner: Promise<UserEntity>;
 
   @Column()
-  @Index({ unique: true })
   ownerId: number;
 }
