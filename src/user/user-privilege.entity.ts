@@ -11,6 +11,7 @@ import { UserEntity } from "@/user/user.entity";
 
 export enum UserPrivilegeType {
   MANAGE_USER = "MANAGE_USER",
+  MANAGE_USER_GROUP = "MANAGE_USER_GROUP",
   MANAGE_PROBLEM = "MANAGE_PROBLEM",
   MANAGE_CONTEST = "MANAGE_CONTEST",
   MANAGE_DISCUSSION = "MANAGE_DISCUSSION"
