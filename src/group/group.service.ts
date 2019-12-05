@@ -29,7 +29,7 @@ export class GroupService {
     return (await this.groupRepository.count({ id: id })) != 0;
   }
 
-  async findById(id: number): Promise<GroupEntity> {
+  async findGroupById(id: number): Promise<GroupEntity> {
     return await this.groupRepository.findOne(id);
   }
 
