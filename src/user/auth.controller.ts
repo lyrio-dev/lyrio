@@ -38,7 +38,8 @@ export class AuthController {
         id: currentUser.id,
         username: currentUser.username,
         email: currentUser.email,
-        bio: currentUser.bio
+        bio: currentUser.bio,
+        isAdmin: currentUser.isAdmin
       };
     } else {
       result.userMeta = null;
@@ -78,7 +79,8 @@ export class AuthController {
         id: user.id,
         username: user.username,
         email: user.email,
-        bio: user.bio
+        bio: user.bio,
+        isAdmin: user.isAdmin
       },
       token: jwt.sign(
         user.id.toString(),
@@ -124,7 +126,8 @@ export class AuthController {
         id: user.id,
         username: user.username,
         email: user.email,
-        bio: user.bio
+        bio: user.bio,
+        isAdmin: user.isAdmin
       },
       token: jwt.sign(
         user.id.toString(),

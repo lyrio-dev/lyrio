@@ -46,7 +46,8 @@ export class UserController {
         id: user.id,
         username: user.username,
         email: user.email,
-        bio: user.bio
+        bio: user.bio,
+        isAdmin: user.isAdmin
       }
     };
 

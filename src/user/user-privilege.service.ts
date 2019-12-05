@@ -28,6 +28,7 @@ export class UserPrivilegeService {
     privilegeType: UserPrivilegeType
   ): Promise<boolean> {
     return (
+      user.isAdmin ||
       (await this.userPrivilegeRepository.count({
         userId: user.id,
         privilegeType: privilegeType
