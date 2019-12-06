@@ -156,9 +156,7 @@ export class GroupController {
         error: AddUserToGroupResponseError.PERMISSION_DENIED
       };
 
-    const group = await this.groupService.findGroupById(
-      request.groupId
-    );
+    const group = await this.groupService.findGroupById(request.groupId);
     if (!group)
       return {
         error: AddUserToGroupResponseError.NO_SUCH_GROUP
@@ -178,10 +176,7 @@ export class GroupController {
         error: AddUserToGroupResponseError.PERMISSION_DENIED
       };
 
-    const error = await this.groupService.addUserToGroup(
-      request.userId,
-      group
-    );
+    const error = await this.groupService.addUserToGroup(request.userId, group);
     if (error)
       return {
         error: error
@@ -206,9 +201,7 @@ export class GroupController {
         error: RemoveUserFromGroupResponseError.PERMISSION_DENIED
       };
 
-    const group = await this.groupService.findGroupById(
-      request.groupId
-    );
+    const group = await this.groupService.findGroupById(request.groupId);
     if (!group)
       return {
         error: RemoveUserFromGroupResponseError.NO_SUCH_GROUP
@@ -256,9 +249,7 @@ export class GroupController {
         error: SetGroupAdminResponseError.PERMISSION_DENIED
       };
 
-    const group = await this.groupService.findGroupById(
-      request.groupId
-    );
+    const group = await this.groupService.findGroupById(request.groupId);
     if (!group)
       return {
         error: SetGroupAdminResponseError.NO_SUCH_GROUP
