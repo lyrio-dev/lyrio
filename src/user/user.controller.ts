@@ -33,13 +33,9 @@ export class UserController {
   ): Promise<UserGetUserMetaResponseDto> {
     let user: UserEntity;
     if (request.userId) {
-      user = await this.userService.findUserById(
-        parseInt(request.userId)
-      );
+      user = await this.userService.findUserById(parseInt(request.userId));
     } else if (request.username) {
-      user = await this.userService.findUserByUsername(
-        request.username
-      );
+      user = await this.userService.findUserByUsername(request.username);
     }
 
     if (!user) return {};
@@ -74,9 +70,10 @@ export class UserController {
     @CurrentUser() currentUser: UserEntity,
     @Body() request: UserSetUserPrivilegesRequestDto
   ): Promise<UserSetUserPrivilegesResponseDto> {
-    if (!currentUser.isAdmin) return {
-      error: UserSetUserPrivilegesResponseError.PERMISSION_DENIED
-    };
+    if (!currentUser.isAdmin)
+      return {
+        error: UserSetUserPrivilegesResponseError.PERMISSION_DENIED
+      };
 
     return {
       error: await this.userPrivilegeService.setUserPrivileges(
