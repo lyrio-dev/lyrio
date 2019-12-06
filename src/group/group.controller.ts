@@ -128,8 +128,6 @@ export class GroupController {
         error: DeleteGroupResponseError.PERMISSION_DENIED
       };
 
-    // TODO: Check permission
-
     const error = await this.groupService.deleteGroup(
       request.groupId,
       request.force
