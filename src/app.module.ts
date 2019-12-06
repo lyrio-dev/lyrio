@@ -13,9 +13,17 @@ import { UserModule } from "./user/user.module";
 import { AuthMiddleware } from "./user/auth.middleware";
 import { CorsModule } from "./cors/cors.module";
 import { GroupModule } from "./group/group.module";
+import { ProblemModule } from "./problem/problem.module";
 
 @Module({
-  imports: [DatabaseModule, ConfigModule, UserModule, CorsModule, GroupModule],
+  imports: [
+    DatabaseModule,
+    ConfigModule,
+    UserModule,
+    CorsModule,
+    GroupModule,
+    ProblemModule
+  ],
   controllers: [AppController],
   providers: [AppService]
 })
