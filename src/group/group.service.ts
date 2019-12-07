@@ -36,6 +36,16 @@ export class GroupService {
     return await this.groupRepository.findOne(id);
   }
 
+  async findGroupMembership(
+    userId: number,
+    groupId: number
+  ): Promise<GroupMembershipEntity> {
+    return await this.groupMembershipRepository.findOne({
+      userId: userId,
+      groupId: groupId
+    });
+  }
+
   async isGroupAdmin(userId: number, groupId: number): Promise<boolean> {
     return (
       (await this.groupMembershipRepository.count({
@@ -46,7 +56,7 @@ export class GroupService {
     );
   }
 
-  async findMembersipsByUserId(
+  async getMembersipsByUserId(
     userId: number
   ): Promise<[GroupMembershipEntity, GroupEntity][]> {
     const memberships = await this.groupMembershipRepository.find({
@@ -98,7 +108,7 @@ export class GroupService {
     id: number,
     force: boolean
   ): Promise<DeleteGroupResponseError> {
-    const group = await this.groupRepository.findOne(id);
+    const group = await this.findGroupById(id);
     if (!group) return DeleteGroupResponseError.NO_SUCH_GROUP;
 
     if (!force) {
@@ -153,10 +163,7 @@ export class GroupService {
     if (userId === group.ownerId)
       return RemoveUserFromGroupResponseError.OWNER_OR_GROUP_ADMIN_CAN_NOT_BE_REMOVED;
 
-    const groupMembership = await this.groupMembershipRepository.findOne({
-      userId: userId,
-      groupId: group.id
-    });
+    const groupMembership = await this.findGroupMembership(userId, group.id);
 
     if (!groupMembership)
       return RemoveUserFromGroupResponseError.USER_NOT_IN_GROUP;

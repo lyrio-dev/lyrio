@@ -6,6 +6,7 @@ import * as bcrypt from "bcrypt";
 
 import { UserEntity } from "./user.entity";
 import { UserAuthEntity } from "./user-auth.entity";
+import { UserService } from "./user.service";
 
 @Injectable()
 export class AuthService {
@@ -15,7 +16,8 @@ export class AuthService {
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(UserAuthEntity)
-    private readonly userAuthRepository: Repository<UserAuthEntity>
+    private readonly userAuthRepository: Repository<UserAuthEntity>,
+    private readonly userService: UserService
   ) {}
 
   async register(
@@ -62,9 +64,9 @@ export class AuthService {
     username: string,
     password: string
   ): Promise<[AuthLoginResponseError, UserEntity]> {
-    const user: UserEntity = await this.userRepository.findOne({
-      username: username
-    });
+    const user: UserEntity = await this.userService.findUserByUsername(
+      username
+    );
 
     if (!user) return [AuthLoginResponseError.NO_SUCH_USER, null];
 
