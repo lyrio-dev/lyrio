@@ -14,6 +14,7 @@ import { AuthMiddleware } from "./user/auth.middleware";
 import { CorsModule } from "./cors/cors.module";
 import { GroupModule } from "./group/group.module";
 import { ProblemModule } from "./problem/problem.module";
+import { LocalizedContentModule } from "./localized-content/localized-content.module";
 
 @Module({
   imports: [
@@ -22,7 +23,8 @@ import { ProblemModule } from "./problem/problem.module";
     UserModule,
     CorsModule,
     GroupModule,
-    ProblemModule
+    ProblemModule,
+    LocalizedContentModule
   ],
   controllers: [AppController],
   providers: [AppService]
