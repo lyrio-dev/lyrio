@@ -10,6 +10,8 @@ import {
 
 import { UserEntity } from "@/user/user.entity";
 import { ProblemJudgeInfoEntity } from "./problem-judge-info.entity";
+import { Locale } from "@/common/locale.type";
+import { ProblemSampleEntity } from "./problem-sample.entity";
 
 export enum ProblemType {
   TRADITIONAL = "TRADITIONAL"
@@ -24,13 +26,9 @@ export class ProblemEntity {
    * The entity ID is NOT designed to be changed, but we need to change its ID
    * So use a "display ID" to display, and use the entity ID internally
    */
-  @Column({ type: "integer" })
+  @Column({ type: "integer", nullable: true })
   @Index({ unique: true })
   displayId: number;
-
-  @Column({ type: "varchar", length: 48 })
-  @Index({ unique: true })
-  title: string;
 
   /*
    * Why put problem's type in problem table, NOT problem judge info table?
@@ -49,6 +47,15 @@ export class ProblemEntity {
 
   @Column()
   ownerId: number;
+
+  @Column({ type: "json" })
+  locales: Locale[];
+
+  @OneToOne(
+    type => ProblemSampleEntity,
+    problemSample => problemSample.problem
+  )
+  sample: Promise<ProblemSampleEntity>;
 
   @OneToOne(
     type => ProblemJudgeInfoEntity,
