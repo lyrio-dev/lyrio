@@ -4,6 +4,24 @@ import {
   ValidationArguments
 } from "class-validator";
 
+export function If<T = any>(
+  callback: (value: T) => boolean,
+  validationOptions?: ValidationOptions
+) {
+  return function(object: Object, propertyName: string) {
+    registerDecorator({
+      target: object.constructor,
+      propertyName: propertyName,
+      options: validationOptions,
+      validator: {
+        validate(value: T, args: ValidationArguments) {
+          return callback(value);
+        }
+      }
+    });
+  };
+}
+
 // class-validator's IsPort accepts strings only, but I prefer
 // writting port numbers as number
 export function IsPortNumber(validationOptions?: ValidationOptions) {
