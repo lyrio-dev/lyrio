@@ -16,6 +16,12 @@ export interface ProblemJudgeInfoTraditional extends ProblemJudgeInfo {
     outputFileName: string;
   };
 
+  /*
+   * If ture, samples in statement will be run before all subtasks
+   * If a submission failed on samples, all subtasks will be skipped
+   */
+  runSamples: boolean;
+
   testdata?: {
     /*
      * Testcases are pre-defined independent of the subtasks each with its

@@ -1,5 +1,4 @@
 export interface ProblemSampleDataMember {
-  runWhenJudging: boolean;
   inputData: string;
   outputData: string;
 }

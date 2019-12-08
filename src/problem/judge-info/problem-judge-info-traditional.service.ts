@@ -12,6 +12,7 @@ export class ProblemJudgeInfoTraditionalService
     return {
       defaultTimeLimit: 1000,
       defaultMemoryLimit: 512,
+      runSamples: true,
       fileIo: null,
       testdata: null
     };
