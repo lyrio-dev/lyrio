@@ -4,10 +4,6 @@ import { ProblemSampleDataMember } from "../problem-sample-data.interface";
 
 export class ProblemSampleDataMemberDto implements ProblemSampleDataMember {
   @ApiModelProperty()
-  @IsBoolean()
-  runWhenJudging: boolean;
-
-  @ApiModelProperty()
   @IsString()
   inputData: string;
 
