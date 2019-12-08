@@ -46,4 +46,10 @@ By default this app listens on `127.0.0.1:2002`. You can change this in the conf
 $ SYZOJ_NG_CONFIG_FILE=./config.json yarn start
 ```
 
+Add `SYZOJ_NG_LOG_SQL` to enable TypeORM logging:
+
+```bash
+$ SYZOJ_NG_LOG_SQL=1 SYZOJ_NG_CONFIG_FILE=./config.json yarn start
+```
+
 Refer to [syzoj-ng-app](https://github.com/syzoj/syzoj-ng-app) for the guide for the front-end app server.

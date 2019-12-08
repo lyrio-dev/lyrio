@@ -34,6 +34,7 @@ export const databaseProviders = [
         password: configService.config.database.password,
         database: configService.config.database.database,
         entities: [__dirname + "/../**/*.entity{.ts,.js}"],
+        logging: !!process.env["SYZOJ_NG_LOG_SQL"],
         synchronize: true
       };
     },
