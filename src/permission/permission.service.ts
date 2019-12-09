@@ -215,4 +215,20 @@ export class PermissionService {
       );
     else throw new Error("userOrGroup is neither a user nor a group");
   }
+
+  async getUsersWithPermission(objectId: number, objectType: PermissionObjectType, permissionType: PermissionType): Promise<number[]> {
+    return (await this.permissionForUserRepository.find({
+      objectId: objectId,
+      objectType: objectType,
+      permissionType: permissionType
+    })).map(permissionForUser => permissionForUser.userId);
+  }
+
+  async getGroupsWithPermission(objectId: number, objectType: PermissionObjectType, permissionType: PermissionType): Promise<number[]> {
+    return (await this.permissionForGroupRepository.find({
+      objectId: objectId,
+      objectType: objectType,
+      permissionType: permissionType
+    })).map(permissionForGroup => permissionForGroup.groupId);
+  }
 }
