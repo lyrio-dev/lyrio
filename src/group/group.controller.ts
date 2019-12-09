@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Body, Query } from "@nestjs/common";
-import { ApiResponse, ApiBearerAuth, ApiUseTags } from "@nestjs/swagger";
+import { ApiOperation, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import {
   GetGroupMetaRequestDto,
@@ -29,7 +29,7 @@ import {
   UserPrivilegeType
 } from "@/user/user-privilege.service";
 
-@ApiUseTags("Group")
+@ApiTags("Group")
 @Controller("group")
 export class GroupController {
   constructor(
@@ -40,10 +40,8 @@ export class GroupController {
   // TODO: Find an elegant way to validate GET's input data
   @Get("getGroupMeta")
   @ApiBearerAuth()
-  @ApiResponse({
-    status: 200,
-    type: GetGroupMetaResponseDto,
-    description: "Get the metadata of a group by its ID"
+  @ApiOperation({
+    summary: "Get the metadata of a group by its ID."
   })
   async getGroupMeta(
     @Query() request: GetGroupMetaRequestDto
@@ -67,10 +65,8 @@ export class GroupController {
 
   @Post("create")
   @ApiBearerAuth()
-  @ApiResponse({
-    status: 200,
-    type: CreateGroupResponseDto,
-    description: "Create a new group, return its ID if success"
+  @ApiOperation({
+    summary: "Create a new group."
   })
   async create(
     @CurrentUser() currentUser: UserEntity,
@@ -105,11 +101,9 @@ export class GroupController {
 
   @Post("delete")
   @ApiBearerAuth()
-  @ApiResponse({
-    status: 200,
-    type: DeleteGroupResponseDto,
-    description:
-      "Delete a group. To delete a group with user or privilege, use the force option"
+  @ApiOperation({
+    summary: "Delete a group.",
+    description: "To delete a group with user or privilege, use the force option."
   })
   async delete(
     @CurrentUser() currentUser: UserEntity,
@@ -142,10 +136,8 @@ export class GroupController {
 
   @Post("addMember")
   @ApiBearerAuth()
-  @ApiResponse({
-    status: 200,
-    type: AddUserToGroupResponseDto,
-    description: "Add a user to a group"
+  @ApiOperation({
+    summary: "Add a user to a group."
   })
   async addMember(
     @CurrentUser() currentUser: UserEntity,
@@ -187,10 +179,8 @@ export class GroupController {
 
   @Post("removeMember")
   @ApiBearerAuth()
-  @ApiResponse({
-    status: 200,
-    type: RemoveUserFromGroupResponseDto,
-    description: "Remove a user from a group"
+  @ApiOperation({
+    summary: "Remove a user from a group."
   })
   async removeMember(
     @CurrentUser() currentUser: UserEntity,
@@ -235,10 +225,8 @@ export class GroupController {
 
   @Post("setGroupAdmin")
   @ApiBearerAuth()
-  @ApiResponse({
-    status: 200,
-    type: SetGroupAdminResponseDto,
-    description: "Set if or not a member of a group is group admin"
+  @ApiOperation({
+    summary: "Set if or not a member of a group is group admin."
   })
   async setGroupAdmin(
     @CurrentUser() currentUser: UserEntity,

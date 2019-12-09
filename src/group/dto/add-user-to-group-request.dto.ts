@@ -1,12 +1,12 @@
-import { ApiModelProperty } from "@nestjs/swagger";
+import { ApiProperty } from "@nestjs/swagger";
 import { IsInt } from "class-validator";
 
 export class AddUserToGroupRequestDto {
-  @ApiModelProperty()
+  @ApiProperty()
   @IsInt()
   readonly userId: number;
 
-  @ApiModelProperty()
+  @ApiProperty()
   @IsInt()
   readonly groupId: number;
 }

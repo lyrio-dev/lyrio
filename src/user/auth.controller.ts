@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Body } from "@nestjs/common";
-import { ApiResponse, ApiBearerAuth, ApiUseTags } from "@nestjs/swagger";
+import { ApiOperation, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import * as jwt from "jsonwebtoken";
 
 import {
@@ -16,7 +16,7 @@ import { AuthService } from "./auth.service";
 import { CurrentUser } from "@/common/user.decorator";
 import { UserEntity } from "./user.entity";
 
-@ApiUseTags("Auth")
+@ApiTags("Auth")
 @Controller("auth")
 export class AuthController {
   constructor(
@@ -26,10 +26,8 @@ export class AuthController {
 
   @Get("getSelfMeta")
   @ApiBearerAuth()
-  @ApiResponse({
-    status: 200,
-    type: AuthGetSelfMetaResponseDto,
-    description: "Get the metadata of the current logged-in user"
+  @ApiOperation({
+    summary: "Get the metadata of the current logged-in user."
   })
   async getSelfMeta(
     @CurrentUser() currentUser: UserEntity
@@ -52,11 +50,9 @@ export class AuthController {
 
   @Post("login")
   @ApiBearerAuth()
-  @ApiResponse({
-    status: 200,
-    type: AuthLoginResponseDto,
-    description:
-      "Login, return the logged-in user's metadata and token if success"
+  @ApiOperation({
+    summary: "Login with given credentials.",
+    description: "Return the logged-in user's metadata and token if success."
   })
   async login(
     @CurrentUser() currentUser: UserEntity,
@@ -94,17 +90,18 @@ export class AuthController {
 
   @Post("logout")
   @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Logout the current session."
+  })
   async logout(): Promise<object> {
     return {};
   }
 
   @Post("register")
   @ApiBearerAuth()
-  @ApiResponse({
-    status: 200,
-    type: AuthRegisterResponseDto,
-    description:
-      "Register then login, return the new user's metadata and token if success"
+  @ApiOperation({
+    summary: "Register then login.",
+    description: "Return the new user's metadata and token if success."
   })
   async register(
     @CurrentUser() currentUser: UserEntity,

@@ -1,5 +1,5 @@
 import { Controller, Get, Header } from "@nestjs/common";
-import { ApiResponse, ApiUseTags } from "@nestjs/swagger";
+import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import * as fs from "fs-extra";
 import * as serialize from "serialize-javascript";
 
@@ -17,18 +17,15 @@ const getXdomainProxyHtml = whiteList =>
   </script>
 </head>`;
 
-@ApiUseTags("CORS")
+@ApiTags("CORS")
 @Controller("cors")
 export class CorsController {
   constructor(private readonly configService: ConfigService) {}
 
   @Get()
   @Header("Content-Type", "text/html")
-  @ApiResponse({
-    status: 200,
-    type: String,
-    description:
-      "Return the proxy page for xdomain, which is used for CORS requests"
+  @ApiOperation({
+    summary: "Get the proxy page for xdomain (used for CORS requests)."
   })
   public async cors(): Promise<string> {
     if (!this.configService.config.security.crossOrigin.enabled) {
@@ -43,10 +40,8 @@ export class CorsController {
   @Get("xdomain.min.js")
   @Header("Content-Type", "application/javascript")
   @Header("Cache-Control", "public, max-age=31536000")
-  @ApiResponse({
-    status: 200,
-    type: String,
-    description: "Return the xdomain script, which is used for CORS requests"
+  @ApiOperation({
+    summary: "Get the xdomain script (used for CORS requests)."
   })
   public async xdomain(): Promise<string> {
     if (!this.configService.config.security.crossOrigin.enabled) {

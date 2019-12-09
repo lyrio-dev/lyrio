@@ -1,16 +1,16 @@
-import { ApiModelProperty } from "@nestjs/swagger";
+import { ApiProperty } from "@nestjs/swagger";
 import { IsNumber, IsBoolean } from "class-validator";
 
 export class SetGroupAdminRequestDto {
-  @ApiModelProperty()
+  @ApiProperty()
   @IsNumber()
   readonly userId: number;
 
-  @ApiModelProperty()
+  @ApiProperty()
   @IsNumber()
   readonly groupId: number;
 
-  @ApiModelProperty()
+  @ApiProperty()
   @IsBoolean()
   readonly isGroupAdmin: boolean;
 }

@@ -1,4 +1,4 @@
-import { ApiModelProperty } from "@nestjs/swagger";
+import { ApiProperty } from "@nestjs/swagger";
 
 import { UserMetaDto } from "./user-meta.dto";
 
@@ -9,12 +9,12 @@ export enum AuthRegisterResponseError {
 }
 
 export class AuthRegisterResponseDto {
-  @ApiModelProperty()
+  @ApiProperty()
   error?: AuthRegisterResponseError;
 
-  @ApiModelProperty()
+  @ApiProperty()
   userMeta?: UserMetaDto;
 
-  @ApiModelProperty()
+  @ApiProperty()
   token?: string;
 }

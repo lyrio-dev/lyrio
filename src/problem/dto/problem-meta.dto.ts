@@ -1,24 +1,24 @@
-import { ApiModelProperty } from "@nestjs/swagger";
+import { ApiProperty } from "@nestjs/swagger";
 import { Locale } from "@/common/locale.type";
 
 import { ProblemType } from "../problem.entity";
 
 export class ProblemMetaDto {
-  @ApiModelProperty()
+  @ApiProperty()
   id: number;
 
-  @ApiModelProperty()
+  @ApiProperty()
   displayId?: number;
 
-  @ApiModelProperty()
+  @ApiProperty()
   type: ProblemType;
 
-  @ApiModelProperty()
+  @ApiProperty()
   isPublic: boolean;
 
-  @ApiModelProperty()
+  @ApiProperty()
   ownerId: number;
 
-  @ApiModelProperty()
+  @ApiProperty()
   locales: Locale[];
 }

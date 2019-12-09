@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Body, Query } from "@nestjs/common";
-import { ApiResponse, ApiBearerAuth, ApiUseTags } from "@nestjs/swagger";
+import { ApiOperation, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import { CurrentUser } from "@/common/user.decorator";
 import { UserEntity } from "./user.entity";
@@ -13,7 +13,7 @@ import {
   UserSetUserPrivilegesResponseError
 } from "./dto";
 
-@ApiUseTags("User")
+@ApiTags("User")
 @Controller("user")
 export class UserController {
   constructor(
@@ -23,10 +23,8 @@ export class UserController {
 
   @Get("getUserMeta")
   @ApiBearerAuth()
-  @ApiResponse({
-    status: 200,
-    type: UserGetUserMetaResponseDto,
-    description: "Get a user's metadata with its ID or username"
+  @ApiOperation({
+    summary: "Get a user's metadata with its ID or username."
   })
   async getUserMeta(
     @Query() request: UserGetUserMetaRequestDto
@@ -61,10 +59,8 @@ export class UserController {
 
   @Post("setUserPrivileges")
   @ApiBearerAuth()
-  @ApiResponse({
-    status: 200,
-    type: UserSetUserPrivilegesResponseDto,
-    description: "Set a user's privileges"
+  @ApiOperation({
+    summary: "Set a user's privileges."
   })
   async setUserPrivileges(
     @CurrentUser() currentUser: UserEntity,

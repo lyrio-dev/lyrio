@@ -1,4 +1,4 @@
-import { ApiModelProperty } from "@nestjs/swagger";
+import { ApiProperty } from "@nestjs/swagger";
 import {
   IsString,
   Length,
@@ -16,16 +16,16 @@ import { ProblemSampleDataMemberDto } from "./problem-sample-data-member.dto";
 import { ProblemContentSectionDto } from "./problem-content-section.dto";
 
 export class ProblemLocalizedContentDto {
-  @ApiModelProperty()
+  @ApiProperty()
   @IsEnum(Locale)
   readonly locale: Locale;
 
-  @ApiModelProperty()
+  @ApiProperty()
   @IsString()
   @Length(1, 120)
   readonly title: string;
 
-  @ApiModelProperty({ type: ProblemContentSectionDto, isArray: true })
+  @ApiProperty({ type: ProblemContentSectionDto, isArray: true })
   @ValidateNested({ each: true })
   @IsArray()
   @ArrayMaxSize(20)
@@ -33,7 +33,7 @@ export class ProblemLocalizedContentDto {
 }
 
 export class ProblemStatementDto {
-  @ApiModelProperty({ type: ProblemLocalizedContentDto, isArray: true })
+  @ApiProperty({ type: ProblemLocalizedContentDto, isArray: true })
   @ValidateNested({ each: true })
   @If<ProblemLocalizedContentDto[]>(
     localizedContents =>
@@ -48,7 +48,7 @@ export class ProblemStatementDto {
   @IsArray()
   readonly localizedContents: ProblemLocalizedContentDto[];
 
-  @ApiModelProperty({ type: ProblemSampleDataMemberDto, isArray: true })
+  @ApiProperty({ type: ProblemSampleDataMemberDto, isArray: true })
   @ValidateNested({ each: true })
   @IsArray()
   readonly samples: ProblemSampleDataMemberDto[];

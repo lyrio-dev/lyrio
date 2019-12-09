@@ -1,4 +1,4 @@
-import { ApiModelProperty } from "@nestjs/swagger";
+import { ApiProperty } from "@nestjs/swagger";
 
 import { Locale } from "@/common/locale.type";
 
@@ -13,27 +13,27 @@ export enum GetProblemDetailResponseError {
 }
 
 export class GetProblemDetailResponseDto {
-  @ApiModelProperty()
+  @ApiProperty()
   error?: GetProblemDetailResponseError;
 
-  @ApiModelProperty()
+  @ApiProperty()
   meta?: ProblemMetaDto;
 
-  @ApiModelProperty()
+  @ApiProperty()
   title?: string;
 
-  @ApiModelProperty()
+  @ApiProperty()
   titleLocale?: Locale;
 
-  @ApiModelProperty({ type: ProblemSampleDataMemberDto, isArray: true })
+  @ApiProperty({ type: ProblemSampleDataMemberDto, isArray: true })
   samples?: ProblemSampleDataMemberDto[];
 
-  @ApiModelProperty({ type: ProblemContentSectionDto, isArray: true })
+  @ApiProperty({ type: ProblemContentSectionDto, isArray: true })
   contentSections?: ProblemContentSectionDto[];
 
-  @ApiModelProperty()
+  @ApiProperty()
   contentLocale?: Locale;
 
-  @ApiModelProperty()
+  @ApiProperty()
   judgeInfo?: ProblemJudgeInfo;
 }

@@ -1,13 +1,13 @@
-import { ApiModelProperty } from "@nestjs/swagger";
+import { ApiProperty } from "@nestjs/swagger";
 import { IsString, IsBoolean } from "class-validator";
 import { ProblemSampleDataMember } from "../problem-sample-data.interface";
 
 export class ProblemSampleDataMemberDto implements ProblemSampleDataMember {
-  @ApiModelProperty()
+  @ApiProperty()
   @IsString()
   inputData: string;
 
-  @ApiModelProperty()
+  @ApiProperty()
   @IsString()
   outputData: string;
 }

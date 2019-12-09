@@ -1,4 +1,4 @@
-import { ApiModelProperty } from "@nestjs/swagger";
+import { ApiProperty } from "@nestjs/swagger";
 
 import { GroupMetaDto } from "./group-meta.dto";
 
@@ -7,9 +7,9 @@ export enum GetGroupMetaResponseError {
 }
 
 export class GetGroupMetaResponseDto {
-  @ApiModelProperty()
+  @ApiProperty()
   groupMeta?: GroupMetaDto;
 
-  @ApiModelProperty()
+  @ApiProperty()
   error?: GetGroupMetaResponseError;
 }

@@ -1,4 +1,4 @@
-import { ApiModelProperty } from "@nestjs/swagger";
+import { ApiProperty } from "@nestjs/swagger";
 
 export enum CreateGroupResponseError {
   PERMISSION_DENIED = "PERMISSION_DENIED",
@@ -6,9 +6,9 @@ export enum CreateGroupResponseError {
 }
 
 export class CreateGroupResponseDto {
-  @ApiModelProperty()
+  @ApiProperty()
   error?: CreateGroupResponseError;
 
-  @ApiModelProperty()
+  @ApiProperty()
   groupId?: number;
 }

@@ -1,4 +1,4 @@
-import { ApiModelProperty } from "@nestjs/swagger";
+import { ApiProperty } from "@nestjs/swagger";
 
 export enum RemoveUserFromGroupResponseError {
   PERMISSION_DENIED = "PERMISSION_DENIED",
@@ -9,6 +9,6 @@ export enum RemoveUserFromGroupResponseError {
 }
 
 export class RemoveUserFromGroupResponseDto {
-  @ApiModelProperty()
+  @ApiProperty()
   error?: RemoveUserFromGroupResponseError;
 }

@@ -1,4 +1,4 @@
-import { ApiModelProperty } from "@nestjs/swagger";
+import { ApiProperty } from "@nestjs/swagger";
 import { IsInt, IsString, Length, IsEnum, IsOptional } from "class-validator";
 
 import {
@@ -7,23 +7,23 @@ import {
 } from "../problem-content.interface";
 
 export class ProblemContentSectionDto implements ProblemContentSection {
-  @ApiModelProperty()
+  @ApiProperty()
   @IsString()
   @Length(1, 120)
   sectionTitle: string;
 
-  @ApiModelProperty()
+  @ApiProperty()
   @IsEnum(ProblemContentSectionType)
   type: ProblemContentSectionType;
 
   // If it's a text section, the sampleId is empty
-  @ApiModelProperty()
+  @ApiProperty()
   @IsInt()
   @IsOptional()
   sampleId?: number;
 
   // If it's a sample section, the text is the explanation
-  @ApiModelProperty()
+  @ApiProperty()
   @IsString()
   @IsOptional()
   text?: string;

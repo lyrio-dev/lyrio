@@ -1,18 +1,18 @@
-import { ApiModelProperty } from "@nestjs/swagger";
+import { ApiProperty } from "@nestjs/swagger";
 
 export class UserMetaDto {
-  @ApiModelProperty()
+  @ApiProperty()
   readonly id: number;
 
-  @ApiModelProperty()
+  @ApiProperty()
   readonly username: string;
 
-  @ApiModelProperty()
+  @ApiProperty()
   readonly email: string;
 
-  @ApiModelProperty()
+  @ApiProperty()
   readonly bio: string;
 
-  @ApiModelProperty()
+  @ApiProperty()
   readonly isAdmin: boolean;
 }

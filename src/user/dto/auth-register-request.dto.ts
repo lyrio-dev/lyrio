@@ -1,17 +1,17 @@
-import { ApiModelProperty } from "@nestjs/swagger";
+import { ApiProperty } from "@nestjs/swagger";
 import { IsEmail, Length } from "class-validator";
 import { IsUsername } from "@/common/validators";
 
 export class AuthRegisterRequestDto {
-  @ApiModelProperty()
+  @ApiProperty()
   @IsUsername()
   readonly username: string;
 
-  @ApiModelProperty()
+  @ApiProperty()
   @IsEmail()
   readonly email: string;
 
-  @ApiModelProperty()
+  @ApiProperty()
   @Length(6, 32)
   readonly password: string;
 }

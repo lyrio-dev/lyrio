@@ -38,8 +38,6 @@ async function bootstrap() {
     .setTitle(packageInfo.name)
     .setDescription(packageInfo.description)
     .setVersion(appVersion)
-    .setBasePath("api")
-    .setSchemes("http", "https")
     .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, options);

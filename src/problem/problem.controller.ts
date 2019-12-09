@@ -1,5 +1,5 @@
 import { Controller, Post, Body, Get, Query } from "@nestjs/common";
-import { ApiResponse, ApiBearerAuth, ApiUseTags } from "@nestjs/swagger";
+import { ApiOperation, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import {
   UserPrivilegeService,
@@ -23,7 +23,7 @@ import {
 import { GetProblemDetailRequestDto } from "./dto/get-problem-detail-request.dto";
 import { ProblemEntity } from "./problem.entity";
 
-@ApiUseTags("Problem")
+@ApiTags("Problem")
 @Controller("problem")
 export class ProblemController {
   constructor(
@@ -33,10 +33,8 @@ export class ProblemController {
 
   @Post("create")
   @ApiBearerAuth()
-  @ApiResponse({
-    status: 200,
-    type: CreateProblemResponseDto,
-    description: "Create a problem with given statement and default judge info"
+  @ApiOperation({
+    summary: "Create a problem with given statement and default judge info."
   })
   async create(
     @CurrentUser() currentUser: UserEntity,
@@ -64,10 +62,8 @@ export class ProblemController {
 
   @Post("updateStatement")
   @ApiBearerAuth()
-  @ApiResponse({
-    status: 200,
-    type: UpdateProblemStatementResponseDto,
-    description: "Update a problem's statement"
+  @ApiOperation({
+    summary: "Update a problem's statement."
   })
   async updateStatement(
     @CurrentUser() currentUser: UserEntity,
@@ -115,11 +111,9 @@ export class ProblemController {
 
   @Get("getProblemDetail")
   @ApiBearerAuth()
-  @ApiResponse({
-    status: 200,
-    type: GetProblemDetailResponseDto,
-    description:
-      "Get a problem's meta, title, contents, samples, judge info\nTitle and contents are fallbacked to another locale if none for given locale"
+  @ApiOperation({
+    summary: "Get a problem's meta, title, contents, samples, judge info of given locale.",
+    description: "Title and contents are fallbacked to another locale if none for given locale."
   })
   async getProblemDetail(
     @CurrentUser() currentUser: UserEntity,

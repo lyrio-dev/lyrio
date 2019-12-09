@@ -1,13 +1,13 @@
-import { ApiModelProperty } from "@nestjs/swagger";
+import { ApiProperty } from "@nestjs/swagger";
 import { Length } from "class-validator";
 import { IsUsername } from "@/common/validators";
 
 export class AuthLoginRequestDto {
-  @ApiModelProperty()
+  @ApiProperty()
   @IsUsername()
   readonly username: string;
 
-  @ApiModelProperty()
+  @ApiProperty()
   @Length(6, 32)
   readonly password: string;
 }

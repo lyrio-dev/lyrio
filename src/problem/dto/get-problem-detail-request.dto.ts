@@ -1,19 +1,19 @@
-import { ApiModelProperty } from "@nestjs/swagger";
+import { ApiProperty } from "@nestjs/swagger";
 import { IsNumberString, IsOptional, IsEnum } from "class-validator";
 import { Locale } from "@/common/locale.type";
 
 export class GetProblemDetailRequestDto {
-  @ApiModelProperty()
+  @ApiProperty()
   @IsNumberString()
   @IsOptional()
   readonly id?: string;
 
-  @ApiModelProperty()
+  @ApiProperty()
   @IsNumberString()
   @IsOptional()
   readonly displayId?: string;
 
-  @ApiModelProperty()
+  @ApiProperty()
   @IsEnum(Locale)
   readonly locale: Locale;
 }

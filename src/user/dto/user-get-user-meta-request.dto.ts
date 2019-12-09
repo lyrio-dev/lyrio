@@ -1,9 +1,9 @@
-import { ApiModelProperty } from "@nestjs/swagger";
+import { ApiProperty } from "@nestjs/swagger";
 import { IsNumberString, IsOptional, IsBooleanString } from "class-validator";
 import { IsUsername } from "@/common/validators";
 
 export class UserGetUserMetaRequestDto {
-  @ApiModelProperty({
+  @ApiProperty({
     required: false
   })
   // FIXME: It should be IsInt but the GET request's input data passed with querystring loses its type.
@@ -11,14 +11,14 @@ export class UserGetUserMetaRequestDto {
   @IsOptional()
   readonly userId?: string;
 
-  @ApiModelProperty({
+  @ApiProperty({
     required: false
   })
   @IsUsername()
   @IsOptional()
   readonly username?: string;
 
-  @ApiModelProperty()
+  @ApiProperty()
   @IsBooleanString()
   @IsOptional()
   readonly getPrivileges?: boolean;
