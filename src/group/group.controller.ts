@@ -103,7 +103,8 @@ export class GroupController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: "Delete a group.",
-    description: "To delete a group with user or privilege, use the force option."
+    description:
+      "To delete a group with user or privilege, use the force option."
   })
   async delete(
     @CurrentUser() currentUser: UserEntity,

@@ -111,8 +111,10 @@ export class ProblemController {
   @Get("getProblemDetail")
   @ApiBearerAuth()
   @ApiOperation({
-    summary: "Get a problem's meta, title, contents, samples, judge info of given locale.",
-    description: "Title and contents are fallbacked to another locale if none for given locale."
+    summary:
+      "Get a problem's meta, title, contents, samples, judge info of given locale.",
+    description:
+      "Title and contents are fallbacked to another locale if none for given locale."
   })
   async getProblemDetail(
     @CurrentUser() currentUser: UserEntity,
