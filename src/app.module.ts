@@ -15,6 +15,7 @@ import { CorsModule } from "./cors/cors.module";
 import { GroupModule } from "./group/group.module";
 import { ProblemModule } from "./problem/problem.module";
 import { LocalizedContentModule } from "./localized-content/localized-content.module";
+import { PermissionModule } from "./permission/permission.module";
 
 @Module({
   imports: [
@@ -24,7 +25,8 @@ import { LocalizedContentModule } from "./localized-content/localized-content.mo
     CorsModule,
     GroupModule,
     ProblemModule,
-    LocalizedContentModule
+    LocalizedContentModule,
+    PermissionModule
   ],
   controllers: [AppController],
   providers: [AppService]
