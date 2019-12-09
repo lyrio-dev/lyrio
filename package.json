@@ -20,7 +20,6 @@
     "@nestjs/swagger": "^3.1.0",
     "@nestjs/typeorm": "^6.2.0",
     "@types/bcrypt": "^3.0.0",
-    "@types/ejs": "^2.7.0",
     "@types/fs-extra": "^8.0.1",
     "@types/jsonwebtoken": "^8.3.5",
     "@types/serialize-javascript": "^1.5.0",
