@@ -66,7 +66,7 @@ export class UserController {
     @CurrentUser() currentUser: UserEntity,
     @Body() request: UserSetUserPrivilegesRequestDto
   ): Promise<UserSetUserPrivilegesResponseDto> {
-    if (!currentUser.isAdmin)
+    if (!(currentUser && currentUser.isAdmin))
       return {
         error: UserSetUserPrivilegesResponseError.PERMISSION_DENIED
       };

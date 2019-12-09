@@ -136,12 +136,13 @@ export class ProblemController {
     if (!problem.isPublic) {
       if (
         !(
-          problem.ownerId == currentUser.id ||
-          currentUser.isAdmin ||
-          (await this.userPrivilegeService.userHasPrivilege(
-            currentUser,
-            UserPrivilegeType.MANAGE_PROBLEM
-          ))
+          currentUser &&
+          (problem.ownerId == currentUser.id ||
+            currentUser.isAdmin ||
+            (await this.userPrivilegeService.userHasPrivilege(
+              currentUser,
+              UserPrivilegeType.MANAGE_PROBLEM
+            )))
         )
       )
         return {
