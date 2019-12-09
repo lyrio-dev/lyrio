@@ -8,20 +8,19 @@ import {
 import { ProblemService } from "./problem.service";
 import { CurrentUser } from "@/common/user.decorator";
 import { UserEntity } from "@/user/user.entity";
+import { ProblemEntity } from "./problem.entity";
+
 import {
   CreateProblemRequestDto,
   CreateProblemResponseDto,
   CreateProblemResponseError,
   UpdateProblemStatementResponseDto,
   UpdateProblemStatementRequestDto,
-  UpdateProblemStatementResponseError
-} from "./dto";
-import {
+  UpdateProblemStatementResponseError,
+  GetProblemDetailRequestDto,
   GetProblemDetailResponseDto,
   GetProblemDetailResponseError
-} from "./dto/get-problem-detail-response.dto";
-import { GetProblemDetailRequestDto } from "./dto/get-problem-detail-request.dto";
-import { ProblemEntity } from "./problem.entity";
+} from "./dto";
 
 @ApiTags("Problem")
 @Controller("problem")

@@ -5,3 +5,6 @@ export * from "./create-problem-response.dto";
 
 export * from "./update-problem-statement-request.dto";
 export * from "./update-problem-statement-response.dto";
+
+export * from "./get-problem-detail-request.dto";
+export * from "./get-problem-detail-response.dto";
