@@ -1,22 +1,21 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Inject, forwardRef } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
-import { AuthLoginResponseError, AuthRegisterResponseError } from "./dto";
+import { LoginResponseError, RegisterResponseError } from "./dto";
 import { Repository, Connection, EntityManager } from "typeorm";
 import * as bcrypt from "bcrypt";
 
-import { UserEntity } from "./user.entity";
+import { UserEntity } from "@/user/user.entity";
 import { UserAuthEntity } from "./user-auth.entity";
-import { UserService } from "./user.service";
+import { UserService } from "@/user/user.service";
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectConnection()
     private readonly connection: Connection,
-    @InjectRepository(UserEntity)
-    private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(UserAuthEntity)
     private readonly userAuthRepository: Repository<UserAuthEntity>,
+    @Inject(forwardRef(() => UserService))
     private readonly userService: UserService
   ) {}
 
@@ -34,7 +33,7 @@ export class AuthService {
     username: string,
     email: string,
     password: string
-  ): Promise<[AuthRegisterResponseError, UserEntity]> {
+  ): Promise<[RegisterResponseError, UserEntity]> {
     // There's a race condition on user inserting. If we do checking before inserting,
     // inserting will still fail if another with same username is inserted after we check
     try {
@@ -58,11 +57,11 @@ export class AuthService {
 
       return [null, user];
     } catch (e) {
-      if (await this.userRepository.count({ username: username }))
-        return [AuthRegisterResponseError.DUPLICATE_USERNAME, null];
+      if (!(await this.userService.checkUsernameAvailability(username)))
+        return [RegisterResponseError.DUPLICATE_USERNAME, null];
 
-      if (await this.userRepository.count({ email: email }))
-        return [AuthRegisterResponseError.DUPLICATE_EMAIL, null];
+      if (!(await this.userService.checkEmailAvailability(email)))
+        return [RegisterResponseError.DUPLICATE_EMAIL, null];
 
       // Unknown error
       // (or the duplicate user's username is just changed?)
@@ -70,29 +69,37 @@ export class AuthService {
     }
   }
 
-  async checkPassword(userAuth: UserAuthEntity, password: string): Promise<boolean> {
+  async checkPassword(
+    userAuth: UserAuthEntity,
+    password: string
+  ): Promise<boolean> {
     return await bcrypt.compare(password, userAuth.password);
   }
 
-  async changePassword(userAuth: UserAuthEntity, password: string, transactionalEntityManager?: EntityManager): Promise<void> {
+  async changePassword(
+    userAuth: UserAuthEntity,
+    password: string,
+    transactionalEntityManager?: EntityManager
+  ): Promise<void> {
     userAuth.password = await this.hashPassword(password);
-    if (transactionalEntityManager) await transactionalEntityManager.save(userAuth);
+    if (transactionalEntityManager)
+      await transactionalEntityManager.save(userAuth);
     else await this.userAuthRepository.save(userAuth);
   }
 
   async login(
     username: string,
     password: string
-  ): Promise<[AuthLoginResponseError, UserEntity]> {
+  ): Promise<[LoginResponseError, UserEntity]> {
     const user: UserEntity = await this.userService.findUserByUsername(
       username
     );
 
-    if (!user) return [AuthLoginResponseError.NO_SUCH_USER, null];
+    if (!user) return [LoginResponseError.NO_SUCH_USER, null];
 
     const userAuth: UserAuthEntity = await user.userAuth;
     if (!(await this.checkPassword(userAuth, password)))
-      return [AuthLoginResponseError.WRONG_PASSWORD, null];
+      return [LoginResponseError.WRONG_PASSWORD, null];
 
     return [null, user];
   }

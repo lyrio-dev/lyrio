@@ -7,7 +7,7 @@ import {
   UserPrivilegeEntity,
   UserPrivilegeType
 } from "./user-privilege.entity";
-import { UserSetUserPrivilegesResponseError } from "./dto";
+import { SetUserPrivilegesResponseError } from "./dto";
 import { UserService } from "./user.service";
 
 export { UserPrivilegeType } from "./user-privilege.entity";
@@ -44,9 +44,9 @@ export class UserPrivilegeService {
   async setUserPrivileges(
     userId: number,
     newPrivilegeTypes: UserPrivilegeType[]
-  ): Promise<UserSetUserPrivilegesResponseError> {
+  ): Promise<SetUserPrivilegesResponseError> {
     if (!(await this.userService.userExists(userId)))
-      return UserSetUserPrivilegesResponseError.NO_SUCH_USER;
+      return SetUserPrivilegesResponseError.NO_SUCH_USER;
 
     await this.connection.transaction(
       "SERIALIZABLE",

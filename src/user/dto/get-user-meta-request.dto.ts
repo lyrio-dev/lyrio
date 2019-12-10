@@ -2,7 +2,7 @@ import { ApiProperty } from "@nestjs/swagger";
 import { IsNumberString, IsOptional, IsBooleanString } from "class-validator";
 import { IsUsername } from "@/common/validators";
 
-export class UserGetUserMetaRequestDto {
+export class GetUserMetaRequestDto {
   @ApiProperty({
     required: false
   })

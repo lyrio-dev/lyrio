@@ -10,7 +10,8 @@ import { AppService } from "./app.service";
 import { DatabaseModule } from "./database/database.module";
 import { ConfigModule } from "./config/config.module";
 import { UserModule } from "./user/user.module";
-import { AuthMiddleware } from "./user/auth.middleware";
+import { AuthModule } from "./auth/auth.module";
+import { AuthMiddleware } from "./auth/auth.middleware";
 import { CorsModule } from "./cors/cors.module";
 import { GroupModule } from "./group/group.module";
 import { ProblemModule } from "./problem/problem.module";
@@ -22,6 +23,7 @@ import { PermissionModule } from "./permission/permission.module";
     DatabaseModule,
     ConfigModule,
     UserModule,
+    AuthModule,
     CorsModule,
     GroupModule,
     ProblemModule,

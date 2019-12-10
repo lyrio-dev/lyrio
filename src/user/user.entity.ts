@@ -6,7 +6,7 @@ import {
   Index
 } from "typeorm";
 
-import { UserAuthEntity } from "./user-auth.entity";
+import { UserAuthEntity } from "@/auth/user-auth.entity";
 
 @Entity("user")
 export class UserEntity {

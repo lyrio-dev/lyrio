@@ -1,7 +1,7 @@
 import { NestMiddleware, Injectable } from "@nestjs/common";
 import * as jwt from "jsonwebtoken";
 
-import { UserService } from "./user.service";
+import { UserService } from "@/user/user.service";
 import { ConfigService } from "@/config/config.service";
 
 @Injectable()

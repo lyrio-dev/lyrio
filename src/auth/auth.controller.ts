@@ -3,18 +3,18 @@ import { ApiOperation, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import * as jwt from "jsonwebtoken";
 
 import {
-  AuthLoginRequestDto,
-  AuthRegisterRequestDto,
-  AuthGetSelfMetaResponseDto,
-  AuthLoginResponseDto,
-  AuthLoginResponseError,
-  AuthRegisterResponseDto,
-  AuthRegisterResponseError
+  LoginRequestDto,
+  RegisterRequestDto,
+  GetSelfMetaResponseDto,
+  LoginResponseDto,
+  LoginResponseError,
+  RegisterResponseDto,
+  RegisterResponseError
 } from "./dto";
 import { ConfigService } from "@/config/config.service";
 import { AuthService } from "./auth.service";
 import { CurrentUser } from "@/common/user.decorator";
-import { UserEntity } from "./user.entity";
+import { UserEntity } from "@/user/user.entity";
 
 @ApiTags("Auth")
 @Controller("auth")
@@ -31,8 +31,8 @@ export class AuthController {
   })
   async getSelfMeta(
     @CurrentUser() currentUser: UserEntity
-  ): Promise<AuthGetSelfMetaResponseDto> {
-    const result: AuthGetSelfMetaResponseDto = new AuthGetSelfMetaResponseDto();
+  ): Promise<GetSelfMetaResponseDto> {
+    const result: GetSelfMetaResponseDto = new GetSelfMetaResponseDto();
     if (currentUser) {
       result.userMeta = {
         id: currentUser.id,
@@ -56,11 +56,11 @@ export class AuthController {
   })
   async login(
     @CurrentUser() currentUser: UserEntity,
-    @Body() request: AuthLoginRequestDto
-  ): Promise<AuthLoginResponseDto> {
+    @Body() request: LoginRequestDto
+  ): Promise<LoginResponseDto> {
     if (currentUser)
       return {
-        error: AuthLoginResponseError.ALREADY_LOGGEDIN
+        error: LoginResponseError.ALREADY_LOGGEDIN
       };
 
     const [error, user] = await this.authService.login(
@@ -105,11 +105,11 @@ export class AuthController {
   })
   async register(
     @CurrentUser() currentUser: UserEntity,
-    @Body() request: AuthRegisterRequestDto
-  ): Promise<AuthRegisterResponseDto> {
+    @Body() request: RegisterRequestDto
+  ): Promise<RegisterResponseDto> {
     if (currentUser)
       return {
-        error: AuthRegisterResponseError.ALREADY_LOGGEDIN
+        error: RegisterResponseError.ALREADY_LOGGEDIN
       };
 
     const [error, user] = await this.authService.register(

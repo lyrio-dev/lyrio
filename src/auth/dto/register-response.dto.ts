@@ -1,16 +1,16 @@
 import { ApiProperty } from "@nestjs/swagger";
 
-import { UserMetaDto } from "./user-meta.dto";
+import { UserMetaDto } from "@/user/dto/user-meta.dto";
 
-export enum AuthRegisterResponseError {
+export enum RegisterResponseError {
   ALREADY_LOGGEDIN = "ALREADY_LOGGEDIN",
   DUPLICATE_USERNAME = "DUPLICATE_USERNAME",
   DUPLICATE_EMAIL = "DUPLICATE_EMAIL"
 }
 
-export class AuthRegisterResponseDto {
+export class RegisterResponseDto {
   @ApiProperty()
-  error?: AuthRegisterResponseError;
+  error?: RegisterResponseError;
 
   @ApiProperty()
   userMeta?: UserMetaDto;

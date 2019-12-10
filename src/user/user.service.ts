@@ -3,8 +3,8 @@ import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
 import { Repository, Connection } from "typeorm";
 
 import { UserEntity } from "./user.entity";
-import { AuthService } from "./auth.service";
-import { UserUpdateUserProfileResponseError } from "./dto";
+import { AuthService } from "@/auth/auth.service";
+import { UpdateUserProfileResponseError } from "./dto";
 
 @Injectable()
 export class UserService {
@@ -31,7 +31,29 @@ export class UserService {
     return (await this.userRepository.count({ id: id })) != 0;
   }
 
-  async updateUserProfile(user: UserEntity, username?: string, email?: string, bio?: string, password?: string): Promise<UserUpdateUserProfileResponseError> {
+  async checkUsernameAvailability(username: string): Promise<boolean> {
+    return (
+      (await this.userRepository.count({
+        username: username
+      })) == 0
+    );
+  }
+
+  async checkEmailAvailability(email: string): Promise<boolean> {
+    return (
+      (await this.userRepository.count({
+        email: email
+      })) == 0
+    );
+  }
+
+  async updateUserProfile(
+    user: UserEntity,
+    username?: string,
+    email?: string,
+    bio?: string,
+    password?: string
+  ): Promise<UpdateUserProfileResponseError> {
     const changingUsername = username != null;
     const changingEmail = email != null;
 
@@ -41,18 +63,20 @@ export class UserService {
       if (bio != null) user.bio = bio;
 
       if (password == null) await this.userRepository.save(user);
-      else await this.connection.transaction(async transactionalEntityManager => {
-        await this.authService.changePassword(await this.authService.findUserAuthByUserId(user.id), password);
-        await transactionalEntityManager.save(user);
-      });      
+      else
+        await this.connection.transaction(async transactionalEntityManager => {
+          await this.authService.changePassword(
+            await this.authService.findUserAuthByUserId(user.id),
+            password
+          );
+          await transactionalEntityManager.save(user);
+        });
     } catch (e) {
-      if (changingUsername && await this.userRepository.count({
-        username: username
-      }) != 0) return UserUpdateUserProfileResponseError.DUPLICATE_USERNAME;
+      if (changingUsername && !(await this.checkUsernameAvailability(username)))
+        return UpdateUserProfileResponseError.DUPLICATE_USERNAME;
 
-      if (changingEmail && await this.userRepository.count({
-        email: email
-      }) != 0) return UserUpdateUserProfileResponseError.DUPLICATE_EMAIL;
+      if (changingEmail && !(await this.checkEmailAvailability(email)))
+        return UpdateUserProfileResponseError.DUPLICATE_EMAIL;
 
       throw e;
     }

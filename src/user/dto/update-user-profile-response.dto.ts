@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 
-export enum UserUpdateUserProfileResponseError {
+export enum UpdateUserProfileResponseError {
   PERMISSION_DENIED = "PERMISSION_DENIED",
   NO_SUCH_USER = "NO_SUCH_USER",
   WRONG_OLD_PASSWORD = "WRONG_OLD_PASSWORD",
@@ -8,7 +8,7 @@ export enum UserUpdateUserProfileResponseError {
   DUPLICATE_EMAIL = "DUPLICATE_EMAIL"
 }
 
-export class UserUpdateUserProfileResponseDto {
+export class UpdateUserProfileResponseDto {
   @ApiProperty()
-  error?: UserUpdateUserProfileResponseError;
+  error?: UpdateUserProfileResponseError;
 }

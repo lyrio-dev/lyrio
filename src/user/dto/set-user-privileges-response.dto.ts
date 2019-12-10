@@ -1,12 +1,12 @@
 import { ApiProperty } from "@nestjs/swagger";
 
-export enum UserSetUserPrivilegesResponseError {
+export enum SetUserPrivilegesResponseError {
   PERMISSION_DENIED = "PERMISSION_DENIED",
   NO_SUCH_USER = "NO_SUCH_USER",
   FAILED = "FAILED"
 }
 
-export class UserSetUserPrivilegesResponseDto {
+export class SetUserPrivilegesResponseDto {
   @ApiProperty()
-  error?: UserSetUserPrivilegesResponseError;
+  error?: SetUserPrivilegesResponseError;
 }

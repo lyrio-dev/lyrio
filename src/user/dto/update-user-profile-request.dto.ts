@@ -2,7 +2,7 @@ import { ApiProperty } from "@nestjs/swagger";
 import { IsInt, IsEmail, Length, IsString } from "class-validator";
 import { IsUsername } from "@/common/validators";
 
-export class UserUpdateUserProfileRequestDto {
+export class UpdateUserProfileRequestDto {
   @ApiProperty()
   @IsInt()
   readonly userId: number;
