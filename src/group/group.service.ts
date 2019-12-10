@@ -56,21 +56,12 @@ export class GroupService {
     );
   }
 
-  async getMembersipsByUserId(
-    userId: number
-  ): Promise<[GroupMembershipEntity, GroupEntity][]> {
-    const memberships = await this.groupMembershipRepository.find({
-      userId: userId
-    });
-
-    return Promise.all(
-      memberships.map(
-        async (membership): Promise<[GroupMembershipEntity, GroupEntity]> => [
-          membership,
-          await membership.group
-        ]
-      )
-    );
+  async getGroupIdsByUserId(userId: number): Promise<number[]> {
+    return (
+      await this.groupMembershipRepository.find({
+        userId: userId
+      })
+    ).map(memberShip => memberShip.groupId);
   }
 
   async createGroup(

@@ -14,6 +14,7 @@ import { UserModule } from "@/user/user.module";
     UserModule
   ],
   providers: [GroupService],
-  controllers: [GroupController]
+  controllers: [GroupController],
+  exports: [GroupService]
 })
 export class GroupModule {}
