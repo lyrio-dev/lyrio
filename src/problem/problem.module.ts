@@ -10,6 +10,8 @@ import { ProblemJudgeInfoService } from "./problem-judge-info.service";
 import { ProblemJudgeInfoTraditionalService } from "./judge-info/problem-judge-info-traditional.service";
 import { ProblemSampleEntity } from "./problem-sample.entity";
 import { UserModule } from "@/user/user.module";
+import { GroupModule } from "@/group/group.module";
+import { PermissionModule } from "@/permission/permission.module";
 
 @Module({
   imports: [
@@ -17,7 +19,9 @@ import { UserModule } from "@/user/user.module";
     TypeOrmModule.forFeature([ProblemJudgeInfoEntity]),
     TypeOrmModule.forFeature([ProblemSampleEntity]),
     LocalizedContentModule,
-    UserModule
+    UserModule,
+    GroupModule,
+    PermissionModule
   ],
   providers: [
     ProblemService,

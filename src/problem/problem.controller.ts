@@ -1,11 +1,9 @@
 import { Controller, Post, Body, Get, Query } from "@nestjs/common";
 import { ApiOperation, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
-import {
-  UserPrivilegeService,
-  UserPrivilegeType
-} from "@/user/user-privilege.service";
-import { ProblemService } from "./problem.service";
+import { UserService } from "@/user/user.service";
+import { GroupService } from "@/group/group.service";
+import { ProblemService, ProblemPermissionType } from "./problem.service";
 import { CurrentUser } from "@/common/user.decorator";
 import { UserEntity } from "@/user/user.entity";
 import { ProblemEntity } from "./problem.entity";
@@ -19,7 +17,10 @@ import {
   UpdateProblemStatementResponseError,
   GetProblemDetailRequestDto,
   GetProblemDetailResponseDto,
-  GetProblemDetailResponseError
+  GetProblemDetailResponseError,
+  SetProblemPermissionsRequestDto,
+  SetProblemPermissionsResponseDto,
+  SetProblemPermissionsResponseError
 } from "./dto";
 
 @ApiTags("Problem")
@@ -27,19 +28,25 @@ import {
 export class ProblemController {
   constructor(
     private readonly problemService: ProblemService,
-    private readonly userPrivilegeService: UserPrivilegeService
+    private readonly userService: UserService,
+    private readonly groupService: GroupService
   ) {}
 
-  @Post("create")
+  @Get("create")
   @ApiBearerAuth()
   @ApiOperation({
     summary: "Create a problem with given statement and default judge info."
   })
   async create(
     @CurrentUser() currentUser: UserEntity,
-    @Body() request: CreateProblemRequestDto
+    @Query() request: CreateProblemRequestDto
   ): Promise<CreateProblemResponseDto> {
-    if (!currentUser)
+    if (
+      !(await this.problemService.userHasPermission(
+        currentUser,
+        ProblemPermissionType.CREATE
+      ))
+    )
       return {
         error: CreateProblemResponseError.PERMISSION_DENIED
       };
@@ -68,11 +75,6 @@ export class ProblemController {
     @CurrentUser() currentUser: UserEntity,
     @Body() request: UpdateProblemStatementRequestDto
   ): Promise<UpdateProblemStatementResponseDto> {
-    if (!currentUser)
-      return {
-        error: UpdateProblemStatementResponseError.PERMISSION_DENIED
-      };
-
     const problem = await this.problemService.findProblemById(
       request.problemId
     );
@@ -82,14 +84,11 @@ export class ProblemController {
       };
 
     if (
-      !(
-        problem.ownerId == currentUser.id ||
-        currentUser.isAdmin ||
-        (await this.userPrivilegeService.userHasPrivilege(
-          currentUser,
-          UserPrivilegeType.MANAGE_PROBLEM
-        ))
-      )
+      !(await this.problemService.userHasPermission(
+        currentUser,
+        ProblemPermissionType.WRITE,
+        problem
+      ))
     )
       return {
         error: UpdateProblemStatementResponseError.PERMISSION_DENIED
@@ -133,22 +132,16 @@ export class ProblemController {
         error: GetProblemDetailResponseError.NO_SUCH_PROBLEM
       };
 
-    if (!problem.isPublic) {
-      if (
-        !(
-          currentUser &&
-          (problem.ownerId == currentUser.id ||
-            currentUser.isAdmin ||
-            (await this.userPrivilegeService.userHasPrivilege(
-              currentUser,
-              UserPrivilegeType.MANAGE_PROBLEM
-            )))
-        )
-      )
-        return {
-          error: GetProblemDetailResponseError.PERMISSION_DENIED
-        };
-    }
+    if (
+      !(await this.problemService.userHasPermission(
+        currentUser,
+        ProblemPermissionType.READ,
+        problem
+      ))
+    )
+      return {
+        error: GetProblemDetailResponseError.PERMISSION_DENIED
+      };
 
     const [
       titleLocale,
@@ -183,5 +176,69 @@ export class ProblemController {
       contentLocale: contentLocale,
       judgeInfo: judgeInfo
     };
+  }
+
+  @Post("setProblemPermissions")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      "Set who and which groups have permission to read / write this problem."
+  })
+  async setProblemPermissions(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: SetProblemPermissionsRequestDto
+  ): Promise<SetProblemPermissionsResponseDto> {
+    const problem = await this.problemService.findProblemById(
+      request.problemId
+    );
+    if (!problem)
+      return {
+        error: SetProblemPermissionsResponseError.NO_SUCH_PROBLEM,
+        errorObjectId: request.problemId
+      };
+
+    if (
+      !(await this.problemService.userHasPermission(
+        currentUser,
+        ProblemPermissionType.CONTROL,
+        problem
+      ))
+    )
+      return {
+        error: SetProblemPermissionsResponseError.PERMISSION_DENIED
+      };
+
+    const users = [];
+    for (const userId of request.userIds) {
+      const user = await this.userService.findUserById(userId);
+      if (!user)
+        return {
+          error: SetProblemPermissionsResponseError.NO_SUCH_USER,
+          errorObjectId: userId
+        };
+
+      users.push(user);
+    }
+
+    const groups = [];
+    for (const groupId of request.groupIds) {
+      const group = await this.groupService.findGroupById(groupId);
+      if (!group)
+        return {
+          error: SetProblemPermissionsResponseError.NO_SUCH_GROUP,
+          errorObjectId: groupId
+        };
+
+      groups.push(group);
+    }
+
+    await this.problemService.setProblemPermissions(
+      problem,
+      request.permissionType,
+      users,
+      groups
+    );
+
+    return {};
   }
 }
