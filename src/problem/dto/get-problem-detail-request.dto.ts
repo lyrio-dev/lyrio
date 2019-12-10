@@ -4,12 +4,16 @@ import { IsIntString } from "@/common/validators";
 import { Locale } from "@/common/locale.type";
 
 export class GetProblemDetailRequestDto {
-  @ApiProperty()
+  @ApiProperty({
+    required: false
+  })
   @IsIntString()
   @IsOptional()
   readonly id?: string;
 
-  @ApiProperty()
+  @ApiProperty({
+    required: false
+  })
   @IsIntString()
   @IsOptional()
   readonly displayId?: string;
