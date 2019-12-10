@@ -19,5 +19,8 @@
             ]
         },
         "sessionSecret": "don't leak this"
+    },
+    "preference": {
+        "allowUserChangeUsername": true
     }
 }

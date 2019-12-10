@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
 import { AuthLoginResponseError, AuthRegisterResponseError } from "./dto";
-import { Repository, Connection } from "typeorm";
+import { Repository, Connection, EntityManager } from "typeorm";
 import * as bcrypt from "bcrypt";
 
 import { UserEntity } from "./user.entity";
@@ -19,6 +19,16 @@ export class AuthService {
     private readonly userAuthRepository: Repository<UserAuthEntity>,
     private readonly userService: UserService
   ) {}
+
+  private async hashPassword(password: string): Promise<string> {
+    return await bcrypt.hash(password, 10);
+  }
+
+  async findUserAuthByUserId(userId: number): Promise<UserAuthEntity> {
+    return await this.userAuthRepository.findOne({
+      userId: userId
+    });
+  }
 
   async register(
     username: string,
@@ -41,7 +51,7 @@ export class AuthService {
 
           const userAuth = new UserAuthEntity();
           userAuth.userId = user.id;
-          userAuth.password = await bcrypt.hash(password, 10);
+          userAuth.password = await this.hashPassword(password);
           await transactionalEntityManager.save(userAuth);
         }
       );
@@ -60,6 +70,16 @@ export class AuthService {
     }
   }
 
+  async checkPassword(userAuth: UserAuthEntity, password: string): Promise<boolean> {
+    return await bcrypt.compare(password, userAuth.password);
+  }
+
+  async changePassword(userAuth: UserAuthEntity, password: string, transactionalEntityManager?: EntityManager): Promise<void> {
+    userAuth.password = await this.hashPassword(password);
+    if (transactionalEntityManager) await transactionalEntityManager.save(userAuth);
+    else await this.userAuthRepository.save(userAuth);
+  }
+
   async login(
     username: string,
     password: string
@@ -71,7 +91,7 @@ export class AuthService {
     if (!user) return [AuthLoginResponseError.NO_SUCH_USER, null];
 
     const userAuth: UserAuthEntity = await user.userAuth;
-    if (!(await bcrypt.compare(password, userAuth.password)))
+    if (!(await this.checkPassword(userAuth, password)))
       return [AuthLoginResponseError.WRONG_PASSWORD, null];
 
     return [null, user];

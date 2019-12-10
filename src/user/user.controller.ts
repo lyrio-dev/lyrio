@@ -10,14 +10,22 @@ import {
   UserGetUserMetaRequestDto,
   UserSetUserPrivilegesResponseDto,
   UserSetUserPrivilegesRequestDto,
-  UserSetUserPrivilegesResponseError
+  UserSetUserPrivilegesResponseError,
+  UserUpdateUserProfileRequestDto,
+  UserUpdateUserProfileResponseDto,
+  UserUpdateUserProfileResponseError
 } from "./dto";
+import { UserPrivilegeType } from "./user-privilege.entity";
+import { AuthService } from "./auth.service";
+import { ConfigService } from "@/config/config.service";
 
 @ApiTags("User")
 @Controller("user")
 export class UserController {
   constructor(
     private readonly userService: UserService,
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
     private readonly userPrivilegeService: UserPrivilegeService
   ) {}
 
@@ -76,6 +84,55 @@ export class UserController {
         request.userId,
         request.privileges
       )
+    };
+  }
+
+  @Post("updateUserProfile")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Update a user's username, email, bio or password."
+  })
+  async updateUserProfile(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: UserUpdateUserProfileRequestDto
+  ): Promise<UserUpdateUserProfileResponseDto> {
+    const user = await this.userService.findUserById(request.userId);
+    if (!user) return {
+      error: UserUpdateUserProfileResponseError.NO_SUCH_USER
+    };
+
+    if (!currentUser) return {
+      error: UserUpdateUserProfileResponseError.PERMISSION_DENIED
+    };
+
+    const isUserSelf = currentUser.id === user.id;
+    const isAdmin = user.isAdmin || await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER);
+
+    if (!(isUserSelf || isAdmin)) return {
+      error: UserUpdateUserProfileResponseError.PERMISSION_DENIED
+    }
+
+    if (request.username) {
+      if (!this.configService.config.preference.allowUserChangeUsername) {
+        // Normal users are not allowed to change their usernames
+        if (!isAdmin) return {
+          error: UserUpdateUserProfileResponseError.PERMISSION_DENIED
+        };
+      }
+    }
+
+    if (request.password) {
+      // A non-admin user must give the old password to change its password
+      if (!isAdmin) {
+        const userAuth = await this.authService.findUserAuthByUserId(request.userId);
+        if (!await this.authService.checkPassword(userAuth, request.oldPassword)) return {
+          error: UserUpdateUserProfileResponseError.WRONG_OLD_PASSWORD
+        };
+      }
+    }
+
+    return {
+      error: await this.userService.updateUserProfile(user, request.username, request.email, request.bio, request.password)
     };
   }
 }

@@ -13,3 +13,6 @@ export * from "./user-get-user-meta-response.dto";
 
 export * from "./user-set-user-privileges-request.dto";
 export * from "./user-set-user-privileges-response.dto";
+
+export * from "./user-update-user-profile-request.dto";
+export * from "./user-update-user-profile-response.dto";

@@ -55,6 +55,11 @@ class SecurityConfig {
   readonly crossOrigin: CrossOriginConfig;
 }
 
+class PreferenceConfig {
+  @IsBoolean()
+  readonly allowUserChangeUsername: boolean;
+}
+
 export class AppConfig {
   @ValidateNested()
   @Type(() => ServerConfig)
@@ -67,4 +72,8 @@ export class AppConfig {
   @ValidateNested()
   @Type(() => SecurityConfig)
   readonly security: SecurityConfig;
+
+  @ValidateNested()
+  @Type(() => PreferenceConfig)
+  readonly preference: PreferenceConfig;
 }
