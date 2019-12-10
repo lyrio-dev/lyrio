@@ -12,9 +12,6 @@ import { UserService } from "./user.service";
 
 export { UserPrivilegeType } from "./user-privilege.entity";
 
-// NOTE: This implementation of user privilege is ugly.
-//       Does anyone have better ideas?
-
 @Injectable()
 export class UserPrivilegeService {
   constructor(
@@ -51,45 +48,22 @@ export class UserPrivilegeService {
     if (!(await this.userService.userExists(userId)))
       return UserSetUserPrivilegesResponseError.NO_SUCH_USER;
 
-    const oldPrivilegeTypes = await this.getUserPrivileges(userId);
-    try {
-      const addList = newPrivilegeTypes.filter(
-        privilegeType => !oldPrivilegeTypes.includes(privilegeType)
-      );
-      const delList = oldPrivilegeTypes.filter(
-        privilegeType => !newPrivilegeTypes.includes(privilegeType)
-      );
+    await this.connection.transaction(
+      "SERIALIZABLE",
+      async transactionalEntityManager => {
+        await transactionalEntityManager.delete(UserPrivilegeEntity, {
+          userId: userId
+        });
 
-      if (addList.length === 0 && delList.length === 0) return null;
-
-      await this.connection.transaction(
-        "SERIALIZABLE",
-        async transactionalEntityManager => {
-          if (delList.length !== 0) {
-            await transactionalEntityManager.delete(UserPrivilegeEntity, {
-              userId: userId,
-              privilegeType: In(delList)
-            });
-          }
-
-          if (addList.length !== 0) {
-            await Promise.all(
-              addList.map(async privilegeType => {
-                const userPrivilege = new UserPrivilegeEntity();
-                userPrivilege.userId = userId;
-                userPrivilege.privilegeType = privilegeType;
-                await transactionalEntityManager.save(userPrivilege);
-              })
-            );
-          }
+        for (const newPrivilegeType of newPrivilegeTypes) {
+          const userPrivilege = new UserPrivilegeEntity();
+          userPrivilege.privilegeType = newPrivilegeType;
+          userPrivilege.userId = userId;
+          await transactionalEntityManager.save(userPrivilege);
         }
-      );
+      }
+    );
 
-      return null;
-    } catch (e) {
-      // TODO: Database error log?
-      //       Error message?
-      return UserSetUserPrivilegesResponseError.FAILED;
-    }
+    return null;
   }
 }

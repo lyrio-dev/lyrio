@@ -1,9 +1,8 @@
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Index,
   ManyToOne,
-  Column,
   JoinColumn
 } from "typeorm";
 
@@ -18,22 +17,18 @@ export enum UserPrivilegeType {
 }
 
 @Entity("user_privilege")
-@Index(["userId", "privilegeType"], { unique: true })
 export class UserPrivilegeEntity {
-  @PrimaryGeneratedColumn()
-  id: number;
-
   @ManyToOne(type => UserEntity, {
     onDelete: "CASCADE"
   })
   @JoinColumn()
   user: Promise<UserEntity>;
 
-  @Column()
+  @PrimaryColumn()
   @Index()
   userId: number;
 
-  @Column({
+  @PrimaryColumn({
     type: "enum",
     enum: UserPrivilegeType
   })
