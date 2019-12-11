@@ -76,7 +76,8 @@ export class ProblemService {
       // Everyone can read a public problem
       // Owner, admins and those who has read permission can read a non-public problem
       case ProblemPermissionType.READ:
-        if (!user) return problem.isPublic;
+        if (problem.isPublic) return true;
+        else if (!user) return false;
         else if (user.id === problem.ownerId) return true;
         else if (user.isAdmin) return true;
         else if (
