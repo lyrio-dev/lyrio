@@ -20,7 +20,16 @@ import {
   GetProblemDetailResponseError,
   SetProblemPermissionsRequestDto,
   SetProblemPermissionsResponseDto,
-  SetProblemPermissionsResponseError
+  SetProblemPermissionsResponseError,
+  SetProblemDisplayIdRequestDto,
+  SetProblemDisplayIdResponseDto,
+  SetProblemDisplayIdResponseError,
+  SetProblemPublicRequestDto,
+  SetProblemPublicResponseDto,
+  SetProblemPublicResponseError,
+  GetProblemPermissionsRequestDto,
+  GetProblemPermissionsResponseDto,
+  GetProblemPermissionsResponseError
 } from "./dto";
 
 @ApiTags("Problem")
@@ -238,6 +247,125 @@ export class ProblemController {
       users,
       groups
     );
+
+    return {};
+  }
+
+  @Get("getProblemPermissions")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      "Get who and which groups have permission to read / write this problem."
+  })
+  async getProblemPermissions(
+    @CurrentUser() currentUser: UserEntity,
+    @Query() request: GetProblemPermissionsRequestDto
+  ): Promise<GetProblemPermissionsResponseDto> {
+    const problem = await this.problemService.findProblemById(
+      parseInt(request.problemId)
+    );
+    if (!problem)
+      return {
+        error: GetProblemPermissionsResponseError.NO_SUCH_PROBLEM
+      };
+
+    if (
+      !(await this.problemService.userHasPermission(
+        currentUser,
+        ProblemPermissionType.CONTROL,
+        problem
+      ))
+    )
+      return {
+        error: GetProblemPermissionsResponseError.PERMISSION_DENIED
+      };
+
+    const [users, groups] = await this.problemService.getProblemPermissions(
+      problem,
+      request.permissionType
+    );
+
+    return {
+      users: users,
+      groups: groups
+    };
+  }
+
+  @Post("setProblemDisplayId")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Set or clear the display ID of a problem."
+  })
+  async setProblemDisplayId(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: SetProblemDisplayIdRequestDto
+  ): Promise<SetProblemDisplayIdResponseDto> {
+    const problem = await this.problemService.findProblemById(
+      request.problemId
+    );
+
+    if (!problem)
+      return {
+        error: SetProblemDisplayIdResponseError.NO_SUCH_PROBLEM
+      };
+
+    if (
+      !(await this.problemService.userHasPermission(
+        currentUser,
+        ProblemPermissionType.FULL_CONTROL,
+        problem
+      ))
+    )
+      return {
+        error: SetProblemDisplayIdResponseError.PERMISSION_DENIED
+      };
+
+    if (
+      !(await this.problemService.setProblemDisplayId(
+        problem,
+        request.displayId
+      ))
+    )
+      return {
+        error: SetProblemDisplayIdResponseError.DUPLICATE_DISPLAY_ID
+      };
+  }
+
+  @Post("setProblemPublic")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Set if a problem is public. The problem must have display ID."
+  })
+  async setProblemPublic(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: SetProblemPublicRequestDto
+  ): Promise<SetProblemPublicResponseDto> {
+    const problem = await this.problemService.findProblemById(
+      request.problemId
+    );
+
+    if (!problem)
+      return {
+        error: SetProblemPublicResponseError.NO_SUCH_PROBLEM
+      };
+
+    if (!problem.displayId)
+      return {
+        error: SetProblemPublicResponseError.NO_DISPLAY_ID
+      };
+
+    if (
+      !(await this.problemService.userHasPermission(
+        currentUser,
+        ProblemPermissionType.FULL_CONTROL,
+        problem
+      ))
+    )
+      return {
+        error: SetProblemPublicResponseError.PERMISSION_DENIED
+      };
+
+    await this.problemService.setProblemPublic(problem, request.isPublic);
 
     return {};
   }

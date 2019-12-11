@@ -270,6 +270,17 @@ export class PermissionService {
     ).map(permissionForGroup => permissionForGroup.groupId);
   }
 
+  async getUsersAndGroupsWithPermission(
+    objectId: number,
+    objectType: PermissionObjectType,
+    permissionType: PermissionType
+  ): Promise<[number[], number[]]> {
+    return [
+      await this.getUsersWithPermission(objectId, objectType, permissionType),
+      await this.getGroupsWithPermission(objectId, objectType, permissionType)
+    ];
+  }
+
   async replaceUsersAndGroupsPermissionForObject(
     objectId: number,
     objectType: PermissionObjectType,

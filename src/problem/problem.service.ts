@@ -24,6 +24,8 @@ import {
   PermissionObjectType,
   PermissionType
 } from "@/permission/permission.service";
+import { UserService } from "@/user/user.service";
+import { GroupService } from "@/group/group.service";
 
 export enum ProblemPermissionType {
   CREATE = "CREATE",
@@ -49,6 +51,8 @@ export class ProblemService {
     private readonly problemJudgeInfoService: ProblemJudgeInfoService,
     private readonly localizedContentService: LocalizedContentService,
     private readonly userPrivilegeService: UserPrivilegeService,
+    private readonly userService: UserService,
+    private readonly groupService: GroupService,
     private readonly permissionService: PermissionService
   ) {}
 
@@ -326,5 +330,62 @@ export class ProblemService {
       users,
       groups
     );
+  }
+
+  async getProblemPermissions(
+    problem: ProblemEntity,
+    permissionType: PermissionType
+  ): Promise<[UserEntity[], GroupEntity[]]> {
+    const [
+      userIds,
+      groupIds
+    ] = await this.permissionService.getUsersAndGroupsWithPermission(
+      problem.id,
+      PermissionObjectType.PROBLEM,
+      permissionType
+    );
+    return [
+      await Promise.all(
+        userIds.map(async userId => await this.userService.findUserById(userId))
+      ),
+      await Promise.all(
+        groupIds.map(
+          async groupId => await this.groupService.findGroupById(groupId)
+        )
+      )
+    ];
+  }
+
+  async setProblemDisplayId(
+    problem: ProblemEntity,
+    displayId: number
+  ): Promise<boolean> {
+    if (!displayId) displayId = null;
+    if (problem.displayId === displayId) return true;
+
+    try {
+      problem.displayId = displayId;
+      await this.problemRepository.save(problem);
+      return true;
+    } catch (e) {
+      if (
+        await this.problemRepository.count({
+          displayId: displayId
+        })
+      )
+        return false;
+
+      throw e;
+    }
+  }
+
+  async setProblemPublic(
+    problem: ProblemEntity,
+    isPublic: boolean
+  ): Promise<void> {
+    if (problem.isPublic === isPublic) return;
+
+    problem.isPublic = isPublic;
+    await this.problemRepository.save(problem);
   }
 }
