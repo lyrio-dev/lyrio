@@ -5,8 +5,8 @@ The next generation SYZOJ server.
 Clone this git repo and install dependencies:
 
 ```bash
-$ git clone git@github.com:syzoj/syzoj-ng-app.git
-$ cd syzoj-ng-app
+$ git clone git@github.com:syzoj/syzoj-ng.git
+$ cd syzoj-ng
 $ yarn
 ```
 
