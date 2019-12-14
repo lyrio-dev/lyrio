@@ -63,12 +63,12 @@ export class GroupController {
     };
   }
 
-  @Post("create")
+  @Post("createGroup")
   @ApiBearerAuth()
   @ApiOperation({
     summary: "Create a new group."
   })
-  async create(
+  async createGroup(
     @CurrentUser() currentUser: UserEntity,
     @Body() request: CreateGroupRequestDto
   ): Promise<CreateGroupResponseDto> {
@@ -99,14 +99,14 @@ export class GroupController {
     };
   }
 
-  @Post("delete")
+  @Post("deleteGroup")
   @ApiBearerAuth()
   @ApiOperation({
     summary: "Delete a group.",
     description:
       "To delete a group with user or privilege, use the force option."
   })
-  async delete(
+  async deleteGroup(
     @CurrentUser() currentUser: UserEntity,
     @Body() request: DeleteGroupRequestDto
   ): Promise<DeleteGroupResponseDto> {

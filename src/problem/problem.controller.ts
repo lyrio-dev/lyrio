@@ -41,12 +41,12 @@ export class ProblemController {
     private readonly groupService: GroupService
   ) {}
 
-  @Post("create")
+  @Post("createProblem")
   @ApiBearerAuth()
   @ApiOperation({
     summary: "Create a problem with given statement and default judge info."
   })
-  async create(
+  async createProblem(
     @CurrentUser() currentUser: UserEntity,
     @Body() request: CreateProblemRequestDto
   ): Promise<CreateProblemResponseDto> {
