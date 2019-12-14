@@ -9,7 +9,7 @@ export enum RegisterResponseError {
 }
 
 export class RegisterResponseDto {
-  @ApiProperty()
+  @ApiProperty({ enum: RegisterResponseError })
   error?: RegisterResponseError;
 
   @ApiProperty()

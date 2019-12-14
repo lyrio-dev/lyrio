@@ -8,7 +8,7 @@ export enum SetProblemPermissionsResponseError {
 }
 
 export class SetProblemPermissionsResponseDto {
-  @ApiProperty()
+  @ApiProperty({ enum: SetProblemPermissionsResponseError })
   error?: SetProblemPermissionsResponseError;
 
   @ApiProperty()

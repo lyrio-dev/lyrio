@@ -7,9 +7,9 @@ export enum GetGroupMetaResponseError {
 }
 
 export class GetGroupMetaResponseDto {
-  @ApiProperty()
-  groupMeta?: GroupMetaDto;
+  @ApiProperty({ enum: GetGroupMetaResponseError })
+  error?: GetGroupMetaResponseError;
 
   @ApiProperty()
-  error?: GetGroupMetaResponseError;
+  groupMeta?: GroupMetaDto;
 }

@@ -9,7 +9,7 @@ export enum LoginResponseError {
 }
 
 export class LoginResponseDto {
-  @ApiProperty()
+  @ApiProperty({ enum: LoginResponseError })
   error?: LoginResponseError;
 
   @ApiProperty()

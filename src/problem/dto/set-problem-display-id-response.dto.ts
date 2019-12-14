@@ -7,6 +7,6 @@ export enum SetProblemDisplayIdResponseError {
 }
 
 export class SetProblemDisplayIdResponseDto {
-  @ApiProperty()
+  @ApiProperty({ enum: SetProblemDisplayIdResponseError })
   error?: SetProblemDisplayIdResponseError;
 }

@@ -9,6 +9,6 @@ export enum RemoveUserFromGroupResponseError {
 }
 
 export class RemoveUserFromGroupResponseDto {
-  @ApiProperty()
+  @ApiProperty({ enum: RemoveUserFromGroupResponseError })
   error?: RemoveUserFromGroupResponseError;
 }

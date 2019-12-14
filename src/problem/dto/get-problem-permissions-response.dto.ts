@@ -8,7 +8,7 @@ export enum GetProblemPermissionsResponseError {
 }
 
 export class GetProblemPermissionsResponseDto {
-  @ApiProperty()
+  @ApiProperty({ enum: GetProblemPermissionsResponseError })
   error?: GetProblemPermissionsResponseError;
 
   @ApiProperty({ type: UserMetaDto, isArray: true })

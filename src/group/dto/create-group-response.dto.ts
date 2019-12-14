@@ -6,7 +6,7 @@ export enum CreateGroupResponseError {
 }
 
 export class CreateGroupResponseDto {
-  @ApiProperty()
+  @ApiProperty({ enum: CreateGroupResponseError })
   error?: CreateGroupResponseError;
 
   @ApiProperty()

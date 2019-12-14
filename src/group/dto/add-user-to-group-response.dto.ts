@@ -8,6 +8,6 @@ export enum AddUserToGroupResponseError {
 }
 
 export class AddUserToGroupResponseDto {
-  @ApiProperty()
+  @ApiProperty({ enum: AddUserToGroupResponseError })
   error?: AddUserToGroupResponseError;
 }

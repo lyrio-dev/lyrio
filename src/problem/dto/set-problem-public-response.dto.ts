@@ -7,6 +7,6 @@ export enum SetProblemPublicResponseError {
 }
 
 export class SetProblemPublicResponseDto {
-  @ApiProperty()
+  @ApiProperty({ enum: SetProblemPublicResponseError })
   error?: SetProblemPublicResponseError;
 }

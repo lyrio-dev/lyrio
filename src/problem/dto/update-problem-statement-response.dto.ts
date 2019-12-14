@@ -7,6 +7,6 @@ export enum UpdateProblemStatementResponseError {
 }
 
 export class UpdateProblemStatementResponseDto {
-  @ApiProperty()
+  @ApiProperty({ enum: UpdateProblemStatementResponseError })
   error?: UpdateProblemStatementResponseError;
 }

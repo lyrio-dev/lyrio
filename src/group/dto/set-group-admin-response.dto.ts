@@ -8,6 +8,6 @@ export enum SetGroupAdminResponseError {
 }
 
 export class SetGroupAdminResponseDto {
-  @ApiProperty()
+  @ApiProperty({ enum: SetGroupAdminResponseError })
   error?: SetGroupAdminResponseError;
 }

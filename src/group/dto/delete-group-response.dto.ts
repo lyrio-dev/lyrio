@@ -8,6 +8,6 @@ export enum DeleteGroupResponseError {
 }
 
 export class DeleteGroupResponseDto {
-  @ApiProperty()
+  @ApiProperty({ enum: DeleteGroupResponseError })
   error?: DeleteGroupResponseError;
 }

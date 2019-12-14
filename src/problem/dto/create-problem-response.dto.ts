@@ -6,9 +6,9 @@ export enum CreateProblemResponseError {
 }
 
 export class CreateProblemResponseDto {
-  @ApiProperty()
-  id?: number;
+  @ApiProperty({ enum: CreateProblemResponseError })
+  error?: CreateProblemResponseError;
 
   @ApiProperty()
-  error?: CreateProblemResponseError;
+  id?: number;
 }

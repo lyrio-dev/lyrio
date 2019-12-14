@@ -7,6 +7,6 @@ export enum SetUserPrivilegesResponseError {
 }
 
 export class SetUserPrivilegesResponseDto {
-  @ApiProperty()
+  @ApiProperty({ enum: SetUserPrivilegesResponseError })
   error?: SetUserPrivilegesResponseError;
 }

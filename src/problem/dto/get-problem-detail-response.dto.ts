@@ -13,7 +13,7 @@ export enum GetProblemDetailResponseError {
 }
 
 export class GetProblemDetailResponseDto {
-  @ApiProperty()
+  @ApiProperty({ enum: GetProblemDetailResponseError })
   error?: GetProblemDetailResponseError;
 
   @ApiProperty()

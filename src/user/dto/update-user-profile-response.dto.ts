@@ -9,6 +9,6 @@ export enum UpdateUserProfileResponseError {
 }
 
 export class UpdateUserProfileResponseDto {
-  @ApiProperty()
+  @ApiProperty({ enum: UpdateUserProfileResponseError })
   error?: UpdateUserProfileResponseError;
 }
