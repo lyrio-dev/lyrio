@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body } from "@nestjs/common";
+import { Controller, Get, Post, Body, Query } from "@nestjs/common";
 import { ApiOperation, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import * as jwt from "jsonwebtoken";
 
@@ -8,10 +8,13 @@ import {
   GetSelfMetaResponseDto,
   LoginResponseDto,
   LoginResponseError,
+  CheckAvailabilityRequestDto,
+  CheckAvailabilityResponseDto,
   RegisterResponseDto,
   RegisterResponseError
 } from "./dto";
 import { ConfigService } from "@/config/config.service";
+import { UserService } from "@/user/user.service";
 import { AuthService } from "./auth.service";
 import { CurrentUser } from "@/common/user.decorator";
 import { UserEntity } from "@/user/user.entity";
@@ -21,6 +24,7 @@ import { UserEntity } from "@/user/user.entity";
 export class AuthController {
   constructor(
     private readonly configService: ConfigService,
+    private readonly userService: UserService,
     private readonly authService: AuthService
   ) {}
 
@@ -95,6 +99,26 @@ export class AuthController {
   })
   async logout(): Promise<object> {
     return {};
+  }
+
+  @Get("checkAvailability")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Check is a username or email is available."
+  })
+  async checkAvailability(
+    @Query() request: CheckAvailabilityRequestDto
+  ): Promise<CheckAvailabilityResponseDto> {
+    const result: CheckAvailabilityResponseDto = {};
+    if (request.username != null) {
+      result.usernameAvailable = await this.userService.checkUsernameAvailability(request.username);
+    }
+
+    if (request.email != null) {
+      result.emailAvailable = await this.userService.checkEmailAvailability(request.email);
+    }
+
+    return result;
   }
 
   @Post("register")
