@@ -23,16 +23,13 @@ export class GetProblemDetailResponseDto {
   title?: string;
 
   @ApiProperty()
-  titleLocale?: Locale;
+  resultLocale?: Locale;
 
   @ApiProperty({ type: ProblemSampleDataMemberDto, isArray: true })
   samples?: ProblemSampleDataMemberDto[];
 
   @ApiProperty({ type: ProblemContentSectionDto, isArray: true })
   contentSections?: ProblemContentSectionDto[];
-
-  @ApiProperty()
-  contentLocale?: Locale;
 
   @ApiProperty()
   judgeInfo?: ProblemJudgeInfo;

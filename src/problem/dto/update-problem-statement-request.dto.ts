@@ -5,10 +5,10 @@ import {
   IsString,
   Length,
   IsOptional,
-  IsBoolean,
   IsArray,
   ArrayMaxSize,
-  IsInt
+  IsInt,
+  ArrayNotEmpty
 } from "class-validator";
 import { Locale } from "@/common/locale.type";
 import { If } from "@/common/validators";
@@ -21,17 +21,14 @@ export class UpdateProblemRequestUpdatingLocalizedContentDto {
   @IsEnum(Locale)
   readonly locale: Locale;
 
-  @ApiProperty()
-  @IsBoolean()
-  @IsOptional()
-  readonly delete?: boolean;
-
+  // Update if not null
   @ApiProperty()
   @IsString()
   @Length(1, 120)
   @IsOptional()
   readonly title?: string;
 
+  // Update if not null
   @ApiProperty({ type: ProblemContentSectionDto, isArray: true })
   @ValidateNested({ each: true })
   @IsArray()
@@ -62,7 +59,8 @@ export class UpdateProblemStatementRequestDto {
     }
   )
   @IsArray()
-  readonly updatingLocalizedContents: UpdateProblemRequestUpdatingLocalizedContentDto[];
+  @ArrayNotEmpty()
+  readonly localizedContents: UpdateProblemRequestUpdatingLocalizedContentDto[];
 
   @ApiProperty({ type: ProblemSampleDataMemberDto, isArray: true })
   @ValidateNested({ each: true })

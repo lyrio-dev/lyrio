@@ -48,6 +48,7 @@ export class ProblemEntity {
   @Column()
   ownerId: number;
 
+  // The first of the array is its default locale
   @Column({ type: "json" })
   locales: Locale[];
 

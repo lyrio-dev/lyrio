@@ -111,11 +111,15 @@ export class AuthController {
   ): Promise<CheckAvailabilityResponseDto> {
     const result: CheckAvailabilityResponseDto = {};
     if (request.username != null) {
-      result.usernameAvailable = await this.userService.checkUsernameAvailability(request.username);
+      result.usernameAvailable = await this.userService.checkUsernameAvailability(
+        request.username
+      );
     }
 
     if (request.email != null) {
-      result.emailAvailable = await this.userService.checkEmailAvailability(request.email);
+      result.emailAvailable = await this.userService.checkEmailAvailability(
+        request.email
+      );
     }
 
     return result;

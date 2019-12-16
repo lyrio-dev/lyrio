@@ -122,7 +122,7 @@ export class ProblemController {
     summary:
       "Get a problem's meta, title, contents, samples, judge info of given locale.",
     description:
-      "Title and contents are fallbacked to another locale if none for given locale."
+      "Title and contents are fallbacked to default (first) locale if none for given locale."
   })
   async getProblemDetail(
     @CurrentUser() currentUser: UserEntity,
@@ -152,19 +152,17 @@ export class ProblemController {
         error: GetProblemDetailResponseError.PERMISSION_DENIED
       };
 
-    const [
-      titleLocale,
-      title
-    ] = await this.problemService.getProblemLocalizedTitle(
+    const resultLocale = problem.locales.includes(request.locale)
+      ? request.locale
+      : problem.locales[0];
+
+    const title = await this.problemService.getProblemLocalizedTitle(
       problem,
-      request.locale
+      resultLocale
     );
-    const [
-      contentLocale,
-      contentSections
-    ] = await this.problemService.getProblemLocalizedContent(
+    const contentSections = await this.problemService.getProblemLocalizedContent(
       problem,
-      request.locale
+      resultLocale
     );
     const samples = await this.problemService.getProblemSamples(problem);
     const judgeInfo = await this.problemService.getProblemJudgeInfo(problem);
@@ -178,11 +176,10 @@ export class ProblemController {
         ownerId: problem.ownerId,
         locales: problem.locales
       },
+      resultLocale: resultLocale,
       title: title,
-      titleLocale: titleLocale,
       samples: samples,
       contentSections: contentSections,
-      contentLocale: contentLocale,
       judgeInfo: judgeInfo
     };
   }

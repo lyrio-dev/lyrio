@@ -160,9 +160,9 @@ export class ProblemService {
         problem.type = type;
         problem.isPublic = false;
         problem.ownerId = owner.id;
-        problem.locales = statement.localizedContents
-          .map(localizedContent => localizedContent.locale)
-          .sort();
+        problem.locales = statement.localizedContents.map(
+          localizedContent => localizedContent.locale
+        );
         await transactionalEntityManager.save(problem);
 
         const problemJudgeInfo = new ProblemJudgeInfoEntity();
@@ -203,16 +203,6 @@ export class ProblemService {
     problem: ProblemEntity,
     request: UpdateProblemStatementRequestDto
   ): Promise<boolean> {
-    // If the user wants to delete all locale versions of the problem statement...
-    if (
-      problem.locales.length === request.updatingLocalizedContents.length &&
-      request.updatingLocalizedContents.every(
-        updatingLocalizedContent => updatingLocalizedContent.delete
-      )
-    ) {
-      return false;
-    }
-
     await this.connection.transaction(async transactionalEntityManager => {
       if (request.samples != null) {
         const problemSample = await this.problemSampleRepository.findOne({
@@ -222,44 +212,48 @@ export class ProblemService {
         await transactionalEntityManager.save(problemSample);
       }
 
-      for (const updatingLocalizedContent of request.updatingLocalizedContents) {
-        if (updatingLocalizedContent.delete) {
-          // Delete
-          problem.locales = problem.locales.filter(
-            locale => locale != updatingLocalizedContent.locale
-          );
-          await this.localizedContentService.delete(
-            problem.id,
-            LocalizedContentType.PROBLEM_TITLE,
-            updatingLocalizedContent.locale,
-            transactionalEntityManager
-          );
-          await this.localizedContentService.delete(
-            problem.id,
-            LocalizedContentType.PROBLEM_CONTENT,
-            updatingLocalizedContent.locale,
-            transactionalEntityManager
-          );
-        } else {
-          // Update
-          if (!problem.locales.includes(updatingLocalizedContent.locale))
-            problem.locales.push(updatingLocalizedContent.locale);
-          await this.localizedContentService.createOrUpdate(
-            problem.id,
-            LocalizedContentType.PROBLEM_TITLE,
-            updatingLocalizedContent.locale,
-            updatingLocalizedContent.title
-          );
-          await this.localizedContentService.createOrUpdate(
-            problem.id,
-            LocalizedContentType.PROBLEM_CONTENT,
-            updatingLocalizedContent.locale,
-            JSON.stringify(updatingLocalizedContent.contentSections)
-          );
-        }
+      const newLocales = request.localizedContents.map(
+        localizedContent => localizedContent.locale
+      );
+
+      const deletingLocales = problem.locales.filter(
+        locale => !newLocales.includes(locale)
+      );
+      for (const deletingLocale of deletingLocales) {
+        await this.localizedContentService.delete(
+          problem.id,
+          LocalizedContentType.PROBLEM_TITLE,
+          deletingLocale,
+          transactionalEntityManager
+        );
+        await this.localizedContentService.delete(
+          problem.id,
+          LocalizedContentType.PROBLEM_CONTENT,
+          deletingLocale,
+          transactionalEntityManager
+        );
       }
 
-      problem.locales = problem.locales.sort();
+      problem.locales = newLocales;
+
+      for (const localizedContent of request.localizedContents) {
+        // Update if not null
+        if (localizedContent.title != null)
+          await this.localizedContentService.createOrUpdate(
+            problem.id,
+            LocalizedContentType.PROBLEM_TITLE,
+            localizedContent.locale,
+            localizedContent.title
+          );
+        if (localizedContent.contentSections != null)
+          await this.localizedContentService.createOrUpdate(
+            problem.id,
+            LocalizedContentType.PROBLEM_CONTENT,
+            localizedContent.locale,
+            JSON.stringify(localizedContent.contentSections)
+          );
+      }
+
       await transactionalEntityManager.save(problem);
     });
 
@@ -267,44 +261,29 @@ export class ProblemService {
   }
 
   // Get a problem's title of a locale. If no title for this locale returns any one.
-  // TODO: Fallback to English/Chinese first?
   async getProblemLocalizedTitle(
     problem: ProblemEntity,
     locale: Locale
-  ): Promise<[Locale, string]> {
-    const title = await this.localizedContentService.get(
+  ): Promise<string> {
+    return await this.localizedContentService.get(
       problem.id,
       LocalizedContentType.PROBLEM_TITLE,
       locale
     );
-    if (title != null) return [locale, title];
-    return await this.localizedContentService.getOfAnyLocale(
-      problem.id,
-      LocalizedContentType.PROBLEM_TITLE
-    );
   }
 
   // Get a problem's content of a locale. If no content for this locale returns any one.
-  // TODO: Fallback to English/Chinese first?
   async getProblemLocalizedContent(
     problem: ProblemEntity,
     locale: Locale
-  ): Promise<[Locale, ProblemContentSection[]]> {
+  ): Promise<ProblemContentSection[]> {
     const data = await this.localizedContentService.get(
       problem.id,
       LocalizedContentType.PROBLEM_CONTENT,
       locale
     );
-    if (data != null) return [locale, JSON.parse(data)];
-
-    const [
-      fallbackLocale,
-      fallbackData
-    ] = await this.localizedContentService.getOfAnyLocale(
-      problem.id,
-      LocalizedContentType.PROBLEM_CONTENT
-    );
-    if (fallbackData != null) return [fallbackLocale, JSON.parse(fallbackData)];
+    if (data != null) return JSON.parse(data);
+    else return null;
   }
 
   async getProblemSamples(problem: ProblemEntity): Promise<ProblemSampleData> {
