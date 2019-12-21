@@ -3,7 +3,9 @@ import {
   IsIP,
   IsString,
   IsIn,
-  IsBoolean
+  IsBoolean,
+  IsInt,
+  Min
 } from "class-validator";
 import { Type } from "class-transformer";
 import { IsPortNumber } from "@/common/validators";
@@ -60,6 +62,12 @@ class PreferenceConfig {
   readonly allowUserChangeUsername: boolean;
 }
 
+class QueryLimitConfig {
+  @IsInt()
+  @Min(0)
+  readonly problemSetProblemsTake: number;
+}
+
 export class AppConfig {
   @ValidateNested()
   @Type(() => ServerConfig)
@@ -76,4 +84,8 @@ export class AppConfig {
   @ValidateNested()
   @Type(() => PreferenceConfig)
   readonly preference: PreferenceConfig;
+
+  @ValidateNested()
+  @Type(() => QueryLimitConfig)
+  readonly queryLimit: QueryLimitConfig;
 }

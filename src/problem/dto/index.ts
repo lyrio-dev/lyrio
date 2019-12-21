@@ -1,5 +1,8 @@
 export * from "./problem-statement.dto";
 
+export * from "./query-problem-set-request.dto";
+export * from "./query-problem-set-response.dto";
+
 export * from "./create-problem-request.dto";
 export * from "./create-problem-response.dto";
 

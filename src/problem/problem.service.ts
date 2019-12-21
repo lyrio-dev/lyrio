@@ -1,6 +1,11 @@
 import { Injectable } from "@nestjs/common";
 import { InjectConnection, InjectRepository } from "@nestjs/typeorm";
-import { Connection, Repository } from "typeorm";
+import {
+  Connection,
+  Repository,
+  FindConditions,
+  FindManyOptions
+} from "typeorm";
 
 import { UserEntity } from "@/user/user.entity";
 import { GroupEntity } from "@/group/group.entity";
@@ -144,6 +149,21 @@ export class ProblemService {
         )
           return true;
     }
+  }
+
+  async queryProblemsAndCount(
+    skipCount: number,
+    takeCount: number
+  ): Promise<[ProblemEntity[], number]> {
+    let findOptions: FindManyOptions<ProblemEntity> = {
+      order: {
+        displayId: "ASC"
+      },
+      skip: skipCount,
+      take: takeCount
+    };
+    findOptions.where = { isPublic: true };
+    return await this.problemRepository.findAndCount(findOptions);
   }
 
   async createProblem(

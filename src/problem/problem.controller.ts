@@ -1,6 +1,7 @@
 import { Controller, Post, Body, Get, Query } from "@nestjs/common";
 import { ApiOperation, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
+import { ConfigService } from "@/config/config.service";
 import { UserService } from "@/user/user.service";
 import { GroupService } from "@/group/group.service";
 import { ProblemService, ProblemPermissionType } from "./problem.service";
@@ -29,17 +30,66 @@ import {
   SetProblemPublicResponseError,
   GetProblemPermissionsRequestDto,
   GetProblemPermissionsResponseDto,
-  GetProblemPermissionsResponseError
+  GetProblemPermissionsResponseError,
+  QueryProblemSetRequestDto,
+  QueryProblemSetResponseDto,
+  QueryProblemSetErrorDto
 } from "./dto";
 
 @ApiTags("Problem")
 @Controller("problem")
 export class ProblemController {
   constructor(
+    private readonly configService: ConfigService,
     private readonly problemService: ProblemService,
     private readonly userService: UserService,
     private readonly groupService: GroupService
   ) {}
+
+  @Post("queryProblemSet")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Query problems in problem set"
+  })
+  async queryProblemSet(
+    @CurrentUser() CurrentUser: UserEntity,
+    @Body() request: QueryProblemSetRequestDto
+  ): Promise<QueryProblemSetResponseDto> {
+    if (
+      request.takeCount >
+      this.configService.config.queryLimit.problemSetProblemsTake
+    )
+      return {
+        error: QueryProblemSetErrorDto.TAKE_TOO_MANY
+      };
+
+    const [problems, count] = await this.problemService.queryProblemsAndCount(
+      request.skipCount,
+      request.takeCount
+    );
+
+    const response: QueryProblemSetResponseDto = {
+      count: count,
+      result: []
+    };
+
+    for (const problem of problems) {
+      const titleLocale = problem.locales.includes(request.locale)
+        ? request.locale
+        : problem.locales[0];
+      const title = await this.problemService.getProblemLocalizedTitle(
+        problem,
+        titleLocale
+      );
+      response.result.push({
+        meta: problem,
+        title: title,
+        titleLocale: titleLocale
+      });
+    }
+
+    return response;
+  }
 
   @Post("createProblem")
   @ApiBearerAuth()

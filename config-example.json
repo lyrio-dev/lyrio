@@ -22,5 +22,8 @@
     },
     "preference": {
         "allowUserChangeUsername": true
+    },
+    "queryLimit": {
+        "problemSetProblemsTake": 100
     }
 }
