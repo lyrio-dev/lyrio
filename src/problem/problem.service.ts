@@ -151,6 +151,44 @@ export class ProblemService {
     }
   }
 
+  async getUserPermission(
+    user: UserEntity,
+    problem?: ProblemEntity
+  ): Promise<Record<ProblemPermissionType, boolean>> {
+    const result: Record<ProblemPermissionType, boolean> = {
+      CREATE: false,
+      READ: false,
+      WRITE: false,
+      CONTROL: false,
+      FULL_CONTROL: false
+    };
+
+    result[ProblemPermissionType.CREATE] = true;
+
+    if (user && user.isAdmin && await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM)) {
+      result[ProblemPermissionType.READ] = true;
+      result[ProblemPermissionType.WRITE] = true;
+      result[ProblemPermissionType.CONTROL] = true;
+      result[ProblemPermissionType.FULL_CONTROL] = true;
+    } else if (problem && user && problem.ownerId === user.id) {
+      result[ProblemPermissionType.READ] = true;
+      result[ProblemPermissionType.WRITE] = true;
+      result[ProblemPermissionType.CONTROL] = true;
+    } else if (problem && user && await this.permissionService.userOrItsGroupsHavePermission(
+      user,
+      problem.id,
+      PermissionObjectType.PROBLEM,
+      PermissionType.WRITE
+    )) {
+      result[ProblemPermissionType.READ] = true;
+      result[ProblemPermissionType.WRITE] = true;
+    } else if (problem && problem.isPublic) {
+      result[ProblemPermissionType.READ] = true;
+    }
+
+    return result;
+  }
+
   async queryProblemsAndCount(
     skipCount: number,
     takeCount: number

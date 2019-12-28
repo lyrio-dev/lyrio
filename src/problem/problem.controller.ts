@@ -216,6 +216,7 @@ export class ProblemController {
     );
     const samples = await this.problemService.getProblemSamples(problem);
     const judgeInfo = await this.problemService.getProblemJudgeInfo(problem);
+    const permission = await this.problemService.getUserPermission(currentUser, problem);
 
     return {
       meta: {
@@ -226,6 +227,7 @@ export class ProblemController {
         ownerId: problem.ownerId,
         locales: problem.locales
       },
+      permission: permission,
       resultLocale: resultLocale,
       title: title,
       samples: samples,

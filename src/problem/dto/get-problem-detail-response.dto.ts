@@ -6,6 +6,7 @@ import { ProblemMetaDto } from "./problem-meta.dto";
 import { ProblemContentSectionDto } from "./problem-content-section.dto";
 import { ProblemSampleDataMemberDto } from "./problem-sample-data-member.dto";
 import { ProblemJudgeInfo } from "../judge-info/problem-judge-info.interface";
+import { ProblemPermissionType } from "../problem.service";
 
 export enum GetProblemDetailResponseError {
   PERMISSION_DENIED = "PERMISSION_DENIED",
@@ -18,6 +19,9 @@ export class GetProblemDetailResponseDto {
 
   @ApiProperty()
   meta?: ProblemMetaDto;
+
+  @ApiProperty()
+  permission?: Record<ProblemPermissionType, boolean>;
 
   @ApiProperty()
   title?: string;
