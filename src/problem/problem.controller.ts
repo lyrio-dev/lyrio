@@ -367,6 +367,13 @@ export class ProblemController {
         error: SetProblemDisplayIdResponseError.PERMISSION_DENIED
       };
 
+    if (problem.isPublic && !request.displayId) {
+      return {
+        error:
+          SetProblemDisplayIdResponseError.PUBLIC_PROBLEM_MUST_HAVE_DISPLAY_ID
+      };
+    }
+
     if (
       !(await this.problemService.setProblemDisplayId(
         problem,
@@ -376,6 +383,8 @@ export class ProblemController {
       return {
         error: SetProblemDisplayIdResponseError.DUPLICATE_DISPLAY_ID
       };
+
+    return {};
   }
 
   @Post("setProblemPublic")
