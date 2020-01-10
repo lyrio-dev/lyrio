@@ -7,7 +7,7 @@ export class SetUserPrivilegesRequestDto {
   @IsInt()
   readonly userId: number;
 
-  @ApiProperty()
+  @ApiProperty({ enum: UserPrivilegeType, isArray: true })
   @IsEnum(UserPrivilegeType, {
     each: true
   })

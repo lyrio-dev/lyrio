@@ -7,6 +7,6 @@ export class GetUserMetaResponseDto {
   @ApiProperty()
   userMeta?: UserMetaDto;
 
-  @ApiProperty()
+  @ApiProperty({ enum: UserPrivilegeType, isArray: true })
   privileges?: UserPrivilegeType[];
 }

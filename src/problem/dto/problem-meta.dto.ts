@@ -19,6 +19,6 @@ export class ProblemMetaDto {
   @ApiProperty()
   ownerId: number;
 
-  @ApiProperty()
+  @ApiProperty({ enum: Locale, isArray: true })
   locales: Locale[];
 }
