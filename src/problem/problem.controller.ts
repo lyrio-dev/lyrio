@@ -33,7 +33,10 @@ import {
   GetProblemPermissionsResponseError,
   QueryProblemSetRequestDto,
   QueryProblemSetResponseDto,
-  QueryProblemSetErrorDto
+  QueryProblemSetErrorDto,
+  GetProblemStatementsAllLocalesRequestDto,
+  GetProblemStatementsAllLocalesResponseDto,
+  GetProblemStatementsAllLocalesResponseError
 } from "./dto";
 
 @ApiTags("Problem")
@@ -164,6 +167,61 @@ export class ProblemController {
       };
 
     return {};
+  }
+
+  @Get("getProblemStatementsAllLocales")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      "Get a problem's meta, title, contents, of ALL locales."
+  })
+  async getProblemStatementsAllLocales(
+    @CurrentUser() currentUser: UserEntity,
+    @Query() request: GetProblemStatementsAllLocalesRequestDto
+  ): Promise<GetProblemStatementsAllLocalesResponseDto> {
+    let problem: ProblemEntity;
+    if (request.id)
+      problem = await this.problemService.findProblemById(parseInt(request.id));
+    else if (request.displayId)
+      problem = await this.problemService.findProblemByDisplayId(
+        parseInt(request.displayId)
+      );
+
+    if (!problem)
+      return {
+        error: GetProblemStatementsAllLocalesResponseError.NO_SUCH_PROBLEM
+      };
+
+    if (
+      !(await this.problemService.userHasPermission(
+        currentUser,
+        ProblemPermissionType.READ,
+        problem
+      ))
+    )
+      return {
+        error: GetProblemStatementsAllLocalesResponseError.PERMISSION_DENIED
+      };
+
+    const samples = await this.problemService.getProblemSamples(problem);
+    const permission = await this.problemService.getUserPermission(currentUser, problem);
+    const localizedContents = await this.problemService.getProblemAllLocalizedContents(problem);
+
+    return {
+      meta: {
+        id: problem.id,
+        displayId: problem.displayId,
+        type: problem.type,
+        isPublic: problem.isPublic,
+        ownerId: problem.ownerId,
+        locales: problem.locales
+      },
+      permission: permission,
+      statement: {
+        samples: samples,
+        localizedContents: localizedContents
+      }
+    };
   }
 
   @Get("getProblemDetail")

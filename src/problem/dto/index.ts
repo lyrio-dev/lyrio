@@ -23,3 +23,6 @@ export * from "./set-problem-public-response.dto";
 
 export * from "./get-problem-permissions-request.dto";
 export * from "./get-problem-permissions-response.dto";
+
+export * from "./get-problem-statements-all-locales-request.dto";
+export * from "./get-problem-statements-all-locales-response.dto";

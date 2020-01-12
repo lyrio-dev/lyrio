@@ -14,7 +14,7 @@ import { ProblemEntity, ProblemType } from "./problem.entity";
 import { ProblemJudgeInfoEntity } from "./problem-judge-info.entity";
 import { ProblemSampleEntity } from "./problem-sample.entity";
 import { ProblemJudgeInfoService } from "./problem-judge-info.service";
-import { ProblemStatementDto, UpdateProblemStatementRequestDto } from "./dto";
+import { ProblemStatementDto, UpdateProblemStatementRequestDto, ProblemLocalizedContentDto } from "./dto";
 import { LocalizedContentType } from "@/localized-content/localized-content.entity";
 import { Locale } from "@/common/locale.type";
 import { ProblemContentSection } from "./problem-content.interface";
@@ -342,6 +342,18 @@ export class ProblemService {
     );
     if (data != null) return JSON.parse(data);
     else return null;
+  }
+
+  async getProblemAllLocalizedContents(
+    problem: ProblemEntity
+  ): Promise<ProblemLocalizedContentDto[]> {
+    const titles = await this.localizedContentService.getOfAllLocales(problem.id, LocalizedContentType.PROBLEM_TITLE);
+    const contents = await this.localizedContentService.getOfAllLocales(problem.id, LocalizedContentType.PROBLEM_CONTENT);
+    return Object.keys(titles).map((locale: Locale) => ({
+      locale: locale,
+      title: titles[locale],
+      contentSections: JSON.parse(contents[locale])
+    }))
   }
 
   async getProblemSamples(problem: ProblemEntity): Promise<ProblemSampleData> {

@@ -75,6 +75,21 @@ export class LocalizedContentService {
     return localizedContent ? localizedContent.data : null;
   }
 
+  async getOfAllLocales(
+    objectId: number,
+    type: LocalizedContentType
+  ): Promise<Partial<Record<Locale, string>>> {
+    const localizedContents = await this.localizedContentRepository.find({
+      objectId: objectId,
+      type: type
+    });
+
+    let result: Partial<Record<Locale, string>> = {};
+    for (const localizedContent of localizedContents)
+      result[localizedContent.locale] = localizedContent.data;
+    return result;
+  }
+
   async getOfAnyLocale(
     objectId: number,
     type: LocalizedContentType
