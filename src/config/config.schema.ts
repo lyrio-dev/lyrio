@@ -30,6 +30,26 @@ class DatabaseConfig {
   readonly database: string;
 }
 
+class FileStorageConfig {
+  @IsString()
+  readonly endPoint: string;
+
+  @IsPortNumber()
+  readonly port: number;
+
+  @IsBoolean()
+  readonly useSSL: boolean;
+
+  @IsString()
+  readonly accessKey: string;
+
+  @IsString()
+  readonly secretKey: string;
+
+  @IsString()
+  readonly bucket: string;
+}
+
 class CrossOriginConfig {
   @IsBoolean()
   readonly enabled: boolean;
@@ -68,6 +88,10 @@ export class AppConfig {
   @ValidateNested()
   @Type(() => DatabaseConfig)
   readonly database: DatabaseConfig;
+
+  @ValidateNested()
+  @Type(() => FileStorageConfig)
+  readonly fileStorage: FileStorageConfig;
 
   @ValidateNested()
   @Type(() => SecurityConfig)

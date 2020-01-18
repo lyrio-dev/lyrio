@@ -26,3 +26,15 @@ export * from "./get-problem-permissions-response.dto";
 
 export * from "./get-problem-statements-all-locales-request.dto";
 export * from "./get-problem-statements-all-locales-response.dto";
+
+export * from "./add-problem-file-request.dto";
+export * from "./add-problem-file-response.dto";
+
+export * from "./remove-problem-file-request.dto";
+export * from "./remove-problem-file-response.dto";
+
+export * from "./list-problem-files-request.dto";
+export * from "./list-problem-files-response.dto";
+
+export * from "./download-problem-files-request.dto";
+export * from "./download-problem-files-response.dto";

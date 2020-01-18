@@ -4,10 +4,12 @@ import { ApiOperation, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { ConfigService } from "@/config/config.service";
 import { UserService } from "@/user/user.service";
 import { GroupService } from "@/group/group.service";
+import { FileService } from "@/file/file.service";
 import { ProblemService, ProblemPermissionType } from "./problem.service";
 import { CurrentUser } from "@/common/user.decorator";
 import { UserEntity } from "@/user/user.entity";
 import { ProblemEntity } from "./problem.entity";
+import { ProblemFileType } from "./problem-file.entity";
 
 import {
   CreateProblemRequestDto,
@@ -36,7 +38,19 @@ import {
   QueryProblemSetErrorDto,
   GetProblemStatementsAllLocalesRequestDto,
   GetProblemStatementsAllLocalesResponseDto,
-  GetProblemStatementsAllLocalesResponseError
+  GetProblemStatementsAllLocalesResponseError,
+  AddProblemFileRequestDto,
+  AddProblemFileResponseDto,
+  AddProblemFileResponseError,
+  RemoveProblemFileRequestDto,
+  RemoveProblemFileResponseDto,
+  RemoveProblemFileResponseError,
+  ListProblemFilesRequestDto,
+  ListProblemFilesResponseDto,
+  ListProblemFilesResponseError,
+  DownloadProblemFilesRequestDto,
+  DownloadProblemFilesResponseDto,
+  DownloadProblemFilesResponseError
 } from "./dto";
 
 @ApiTags("Problem")
@@ -46,7 +60,8 @@ export class ProblemController {
     private readonly configService: ConfigService,
     private readonly problemService: ProblemService,
     private readonly userService: UserService,
-    private readonly groupService: GroupService
+    private readonly groupService: GroupService,
+    private readonly fileService: FileService
   ) {}
 
   @Post("queryProblemSet")
@@ -185,7 +200,7 @@ export class ProblemController {
   @Get("getProblemDetail")
   @ApiBearerAuth()
   @ApiOperation({
-    summary: "Get a problem's meta, title, contents, samples, judge info of given locale.",
+    summary: "Get a problem's meta, title, contents, samples, additional files and judge info of given locale.",
     description: "Title and contents are fallbacked to default (first) locale if none for given locale."
   })
   async getProblemDetail(
@@ -213,6 +228,7 @@ export class ProblemController {
     const samples = await this.problemService.getProblemSamples(problem);
     const judgeInfo = await this.problemService.getProblemJudgeInfo(problem);
     const permission = await this.problemService.getUserPermission(currentUser, problem);
+    const additionalFiles = await this.problemService.listProblemFiles(problem, ProblemFileType.AdditionalFile);
 
     return {
       meta: {
@@ -228,6 +244,7 @@ export class ProblemController {
       title: title,
       samples: samples,
       contentSections: contentSections,
+      additionalFiles: additionalFiles,
       judgeInfo: judgeInfo
     };
   }
@@ -374,5 +391,130 @@ export class ProblemController {
     await this.problemService.setProblemPublic(problem, request.isPublic);
 
     return {};
+  }
+
+  @Post("addProblemFile")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Upload or add an existing file to a problem as its testdata or additional file."
+  })
+  async addProblemFile(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: AddProblemFileRequestDto
+  ): Promise<AddProblemFileResponseDto> {
+    const problem = await this.problemService.findProblemByDisplayId(request.problemId);
+    if (!problem)
+      return {
+        error: AddProblemFileResponseError.NO_SUCH_PROBLEM
+      };
+
+    if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.WRITE, problem)))
+      return {
+        error: AddProblemFileResponseError.PERMISSION_DENIED
+      };
+
+    if (!(await this.problemService.addProblemFile(problem, request.sha256, request.type, request.filename))) {
+      const [uuid, uploadUrl] = await this.fileService.createUploadUrl(request.sha256);
+      return {
+        error: AddProblemFileResponseError.UPLOAD_REQUIRED,
+        uploadUrl: uploadUrl,
+        uploadUuid: uuid
+      };
+    }
+
+    return {};
+  }
+
+  @Post("removeProblemFile")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Remove a file from a problem's testdata or additional files."
+  })
+  async removeProblemFile(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: RemoveProblemFileRequestDto
+  ): Promise<RemoveProblemFileResponseDto> {
+    const problem = await this.problemService.findProblemByDisplayId(request.problemId);
+    if (!problem)
+      return {
+        error: RemoveProblemFileResponseError.NO_SUCH_PROBLEM
+      };
+
+    if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.WRITE, problem)))
+      return {
+        error: RemoveProblemFileResponseError.PERMISSION_DENIED
+      };
+
+    if (!(await this.problemService.removeProblemFile(problem, request.type, request.filename)))
+      return {
+        error: RemoveProblemFileResponseError.NO_SUCH_FILE
+      };
+
+    return {};
+  }
+
+  @Post("listProblemFiles")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "List testdata or additional files of a problem."
+  })
+  async listProblemFiles(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: ListProblemFilesRequestDto
+  ): Promise<ListProblemFilesResponseDto> {
+    const problem = await this.problemService.findProblemByDisplayId(request.problemId);
+    if (!problem)
+      return {
+        error: ListProblemFilesResponseError.NO_SUCH_PROBLEM
+      };
+
+    if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.READ, problem)))
+      return {
+        error: ListProblemFilesResponseError.PERMISSION_DENIED
+      };
+
+    const problemFiles = await this.problemService.listProblemFiles(problem, request.type);
+
+    return {
+      problemFiles: problemFiles.map(problemFile => ({
+        uuid: problemFile.uuid,
+        filename: problemFile.filename
+      }))
+    };
+  }
+
+  @Post("downloadProblemFiles")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Download some of a problem's testdata or additional files."
+  })
+  async downloadProblemFiles(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: DownloadProblemFilesRequestDto
+  ): Promise<DownloadProblemFilesResponseDto> {
+    const problem = await this.problemService.findProblemByDisplayId(request.problemId);
+    if (!problem)
+      return {
+        error: DownloadProblemFilesResponseError.NO_SUCH_PROBLEM
+      };
+
+    if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.READ, problem)))
+      return {
+        error: DownloadProblemFilesResponseError.PERMISSION_DENIED
+      };
+
+    const problemFiles = await this.problemService.listProblemFiles(problem, request.type);
+    const downloadList = problemFiles.filter(
+      problemFile => request.filenameList.length === 0 || request.filenameList.includes(problemFile.filename)
+    );
+
+    return {
+      downloadInfo: await Promise.all(
+        downloadList.map(async problemFile => ({
+          filename: problemFile.filename,
+          downloadUrl: await this.fileService.getDownloadLink(problemFile.uuid)
+        }))
+      )
+    };
   }
 }

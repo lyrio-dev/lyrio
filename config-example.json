@@ -11,6 +11,14 @@
         "password": "syzoj-ng",
         "database": "syzoj-ng"
     },
+    "fileStorage": {
+        "endPoint": "syzoj-ng.test",
+        "port": 9000,
+        "useSSL": false,
+        "accessKey": "minioadmin",
+        "secretKey": "minioadmin",
+        "bucket": "syzoj-ng-files"
+    },
     "security": {
         "crossOrigin": {
             "enabled": true,

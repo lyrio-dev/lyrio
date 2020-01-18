@@ -8,6 +8,7 @@ import { LocalizedContentService } from "@/localized-content/localized-content.s
 import { ProblemEntity, ProblemType } from "./problem.entity";
 import { ProblemJudgeInfoEntity } from "./problem-judge-info.entity";
 import { ProblemSampleEntity } from "./problem-sample.entity";
+import { ProblemFileType, ProblemFileEntity } from "./problem-file.entity";
 import { ProblemJudgeInfoService } from "./problem-judge-info.service";
 import { ProblemStatementDto, UpdateProblemStatementRequestDto, ProblemLocalizedContentDto } from "./dto";
 import { LocalizedContentType } from "@/localized-content/localized-content.entity";
@@ -19,6 +20,7 @@ import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.s
 import { PermissionService, PermissionObjectType, PermissionType } from "@/permission/permission.service";
 import { UserService } from "@/user/user.service";
 import { GroupService } from "@/group/group.service";
+import { FileService } from "@/file/file.service";
 
 export enum ProblemPermissionType {
   CREATE = "CREATE",
@@ -39,12 +41,15 @@ export class ProblemService {
     private readonly problemJudgeInfoRepository: Repository<ProblemJudgeInfoEntity>,
     @InjectRepository(ProblemSampleEntity)
     private readonly problemSampleRepository: Repository<ProblemSampleEntity>,
+    @InjectRepository(ProblemFileEntity)
+    private readonly problemFileRepository: Repository<ProblemFileEntity>,
     private readonly problemJudgeInfoService: ProblemJudgeInfoService,
     private readonly localizedContentService: LocalizedContentService,
     private readonly userPrivilegeService: UserPrivilegeService,
     private readonly userService: UserService,
     private readonly groupService: GroupService,
-    private readonly permissionService: PermissionService
+    private readonly permissionService: PermissionService,
+    private readonly fileService: FileService
   ) {}
 
   async findProblemById(id: number): Promise<ProblemEntity> {
@@ -350,5 +355,65 @@ export class ProblemService {
 
     problem.isPublic = isPublic;
     await this.problemRepository.save(problem);
+  }
+
+  async addProblemFile(
+    problem: ProblemEntity,
+    sha256: string,
+    type: ProblemFileType,
+    filename: string
+  ): Promise<boolean> {
+    return await this.connection.transaction("SERIALIZABLE", async transactionalEntityManager => {
+      const uuid = await this.fileService.tryReferenceFile(sha256, transactionalEntityManager);
+      if (!uuid) {
+        return false;
+      }
+
+      let problemFile = await this.problemFileRepository.findOne({
+        problemId: problem.id,
+        type: type,
+        filename: filename
+      });
+      if (problemFile) {
+        // Rereference old file
+        await this.fileService.dereferenceFile(problemFile.uuid, transactionalEntityManager);
+      } else {
+        problemFile = new ProblemFileEntity();
+        problemFile.problemId = problem.id;
+        problemFile.type = type;
+        problemFile.filename = filename;
+      }
+
+      problemFile.uuid = uuid;
+      await transactionalEntityManager.save(ProblemFileEntity, problemFile);
+
+      return true;
+    });
+  }
+
+  async removeProblemFile(problem: ProblemEntity, type: ProblemFileType, filename: string): Promise<boolean> {
+    return await this.connection.transaction("SERIALIZABLE", async transactionalEntityManager => {
+      const problemFile = await transactionalEntityManager.findOne(ProblemFileEntity, {
+        problemId: problem.id,
+        type: type,
+        filename: filename
+      });
+
+      if (!problemFile) {
+        return false;
+      }
+
+      await transactionalEntityManager.remove(ProblemFileEntity, problemFile);
+      await this.fileService.dereferenceFile(problemFile.uuid, transactionalEntityManager);
+
+      return true;
+    });
+  }
+
+  async listProblemFiles(problem: ProblemEntity, type: ProblemFileType): Promise<ProblemFileEntity[]> {
+    return await this.problemFileRepository.find({
+      problemId: problem.id,
+      type: type
+    });
   }
 }
