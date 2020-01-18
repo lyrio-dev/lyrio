@@ -7,8 +7,7 @@ let patched = false;
 
 function patchTypeOrm() {
   const TypeORMMysqlDriver = require("typeorm/driver/mysql/MysqlDriver");
-  const OriginalNormalizeType =
-    TypeORMMysqlDriver.MysqlDriver.prototype.normalizeType;
+  const OriginalNormalizeType = TypeORMMysqlDriver.MysqlDriver.prototype.normalizeType;
   TypeORMMysqlDriver.MysqlDriver.prototype.normalizeType = function(column) {
     if (column.type === "json") {
       return "longtext";

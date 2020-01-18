@@ -1,11 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { InjectConnection, InjectRepository } from "@nestjs/typeorm";
-import {
-  Connection,
-  Repository,
-  FindConditions,
-  FindManyOptions
-} from "typeorm";
+import { Connection, Repository, FindConditions, FindManyOptions } from "typeorm";
 
 import { UserEntity } from "@/user/user.entity";
 import { GroupEntity } from "@/group/group.entity";
@@ -20,15 +15,8 @@ import { Locale } from "@/common/locale.type";
 import { ProblemContentSection } from "./problem-content.interface";
 import { ProblemSampleData } from "./problem-sample-data.interface";
 import { ProblemJudgeInfo } from "./judge-info/problem-judge-info.interface";
-import {
-  UserPrivilegeService,
-  UserPrivilegeType
-} from "@/user/user-privilege.service";
-import {
-  PermissionService,
-  PermissionObjectType,
-  PermissionType
-} from "@/permission/permission.service";
+import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.service";
+import { PermissionService, PermissionObjectType, PermissionType } from "@/permission/permission.service";
 import { UserService } from "@/user/user.service";
 import { GroupService } from "@/group/group.service";
 
@@ -48,9 +36,7 @@ export class ProblemService {
     @InjectRepository(ProblemEntity)
     private readonly problemRepository: Repository<ProblemEntity>,
     @InjectRepository(ProblemJudgeInfoEntity)
-    private readonly problemJudgeInfoRepository: Repository<
-      ProblemJudgeInfoEntity
-    >,
+    private readonly problemJudgeInfoRepository: Repository<ProblemJudgeInfoEntity>,
     @InjectRepository(ProblemSampleEntity)
     private readonly problemSampleRepository: Repository<ProblemSampleEntity>,
     private readonly problemJudgeInfoService: ProblemJudgeInfoService,
@@ -71,11 +57,7 @@ export class ProblemService {
     });
   }
 
-  async userHasPermission(
-    user: UserEntity,
-    type: ProblemPermissionType,
-    problem?: ProblemEntity
-  ): Promise<boolean> {
+  async userHasPermission(user: UserEntity, type: ProblemPermissionType, problem?: ProblemEntity): Promise<boolean> {
     switch (type) {
       // Everyone can create a problem
       case ProblemPermissionType.CREATE:
@@ -89,13 +71,7 @@ export class ProblemService {
         else if (!user) return false;
         else if (user.id === problem.ownerId) return true;
         else if (user.isAdmin) return true;
-        else if (
-          await this.userPrivilegeService.userHasPrivilege(
-            user,
-            UserPrivilegeType.MANAGE_PROBLEM
-          )
-        )
-          return true;
+        else if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM)) return true;
         else
           return await this.permissionService.userOrItsGroupsHavePermission(
             user,
@@ -109,13 +85,7 @@ export class ProblemService {
         if (!user) return false;
         else if (user.id === problem.ownerId) return true;
         else if (user.isAdmin) return true;
-        else if (
-          await this.userPrivilegeService.userHasPrivilege(
-            user,
-            UserPrivilegeType.MANAGE_PROBLEM
-          )
-        )
-          return true;
+        else if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM)) return true;
         else
           return await this.permissionService.userOrItsGroupsHavePermission(
             user,
@@ -129,32 +99,17 @@ export class ProblemService {
         if (!user) return false;
         else if (user.id === problem.ownerId) return true;
         else if (user.isAdmin) return true;
-        else if (
-          await this.userPrivilegeService.userHasPrivilege(
-            user,
-            UserPrivilegeType.MANAGE_PROBLEM
-          )
-        )
-          return true;
+        else if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM)) return true;
 
       // Admins can full control a problem (i.e. set it's public or not / set its display id)
       case ProblemPermissionType.FULL_CONTROL:
         if (!user) return false;
         else if (user.isAdmin) return true;
-        else if (
-          await this.userPrivilegeService.userHasPrivilege(
-            user,
-            UserPrivilegeType.MANAGE_PROBLEM
-          )
-        )
-          return true;
+        else if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM)) return true;
     }
   }
 
-  async getUserPermission(
-    user: UserEntity,
-    problem?: ProblemEntity
-  ): Promise<Record<ProblemPermissionType, boolean>> {
+  async getUserPermission(user: UserEntity, problem?: ProblemEntity): Promise<Record<ProblemPermissionType, boolean>> {
     const result: Record<ProblemPermissionType, boolean> = {
       CREATE: false,
       READ: false,
@@ -165,7 +120,11 @@ export class ProblemService {
 
     result[ProblemPermissionType.CREATE] = true;
 
-    if (user && user.isAdmin && await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM)) {
+    if (
+      user &&
+      user.isAdmin &&
+      (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM))
+    ) {
       result[ProblemPermissionType.READ] = true;
       result[ProblemPermissionType.WRITE] = true;
       result[ProblemPermissionType.CONTROL] = true;
@@ -174,12 +133,16 @@ export class ProblemService {
       result[ProblemPermissionType.READ] = true;
       result[ProblemPermissionType.WRITE] = true;
       result[ProblemPermissionType.CONTROL] = true;
-    } else if (problem && user && await this.permissionService.userOrItsGroupsHavePermission(
-      user,
-      problem.id,
-      PermissionObjectType.PROBLEM,
-      PermissionType.WRITE
-    )) {
+    } else if (
+      problem &&
+      user &&
+      (await this.permissionService.userOrItsGroupsHavePermission(
+        user,
+        problem.id,
+        PermissionObjectType.PROBLEM,
+        PermissionType.WRITE
+      ))
+    ) {
       result[ProblemPermissionType.READ] = true;
       result[ProblemPermissionType.WRITE] = true;
     } else if (problem && problem.isPublic) {
@@ -189,10 +152,7 @@ export class ProblemService {
     return result;
   }
 
-  async queryProblemsAndCount(
-    skipCount: number,
-    takeCount: number
-  ): Promise<[ProblemEntity[], number]> {
+  async queryProblemsAndCount(skipCount: number, takeCount: number): Promise<[ProblemEntity[], number]> {
     let findOptions: FindManyOptions<ProblemEntity> = {
       order: {
         displayId: "ASC"
@@ -204,63 +164,49 @@ export class ProblemService {
     return await this.problemRepository.findAndCount(findOptions);
   }
 
-  async createProblem(
-    owner: UserEntity,
-    type: ProblemType,
-    statement: ProblemStatementDto
-  ): Promise<ProblemEntity> {
+  async createProblem(owner: UserEntity, type: ProblemType, statement: ProblemStatementDto): Promise<ProblemEntity> {
     let problem: ProblemEntity;
-    await this.connection.transaction(
-      "SERIALIZABLE",
-      async transactionalEntityManager => {
-        problem = new ProblemEntity();
-        problem.displayId = null;
-        problem.type = type;
-        problem.isPublic = false;
-        problem.ownerId = owner.id;
-        problem.locales = statement.localizedContents.map(
-          localizedContent => localizedContent.locale
+    await this.connection.transaction("SERIALIZABLE", async transactionalEntityManager => {
+      problem = new ProblemEntity();
+      problem.displayId = null;
+      problem.type = type;
+      problem.isPublic = false;
+      problem.ownerId = owner.id;
+      problem.locales = statement.localizedContents.map(localizedContent => localizedContent.locale);
+      await transactionalEntityManager.save(problem);
+
+      const problemJudgeInfo = new ProblemJudgeInfoEntity();
+      problemJudgeInfo.problemId = problem.id;
+      problemJudgeInfo.judgeInfo = this.problemJudgeInfoService.getDefaultJudgeInfoOfType(type);
+      await transactionalEntityManager.save(problemJudgeInfo);
+
+      const problemSample = new ProblemSampleEntity();
+      problemSample.problemId = problem.id;
+      problemSample.data = statement.samples;
+      await transactionalEntityManager.save(problemSample);
+
+      for (const localizedContent of statement.localizedContents) {
+        await this.localizedContentService.createOrUpdate(
+          problem.id,
+          LocalizedContentType.PROBLEM_TITLE,
+          localizedContent.locale,
+          localizedContent.title,
+          transactionalEntityManager
         );
-        await transactionalEntityManager.save(problem);
-
-        const problemJudgeInfo = new ProblemJudgeInfoEntity();
-        problemJudgeInfo.problemId = problem.id;
-        problemJudgeInfo.judgeInfo = this.problemJudgeInfoService.getDefaultJudgeInfoOfType(
-          type
+        await this.localizedContentService.createOrUpdate(
+          problem.id,
+          LocalizedContentType.PROBLEM_CONTENT,
+          localizedContent.locale,
+          JSON.stringify(localizedContent.contentSections),
+          transactionalEntityManager
         );
-        await transactionalEntityManager.save(problemJudgeInfo);
-
-        const problemSample = new ProblemSampleEntity();
-        problemSample.problemId = problem.id;
-        problemSample.data = statement.samples;
-        await transactionalEntityManager.save(problemSample);
-
-        for (const localizedContent of statement.localizedContents) {
-          await this.localizedContentService.createOrUpdate(
-            problem.id,
-            LocalizedContentType.PROBLEM_TITLE,
-            localizedContent.locale,
-            localizedContent.title,
-            transactionalEntityManager
-          );
-          await this.localizedContentService.createOrUpdate(
-            problem.id,
-            LocalizedContentType.PROBLEM_CONTENT,
-            localizedContent.locale,
-            JSON.stringify(localizedContent.contentSections),
-            transactionalEntityManager
-          );
-        }
       }
-    );
+    });
 
     return problem;
   }
 
-  async updateProblemStatement(
-    problem: ProblemEntity,
-    request: UpdateProblemStatementRequestDto
-  ): Promise<boolean> {
+  async updateProblemStatement(problem: ProblemEntity, request: UpdateProblemStatementRequestDto): Promise<boolean> {
     await this.connection.transaction(async transactionalEntityManager => {
       if (request.samples != null) {
         const problemSample = await this.problemSampleRepository.findOne({
@@ -270,13 +216,9 @@ export class ProblemService {
         await transactionalEntityManager.save(problemSample);
       }
 
-      const newLocales = request.localizedContents.map(
-        localizedContent => localizedContent.locale
-      );
+      const newLocales = request.localizedContents.map(localizedContent => localizedContent.locale);
 
-      const deletingLocales = problem.locales.filter(
-        locale => !newLocales.includes(locale)
-      );
+      const deletingLocales = problem.locales.filter(locale => !newLocales.includes(locale));
       for (const deletingLocale of deletingLocales) {
         await this.localizedContentService.delete(
           problem.id,
@@ -319,41 +261,28 @@ export class ProblemService {
   }
 
   // Get a problem's title of a locale. If no title for this locale returns any one.
-  async getProblemLocalizedTitle(
-    problem: ProblemEntity,
-    locale: Locale
-  ): Promise<string> {
-    return await this.localizedContentService.get(
-      problem.id,
-      LocalizedContentType.PROBLEM_TITLE,
-      locale
-    );
+  async getProblemLocalizedTitle(problem: ProblemEntity, locale: Locale): Promise<string> {
+    return await this.localizedContentService.get(problem.id, LocalizedContentType.PROBLEM_TITLE, locale);
   }
 
   // Get a problem's content of a locale. If no content for this locale returns any one.
-  async getProblemLocalizedContent(
-    problem: ProblemEntity,
-    locale: Locale
-  ): Promise<ProblemContentSection[]> {
-    const data = await this.localizedContentService.get(
-      problem.id,
-      LocalizedContentType.PROBLEM_CONTENT,
-      locale
-    );
+  async getProblemLocalizedContent(problem: ProblemEntity, locale: Locale): Promise<ProblemContentSection[]> {
+    const data = await this.localizedContentService.get(problem.id, LocalizedContentType.PROBLEM_CONTENT, locale);
     if (data != null) return JSON.parse(data);
     else return null;
   }
 
-  async getProblemAllLocalizedContents(
-    problem: ProblemEntity
-  ): Promise<ProblemLocalizedContentDto[]> {
+  async getProblemAllLocalizedContents(problem: ProblemEntity): Promise<ProblemLocalizedContentDto[]> {
     const titles = await this.localizedContentService.getOfAllLocales(problem.id, LocalizedContentType.PROBLEM_TITLE);
-    const contents = await this.localizedContentService.getOfAllLocales(problem.id, LocalizedContentType.PROBLEM_CONTENT);
+    const contents = await this.localizedContentService.getOfAllLocales(
+      problem.id,
+      LocalizedContentType.PROBLEM_CONTENT
+    );
     return Object.keys(titles).map((locale: Locale) => ({
       locale: locale,
       title: titles[locale],
       contentSections: JSON.parse(contents[locale])
-    }))
+    }));
   }
 
   async getProblemSamples(problem: ProblemEntity): Promise<ProblemSampleData> {
@@ -385,30 +314,18 @@ export class ProblemService {
     problem: ProblemEntity,
     permissionType: PermissionType
   ): Promise<[UserEntity[], GroupEntity[]]> {
-    const [
-      userIds,
-      groupIds
-    ] = await this.permissionService.getUsersAndGroupsWithPermission(
+    const [userIds, groupIds] = await this.permissionService.getUsersAndGroupsWithPermission(
       problem.id,
       PermissionObjectType.PROBLEM,
       permissionType
     );
     return [
-      await Promise.all(
-        userIds.map(async userId => await this.userService.findUserById(userId))
-      ),
-      await Promise.all(
-        groupIds.map(
-          async groupId => await this.groupService.findGroupById(groupId)
-        )
-      )
+      await Promise.all(userIds.map(async userId => await this.userService.findUserById(userId))),
+      await Promise.all(groupIds.map(async groupId => await this.groupService.findGroupById(groupId)))
     ];
   }
 
-  async setProblemDisplayId(
-    problem: ProblemEntity,
-    displayId: number
-  ): Promise<boolean> {
+  async setProblemDisplayId(problem: ProblemEntity, displayId: number): Promise<boolean> {
     if (!displayId) displayId = null;
     if (problem.displayId === displayId) return true;
 
@@ -428,10 +345,7 @@ export class ProblemService {
     }
   }
 
-  async setProblemPublic(
-    problem: ProblemEntity,
-    isPublic: boolean
-  ): Promise<void> {
+  async setProblemPublic(problem: ProblemEntity, isPublic: boolean): Promise<void> {
     if (problem.isPublic === isPublic) return;
 
     problem.isPublic = isPublic;

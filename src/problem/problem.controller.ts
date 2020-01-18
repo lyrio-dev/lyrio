@@ -58,18 +58,12 @@ export class ProblemController {
     @CurrentUser() CurrentUser: UserEntity,
     @Body() request: QueryProblemSetRequestDto
   ): Promise<QueryProblemSetResponseDto> {
-    if (
-      request.takeCount >
-      this.configService.config.queryLimit.problemSetProblemsTake
-    )
+    if (request.takeCount > this.configService.config.queryLimit.problemSetProblemsTake)
       return {
         error: QueryProblemSetErrorDto.TAKE_TOO_MANY
       };
 
-    const [problems, count] = await this.problemService.queryProblemsAndCount(
-      request.skipCount,
-      request.takeCount
-    );
+    const [problems, count] = await this.problemService.queryProblemsAndCount(request.skipCount, request.takeCount);
 
     const response: QueryProblemSetResponseDto = {
       count: count,
@@ -77,13 +71,8 @@ export class ProblemController {
     };
 
     for (const problem of problems) {
-      const titleLocale = problem.locales.includes(request.locale)
-        ? request.locale
-        : problem.locales[0];
-      const title = await this.problemService.getProblemLocalizedTitle(
-        problem,
-        titleLocale
-      );
+      const titleLocale = problem.locales.includes(request.locale) ? request.locale : problem.locales[0];
+      const title = await this.problemService.getProblemLocalizedTitle(problem, titleLocale);
       response.result.push({
         meta: problem,
         title: title,
@@ -103,21 +92,12 @@ export class ProblemController {
     @CurrentUser() currentUser: UserEntity,
     @Body() request: CreateProblemRequestDto
   ): Promise<CreateProblemResponseDto> {
-    if (
-      !(await this.problemService.userHasPermission(
-        currentUser,
-        ProblemPermissionType.CREATE
-      ))
-    )
+    if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.CREATE)))
       return {
         error: CreateProblemResponseError.PERMISSION_DENIED
       };
 
-    const problem = await this.problemService.createProblem(
-      currentUser,
-      request.type,
-      request.statement
-    );
+    const problem = await this.problemService.createProblem(currentUser, request.type, request.statement);
     if (!problem)
       return {
         error: CreateProblemResponseError.FAILED
@@ -137,29 +117,18 @@ export class ProblemController {
     @CurrentUser() currentUser: UserEntity,
     @Body() request: UpdateProblemStatementRequestDto
   ): Promise<UpdateProblemStatementResponseDto> {
-    const problem = await this.problemService.findProblemById(
-      request.problemId
-    );
+    const problem = await this.problemService.findProblemById(request.problemId);
     if (!problem)
       return {
         error: UpdateProblemStatementResponseError.NO_SUCH_PROBLEM
       };
 
-    if (
-      !(await this.problemService.userHasPermission(
-        currentUser,
-        ProblemPermissionType.WRITE,
-        problem
-      ))
-    )
+    if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.WRITE, problem)))
       return {
         error: UpdateProblemStatementResponseError.PERMISSION_DENIED
       };
 
-    const success = await this.problemService.updateProblemStatement(
-      problem,
-      request
-    );
+    const success = await this.problemService.updateProblemStatement(problem, request);
 
     if (!success)
       return {
@@ -172,33 +141,22 @@ export class ProblemController {
   @Get("getProblemStatementsAllLocales")
   @ApiBearerAuth()
   @ApiOperation({
-    summary:
-      "Get a problem's meta, title, contents, of ALL locales."
+    summary: "Get a problem's meta, title, contents, of ALL locales."
   })
   async getProblemStatementsAllLocales(
     @CurrentUser() currentUser: UserEntity,
     @Query() request: GetProblemStatementsAllLocalesRequestDto
   ): Promise<GetProblemStatementsAllLocalesResponseDto> {
     let problem: ProblemEntity;
-    if (request.id)
-      problem = await this.problemService.findProblemById(parseInt(request.id));
-    else if (request.displayId)
-      problem = await this.problemService.findProblemByDisplayId(
-        parseInt(request.displayId)
-      );
+    if (request.id) problem = await this.problemService.findProblemById(parseInt(request.id));
+    else if (request.displayId) problem = await this.problemService.findProblemByDisplayId(parseInt(request.displayId));
 
     if (!problem)
       return {
         error: GetProblemStatementsAllLocalesResponseError.NO_SUCH_PROBLEM
       };
 
-    if (
-      !(await this.problemService.userHasPermission(
-        currentUser,
-        ProblemPermissionType.READ,
-        problem
-      ))
-    )
+    if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.READ, problem)))
       return {
         error: GetProblemStatementsAllLocalesResponseError.PERMISSION_DENIED
       };
@@ -227,51 +185,31 @@ export class ProblemController {
   @Get("getProblemDetail")
   @ApiBearerAuth()
   @ApiOperation({
-    summary:
-      "Get a problem's meta, title, contents, samples, judge info of given locale.",
-    description:
-      "Title and contents are fallbacked to default (first) locale if none for given locale."
+    summary: "Get a problem's meta, title, contents, samples, judge info of given locale.",
+    description: "Title and contents are fallbacked to default (first) locale if none for given locale."
   })
   async getProblemDetail(
     @CurrentUser() currentUser: UserEntity,
     @Query() request: GetProblemDetailRequestDto
   ): Promise<GetProblemDetailResponseDto> {
     let problem: ProblemEntity;
-    if (request.id)
-      problem = await this.problemService.findProblemById(parseInt(request.id));
-    else if (request.displayId)
-      problem = await this.problemService.findProblemByDisplayId(
-        parseInt(request.displayId)
-      );
+    if (request.id) problem = await this.problemService.findProblemById(parseInt(request.id));
+    else if (request.displayId) problem = await this.problemService.findProblemByDisplayId(parseInt(request.displayId));
 
     if (!problem)
       return {
         error: GetProblemDetailResponseError.NO_SUCH_PROBLEM
       };
 
-    if (
-      !(await this.problemService.userHasPermission(
-        currentUser,
-        ProblemPermissionType.READ,
-        problem
-      ))
-    )
+    if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.READ, problem)))
       return {
         error: GetProblemDetailResponseError.PERMISSION_DENIED
       };
 
-    const resultLocale = problem.locales.includes(request.locale)
-      ? request.locale
-      : problem.locales[0];
+    const resultLocale = problem.locales.includes(request.locale) ? request.locale : problem.locales[0];
 
-    const title = await this.problemService.getProblemLocalizedTitle(
-      problem,
-      resultLocale
-    );
-    const contentSections = await this.problemService.getProblemLocalizedContent(
-      problem,
-      resultLocale
-    );
+    const title = await this.problemService.getProblemLocalizedTitle(problem, resultLocale);
+    const contentSections = await this.problemService.getProblemLocalizedContent(problem, resultLocale);
     const samples = await this.problemService.getProblemSamples(problem);
     const judgeInfo = await this.problemService.getProblemJudgeInfo(problem);
     const permission = await this.problemService.getUserPermission(currentUser, problem);
@@ -297,29 +235,20 @@ export class ProblemController {
   @Post("setProblemPermissions")
   @ApiBearerAuth()
   @ApiOperation({
-    summary:
-      "Set who and which groups have permission to read / write this problem."
+    summary: "Set who and which groups have permission to read / write this problem."
   })
   async setProblemPermissions(
     @CurrentUser() currentUser: UserEntity,
     @Body() request: SetProblemPermissionsRequestDto
   ): Promise<SetProblemPermissionsResponseDto> {
-    const problem = await this.problemService.findProblemById(
-      request.problemId
-    );
+    const problem = await this.problemService.findProblemById(request.problemId);
     if (!problem)
       return {
         error: SetProblemPermissionsResponseError.NO_SUCH_PROBLEM,
         errorObjectId: request.problemId
       };
 
-    if (
-      !(await this.problemService.userHasPermission(
-        currentUser,
-        ProblemPermissionType.CONTROL,
-        problem
-      ))
-    )
+    if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.CONTROL, problem)))
       return {
         error: SetProblemPermissionsResponseError.PERMISSION_DENIED
       };
@@ -348,12 +277,7 @@ export class ProblemController {
       groups.push(group);
     }
 
-    await this.problemService.setProblemPermissions(
-      problem,
-      request.permissionType,
-      users,
-      groups
-    );
+    await this.problemService.setProblemPermissions(problem, request.permissionType, users, groups);
 
     return {};
   }
@@ -361,36 +285,24 @@ export class ProblemController {
   @Get("getProblemPermissions")
   @ApiBearerAuth()
   @ApiOperation({
-    summary:
-      "Get who and which groups have permission to read / write this problem."
+    summary: "Get who and which groups have permission to read / write this problem."
   })
   async getProblemPermissions(
     @CurrentUser() currentUser: UserEntity,
     @Query() request: GetProblemPermissionsRequestDto
   ): Promise<GetProblemPermissionsResponseDto> {
-    const problem = await this.problemService.findProblemById(
-      parseInt(request.problemId)
-    );
+    const problem = await this.problemService.findProblemById(parseInt(request.problemId));
     if (!problem)
       return {
         error: GetProblemPermissionsResponseError.NO_SUCH_PROBLEM
       };
 
-    if (
-      !(await this.problemService.userHasPermission(
-        currentUser,
-        ProblemPermissionType.CONTROL,
-        problem
-      ))
-    )
+    if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.CONTROL, problem)))
       return {
         error: GetProblemPermissionsResponseError.PERMISSION_DENIED
       };
 
-    const [users, groups] = await this.problemService.getProblemPermissions(
-      problem,
-      request.permissionType
-    );
+    const [users, groups] = await this.problemService.getProblemPermissions(problem, request.permissionType);
 
     return {
       users: users,
@@ -407,39 +319,25 @@ export class ProblemController {
     @CurrentUser() currentUser: UserEntity,
     @Body() request: SetProblemDisplayIdRequestDto
   ): Promise<SetProblemDisplayIdResponseDto> {
-    const problem = await this.problemService.findProblemById(
-      request.problemId
-    );
+    const problem = await this.problemService.findProblemById(request.problemId);
 
     if (!problem)
       return {
         error: SetProblemDisplayIdResponseError.NO_SUCH_PROBLEM
       };
 
-    if (
-      !(await this.problemService.userHasPermission(
-        currentUser,
-        ProblemPermissionType.FULL_CONTROL,
-        problem
-      ))
-    )
+    if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.FULL_CONTROL, problem)))
       return {
         error: SetProblemDisplayIdResponseError.PERMISSION_DENIED
       };
 
     if (problem.isPublic && !request.displayId) {
       return {
-        error:
-          SetProblemDisplayIdResponseError.PUBLIC_PROBLEM_MUST_HAVE_DISPLAY_ID
+        error: SetProblemDisplayIdResponseError.PUBLIC_PROBLEM_MUST_HAVE_DISPLAY_ID
       };
     }
 
-    if (
-      !(await this.problemService.setProblemDisplayId(
-        problem,
-        request.displayId
-      ))
-    )
+    if (!(await this.problemService.setProblemDisplayId(problem, request.displayId)))
       return {
         error: SetProblemDisplayIdResponseError.DUPLICATE_DISPLAY_ID
       };
@@ -456,9 +354,7 @@ export class ProblemController {
     @CurrentUser() currentUser: UserEntity,
     @Body() request: SetProblemPublicRequestDto
   ): Promise<SetProblemPublicResponseDto> {
-    const problem = await this.problemService.findProblemById(
-      request.problemId
-    );
+    const problem = await this.problemService.findProblemById(request.problemId);
 
     if (!problem)
       return {
@@ -470,13 +366,7 @@ export class ProblemController {
         error: SetProblemPublicResponseError.NO_DISPLAY_ID
       };
 
-    if (
-      !(await this.problemService.userHasPermission(
-        currentUser,
-        ProblemPermissionType.FULL_CONTROL,
-        problem
-      ))
-    )
+    if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.FULL_CONTROL, problem)))
       return {
         error: SetProblemPublicResponseError.PERMISSION_DENIED
       };

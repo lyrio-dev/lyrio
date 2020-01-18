@@ -1,10 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsInt, IsString, Length, IsEnum, IsOptional } from "class-validator";
 
-import {
-  ProblemContentSection,
-  ProblemContentSectionType
-} from "../problem-content.interface";
+import { ProblemContentSection, ProblemContentSectionType } from "../problem-content.interface";
 
 export class ProblemContentSectionDto implements ProblemContentSection {
   @ApiProperty()

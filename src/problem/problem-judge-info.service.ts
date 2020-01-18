@@ -12,10 +12,7 @@ import { ProblemJudgeInfoTraditionalService } from "./judge-info/problem-judge-i
 
 @Injectable()
 export class ProblemJudgeInfoService {
-  private readonly problemJudgeInfoServices: Record<
-    ProblemType,
-    ProblemJudgeInfoTypedService<ProblemJudgeInfo>
-  >;
+  private readonly problemJudgeInfoServices: Record<ProblemType, ProblemJudgeInfoTypedService<ProblemJudgeInfo>>;
 
   constructor(
     @InjectConnection()
@@ -23,9 +20,7 @@ export class ProblemJudgeInfoService {
     @InjectRepository(ProblemEntity)
     private readonly problemRepository: Repository<ProblemEntity>,
     @InjectRepository(ProblemJudgeInfoEntity)
-    private readonly problemJudgeInfoRepository: Repository<
-      ProblemJudgeInfoEntity
-    >,
+    private readonly problemJudgeInfoRepository: Repository<ProblemJudgeInfoEntity>,
     @Inject(forwardRef(() => ProblemService))
     private readonly problemService: ProblemService,
     private readonly problemJudgeInfoTraditionalService: ProblemJudgeInfoTraditionalService
@@ -35,11 +30,7 @@ export class ProblemJudgeInfoService {
     };
   }
 
-  getDefaultJudgeInfoOfType<T extends ProblemJudgeInfo>(
-    problemType: ProblemType
-  ): T {
-    return this.problemJudgeInfoServices[
-      problemType
-    ].getDefaultJudgeInfo() as T;
+  getDefaultJudgeInfoOfType<T extends ProblemJudgeInfo>(problemType: ProblemType): T {
+    return this.problemJudgeInfoServices[problemType].getDefaultJudgeInfo() as T;
   }
 }

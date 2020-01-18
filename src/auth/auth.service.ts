@@ -29,39 +29,31 @@ export class AuthService {
     });
   }
 
-  async register(
-    username: string,
-    email: string,
-    password: string
-  ): Promise<[RegisterResponseError, UserEntity]> {
+  async register(username: string, email: string, password: string): Promise<[RegisterResponseError, UserEntity]> {
     // There's a race condition on user inserting. If we do checking before inserting,
     // inserting will still fail if another with same username is inserted after we check
     try {
       let user: UserEntity;
-      await this.connection.transaction(
-        "SERIALIZABLE",
-        async transactionalEntityManager => {
-          user = new UserEntity();
-          user.username = username;
-          user.email = email;
-          user.bio = "";
-          user.isAdmin = false;
-          await transactionalEntityManager.save(user);
+      await this.connection.transaction("SERIALIZABLE", async transactionalEntityManager => {
+        user = new UserEntity();
+        user.username = username;
+        user.email = email;
+        user.bio = "";
+        user.isAdmin = false;
+        await transactionalEntityManager.save(user);
 
-          const userAuth = new UserAuthEntity();
-          userAuth.userId = user.id;
-          userAuth.password = await this.hashPassword(password);
-          await transactionalEntityManager.save(userAuth);
-        }
-      );
+        const userAuth = new UserAuthEntity();
+        userAuth.userId = user.id;
+        userAuth.password = await this.hashPassword(password);
+        await transactionalEntityManager.save(userAuth);
+      });
 
       return [null, user];
     } catch (e) {
       if (!(await this.userService.checkUsernameAvailability(username)))
         return [RegisterResponseError.DUPLICATE_USERNAME, null];
 
-      if (!(await this.userService.checkEmailAvailability(email)))
-        return [RegisterResponseError.DUPLICATE_EMAIL, null];
+      if (!(await this.userService.checkEmailAvailability(email))) return [RegisterResponseError.DUPLICATE_EMAIL, null];
 
       // Unknown error
       // (or the duplicate user's username is just changed?)
@@ -69,10 +61,7 @@ export class AuthService {
     }
   }
 
-  async checkPassword(
-    userAuth: UserAuthEntity,
-    password: string
-  ): Promise<boolean> {
+  async checkPassword(userAuth: UserAuthEntity, password: string): Promise<boolean> {
     return await bcrypt.compare(password, userAuth.password);
   }
 
@@ -82,24 +71,17 @@ export class AuthService {
     transactionalEntityManager?: EntityManager
   ): Promise<void> {
     userAuth.password = await this.hashPassword(password);
-    if (transactionalEntityManager)
-      await transactionalEntityManager.save(userAuth);
+    if (transactionalEntityManager) await transactionalEntityManager.save(userAuth);
     else await this.userAuthRepository.save(userAuth);
   }
 
-  async login(
-    username: string,
-    password: string
-  ): Promise<[LoginResponseError, UserEntity]> {
-    const user: UserEntity = await this.userService.findUserByUsername(
-      username
-    );
+  async login(username: string, password: string): Promise<[LoginResponseError, UserEntity]> {
+    const user: UserEntity = await this.userService.findUserByUsername(username);
 
     if (!user) return [LoginResponseError.NO_SUCH_USER, null];
 
     const userAuth: UserAuthEntity = await user.userAuth;
-    if (!(await this.checkPassword(userAuth, password)))
-      return [LoginResponseError.WRONG_PASSWORD, null];
+    if (!(await this.checkPassword(userAuth, password))) return [LoginResponseError.WRONG_PASSWORD, null];
 
     return [null, user];
   }

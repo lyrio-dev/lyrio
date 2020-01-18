@@ -49,11 +49,8 @@ export class UpdateProblemStatementRequestDto {
   @ValidateNested({ each: true })
   @If<UpdateProblemRequestUpdatingLocalizedContentDto[]>(
     updatingLocalizedContents =>
-      new Set(
-        updatingLocalizedContents.map(
-          updatingLocalizedContent => updatingLocalizedContent.locale
-        )
-      ).size === updatingLocalizedContents.length,
+      new Set(updatingLocalizedContents.map(updatingLocalizedContent => updatingLocalizedContent.locale)).size ===
+      updatingLocalizedContents.length,
     {
       message: "locale is not unique"
     }

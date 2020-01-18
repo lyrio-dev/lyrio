@@ -9,9 +9,7 @@ export class ConfigService {
   constructor() {
     const filePath: string = process.env["SYZOJ_NG_CONFIG_FILE"];
     if (!filePath) {
-      throw new Error(
-        "Please specify configuration file with environment variable SYZOJ_NG_CONFIG_FILE"
-      );
+      throw new Error("Please specify configuration file with environment variable SYZOJ_NG_CONFIG_FILE");
     }
 
     const config: object = JSON.parse(fs.readFileSync(filePath).toString());
@@ -27,9 +25,7 @@ export class ConfigService {
     });
 
     if (errors.length > 0) {
-      throw new Error(
-        `Config validation error: ${JSON.stringify(errors, null, 2)}`
-      );
+      throw new Error(`Config validation error: ${JSON.stringify(errors, null, 2)}`);
     }
     return appConfig;
   }

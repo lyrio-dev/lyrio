@@ -15,15 +15,12 @@ async function bootstrap() {
   const gitRepoInfo = getGitRepoInfo();
   const appVersion = "v" + packageInfo.version;
   const gitRepoVersion = gitRepoInfo.sha
-    ? ` (Git revision ${gitRepoInfo.sha.substr(8)} on ${moment(
-        gitRepoInfo.committerDate
-      ).format("YYYY-MM-DD H:mm:ss")})`
+    ? ` (Git revision ${gitRepoInfo.sha.substr(8)} on ${moment(gitRepoInfo.committerDate).format(
+        "YYYY-MM-DD H:mm:ss"
+      )})`
     : "";
 
-  Logger.log(
-    `Starting ${packageInfo.name} version ${appVersion}${gitRepoVersion}`,
-    "Bootstrap"
-  );
+  Logger.log(`Starting ${packageInfo.name} version ${appVersion}${gitRepoVersion}`, "Bootstrap");
 
   // Create nestjs app
   const app = await NestFactory.create(AppModule);
@@ -44,10 +41,7 @@ async function bootstrap() {
   SwaggerModule.setup("/docs", app, document);
 
   // Start nestjs app
-  await app.listen(
-    configService.config.server.port,
-    configService.config.server.hostname
-  );
+  await app.listen(configService.config.server.port, configService.config.server.hostname);
   Logger.log(
     `${packageInfo.name} is listening on ${configService.config.server.hostname}:${configService.config.server.port}`,
     "Bootstrap"

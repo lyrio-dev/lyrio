@@ -34,9 +34,7 @@ export class UserController {
   @ApiOperation({
     summary: "Get a user's metadata with its ID or username."
   })
-  async getUserMeta(
-    @Query() request: GetUserMetaRequestDto
-  ): Promise<GetUserMetaResponseDto> {
+  async getUserMeta(@Query() request: GetUserMetaRequestDto): Promise<GetUserMetaResponseDto> {
     let user: UserEntity;
     if (request.userId) {
       user = await this.userService.findUserById(parseInt(request.userId));
@@ -57,9 +55,7 @@ export class UserController {
     };
 
     if (request.getPrivileges) {
-      result.privileges = await this.userPrivilegeService.getUserPrivileges(
-        user.id
-      );
+      result.privileges = await this.userPrivilegeService.getUserPrivileges(user.id);
     }
 
     return result;
@@ -80,10 +76,7 @@ export class UserController {
       };
 
     return {
-      error: await this.userPrivilegeService.setUserPrivileges(
-        request.userId,
-        request.privileges
-      )
+      error: await this.userPrivilegeService.setUserPrivileges(request.userId, request.privileges)
     };
   }
 
@@ -109,11 +102,7 @@ export class UserController {
 
     const isUserSelf = currentUser.id === user.id;
     const isAdmin =
-      user.isAdmin ||
-      (await this.userPrivilegeService.userHasPrivilege(
-        currentUser,
-        UserPrivilegeType.MANAGE_USER
-      ));
+      user.isAdmin || (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER));
 
     if (!(isUserSelf || isAdmin))
       return {
@@ -133,12 +122,8 @@ export class UserController {
     if (request.password) {
       // A non-admin user must give the old password to change its password
       if (!isAdmin) {
-        const userAuth = await this.authService.findUserAuthByUserId(
-          request.userId
-        );
-        if (
-          !(await this.authService.checkPassword(userAuth, request.oldPassword))
-        )
+        const userAuth = await this.authService.findUserAuthByUserId(request.userId);
+        if (!(await this.authService.checkPassword(userAuth, request.oldPassword)))
           return {
             error: UpdateUserProfileResponseError.WRONG_OLD_PASSWORD
           };

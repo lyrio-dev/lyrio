@@ -22,9 +22,7 @@ export class GroupService {
     @InjectRepository(GroupEntity)
     private readonly groupRepository: Repository<GroupEntity>,
     @InjectRepository(GroupMembershipEntity)
-    private readonly groupMembershipRepository: Repository<
-      GroupMembershipEntity
-    >,
+    private readonly groupMembershipRepository: Repository<GroupMembershipEntity>,
     private readonly userService: UserService
   ) {}
 
@@ -36,10 +34,7 @@ export class GroupService {
     return await this.groupRepository.findOne(id);
   }
 
-  async findGroupMembership(
-    userId: number,
-    groupId: number
-  ): Promise<GroupMembershipEntity> {
+  async findGroupMembership(userId: number, groupId: number): Promise<GroupMembershipEntity> {
     return await this.groupMembershipRepository.findOne({
       userId: userId,
       groupId: groupId
@@ -64,27 +59,21 @@ export class GroupService {
     ).map(memberShip => memberShip.groupId);
   }
 
-  async createGroup(
-    ownerId: number,
-    name: string
-  ): Promise<[CreateGroupResponseError, GroupEntity]> {
+  async createGroup(ownerId: number, name: string): Promise<[CreateGroupResponseError, GroupEntity]> {
     try {
       let group: GroupEntity;
-      await this.connection.transaction(
-        "SERIALIZABLE",
-        async transactionalEntityManager => {
-          group = new GroupEntity();
-          group.name = name;
-          group.ownerId = ownerId;
-          await transactionalEntityManager.save(group);
+      await this.connection.transaction("SERIALIZABLE", async transactionalEntityManager => {
+        group = new GroupEntity();
+        group.name = name;
+        group.ownerId = ownerId;
+        await transactionalEntityManager.save(group);
 
-          const groupMembership = new GroupMembershipEntity();
-          groupMembership.userId = ownerId;
-          groupMembership.groupId = group.id;
-          groupMembership.isGroupAdmin = false;
-          await transactionalEntityManager.save(groupMembership);
-        }
-      );
+        const groupMembership = new GroupMembershipEntity();
+        groupMembership.userId = ownerId;
+        groupMembership.groupId = group.id;
+        groupMembership.isGroupAdmin = false;
+        await transactionalEntityManager.save(groupMembership);
+      });
 
       return [null, group];
     } catch (e) {
@@ -95,10 +84,7 @@ export class GroupService {
     }
   }
 
-  async deleteGroup(
-    id: number,
-    force: boolean
-  ): Promise<DeleteGroupResponseError> {
+  async deleteGroup(id: number, force: boolean): Promise<DeleteGroupResponseError> {
     const group = await this.findGroupById(id);
     if (!group) return DeleteGroupResponseError.NO_SUCH_GROUP;
 
@@ -115,12 +101,8 @@ export class GroupService {
     return null;
   }
 
-  async addUserToGroup(
-    userId: number,
-    group: GroupEntity
-  ): Promise<AddUserToGroupResponseError> {
-    if (!(await this.userService.userExists(userId)))
-      return AddUserToGroupResponseError.NO_SUCH_USER;
+  async addUserToGroup(userId: number, group: GroupEntity): Promise<AddUserToGroupResponseError> {
+    if (!(await this.userService.userExists(userId))) return AddUserToGroupResponseError.NO_SUCH_USER;
 
     try {
       const groupMembership = new GroupMembershipEntity();
@@ -144,38 +126,25 @@ export class GroupService {
     return null;
   }
 
-  async removeUserFromGroup(
-    userId: number,
-    group: GroupEntity
-  ): Promise<RemoveUserFromGroupResponseError> {
-    if (!(await this.userService.userExists(userId)))
-      return RemoveUserFromGroupResponseError.NO_SUCH_USER;
+  async removeUserFromGroup(userId: number, group: GroupEntity): Promise<RemoveUserFromGroupResponseError> {
+    if (!(await this.userService.userExists(userId))) return RemoveUserFromGroupResponseError.NO_SUCH_USER;
 
-    if (userId === group.ownerId)
-      return RemoveUserFromGroupResponseError.OWNER_OR_GROUP_ADMIN_CAN_NOT_BE_REMOVED;
+    if (userId === group.ownerId) return RemoveUserFromGroupResponseError.OWNER_OR_GROUP_ADMIN_CAN_NOT_BE_REMOVED;
 
     const groupMembership = await this.findGroupMembership(userId, group.id);
 
-    if (!groupMembership)
-      return RemoveUserFromGroupResponseError.USER_NOT_IN_GROUP;
+    if (!groupMembership) return RemoveUserFromGroupResponseError.USER_NOT_IN_GROUP;
 
-    if (groupMembership.isGroupAdmin)
-      return RemoveUserFromGroupResponseError.OWNER_OR_GROUP_ADMIN_CAN_NOT_BE_REMOVED;
+    if (groupMembership.isGroupAdmin) return RemoveUserFromGroupResponseError.OWNER_OR_GROUP_ADMIN_CAN_NOT_BE_REMOVED;
 
     await this.groupMembershipRepository.delete(groupMembership);
 
     return null;
   }
 
-  async setIsGroupAdmin(
-    userId: number,
-    groupId: number,
-    isGroupAdmin: boolean
-  ): Promise<SetGroupAdminResponseError> {
-    if (!(await this.userService.userExists(userId)))
-      return SetGroupAdminResponseError.NO_SUCH_USER;
-    if (!(await this.groupExists(groupId)))
-      return SetGroupAdminResponseError.NO_SUCH_GROUP;
+  async setIsGroupAdmin(userId: number, groupId: number, isGroupAdmin: boolean): Promise<SetGroupAdminResponseError> {
+    if (!(await this.userService.userExists(userId))) return SetGroupAdminResponseError.NO_SUCH_USER;
+    if (!(await this.groupExists(groupId))) return SetGroupAdminResponseError.NO_SUCH_GROUP;
 
     const groupMembership = await this.groupMembershipRepository.findOne({
       userId: userId,

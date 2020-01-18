@@ -21,13 +21,9 @@ export class PermissionService {
     @InjectConnection()
     private connection: Connection,
     @InjectRepository(PermissionForUserEntity)
-    private readonly permissionForUserRepository: Repository<
-      PermissionForUserEntity
-    >,
+    private readonly permissionForUserRepository: Repository<PermissionForUserEntity>,
     @InjectRepository(PermissionForGroupEntity)
-    private readonly permissionForGroupRepository: Repository<
-      PermissionForGroupEntity
-    >,
+    private readonly permissionForGroupRepository: Repository<PermissionForGroupEntity>,
     private readonly groupService: GroupService
   ) {}
 
@@ -92,8 +88,7 @@ export class PermissionService {
     if (permissionType) match.permissionType = permissionType;
     if (user) match.userId = user.id;
 
-    if (transactionalEntityManager)
-      await transactionalEntityManager.delete(PermissionForUserEntity, match);
+    if (transactionalEntityManager) await transactionalEntityManager.delete(PermissionForUserEntity, match);
     else await this.permissionForUserRepository.delete(match);
   }
 
@@ -110,8 +105,7 @@ export class PermissionService {
     if (permissionType) match.permissionType = permissionType;
     if (group) match.groupId = group.id;
 
-    if (transactionalEntityManager)
-      await transactionalEntityManager.delete(PermissionForGroupEntity, match);
+    if (transactionalEntityManager) await transactionalEntityManager.delete(PermissionForGroupEntity, match);
     else await this.permissionForGroupRepository.delete(match);
   }
 
@@ -206,19 +200,9 @@ export class PermissionService {
     permissionType: PermissionType
   ): Promise<boolean> {
     if (userOrGroup instanceof UserEntity)
-      return await this.userHasPermission(
-        userOrGroup,
-        objectId,
-        objectType,
-        permissionType
-      );
+      return await this.userHasPermission(userOrGroup, objectId, objectType, permissionType);
     else if (userOrGroup instanceof GroupEntity)
-      return await this.groupHasPermission(
-        userOrGroup,
-        objectId,
-        objectType,
-        permissionType
-      );
+      return await this.groupHasPermission(userOrGroup, objectId, objectType, permissionType);
     else throw new Error("userOrGroup is neither a user nor a group");
   }
 
@@ -228,18 +212,11 @@ export class PermissionService {
     objectType: PermissionObjectType,
     permissionType: PermissionType
   ): Promise<boolean> {
-    if (await this.hasPermission(user, objectId, objectType, permissionType))
-      return true;
+    if (await this.hasPermission(user, objectId, objectType, permissionType)) return true;
 
-    const groupIdsWithPermission = await this.getGroupsWithPermission(
-      objectId,
-      objectType,
-      permissionType
-    );
+    const groupIdsWithPermission = await this.getGroupsWithPermission(objectId, objectType, permissionType);
     const groupIdsOfUser = await this.groupService.getGroupIdsByUserId(user.id);
-    return groupIdsOfUser.some(groupId =>
-      groupIdsWithPermission.includes(groupId)
-    );
+    return groupIdsOfUser.some(groupId => groupIdsWithPermission.includes(groupId));
   }
 
   async getUsersWithPermission(
@@ -289,9 +266,7 @@ export class PermissionService {
     groups: GroupEntity[],
     transactionalEntityManager?: EntityManager
   ): Promise<void> {
-    const runInTransaction = async (
-      transactionalEntityManager: EntityManager
-    ) => {
+    const runInTransaction = async (transactionalEntityManager: EntityManager) => {
       await transactionalEntityManager.delete(PermissionForUserEntity, {
         objectId: objectId,
         objectType: objectType,
@@ -305,25 +280,12 @@ export class PermissionService {
       });
 
       for (const user of users)
-        await this.ensurePermissionForUser(
-          user,
-          objectId,
-          objectType,
-          permissionType,
-          transactionalEntityManager
-        );
+        await this.ensurePermissionForUser(user, objectId, objectType, permissionType, transactionalEntityManager);
       for (const group of groups)
-        await this.ensurePermissionForGroup(
-          group,
-          objectId,
-          objectType,
-          permissionType,
-          transactionalEntityManager
-        );
+        await this.ensurePermissionForGroup(group, objectId, objectType, permissionType, transactionalEntityManager);
     };
 
-    if (transactionalEntityManager)
-      runInTransaction(transactionalEntityManager);
+    if (transactionalEntityManager) runInTransaction(transactionalEntityManager);
     else this.connection.transaction(runInTransaction);
   }
 

@@ -25,11 +25,7 @@ import { PermissionModule } from "@/permission/permission.module";
     GroupModule,
     PermissionModule
   ],
-  providers: [
-    ProblemService,
-    ProblemJudgeInfoService,
-    ProblemJudgeInfoTraditionalService
-  ],
+  providers: [ProblemService, ProblemJudgeInfoService, ProblemJudgeInfoTraditionalService],
   controllers: [ProblemController],
   exports: [ProblemService, ProblemJudgeInfoService]
 })

@@ -1,10 +1,4 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  OneToOne,
-  Index
-} from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, OneToOne, Index } from "typeorm";
 
 import { UserAuthEntity } from "@/auth/user-auth.entity";
 

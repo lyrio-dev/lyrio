@@ -6,8 +6,7 @@ import { ProblemJudgeInfoTraditional } from "./problem-judge-info-traditional.in
 export { ProblemJudgeInfoTraditional } from "./problem-judge-info-traditional.interface";
 
 @Injectable()
-export class ProblemJudgeInfoTraditionalService
-  implements ProblemJudgeInfoTypedService<ProblemJudgeInfoTraditional> {
+export class ProblemJudgeInfoTraditionalService implements ProblemJudgeInfoTypedService<ProblemJudgeInfoTraditional> {
   getDefaultJudgeInfo(): ProblemJudgeInfoTraditional {
     return {
       defaultTimeLimit: 1000,

@@ -1,12 +1,4 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Index,
-  ManyToOne,
-  Column,
-  JoinColumn,
-  OneToOne
-} from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Index, ManyToOne, Column, JoinColumn, OneToOne } from "typeorm";
 
 import { UserEntity } from "@/user/user.entity";
 import { ProblemJudgeInfoEntity } from "./problem-judge-info.entity";

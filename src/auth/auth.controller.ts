@@ -33,9 +33,7 @@ export class AuthController {
   @ApiOperation({
     summary: "Get the metadata of the current logged-in user."
   })
-  async getSelfMeta(
-    @CurrentUser() currentUser: UserEntity
-  ): Promise<GetSelfMetaResponseDto> {
+  async getSelfMeta(@CurrentUser() currentUser: UserEntity): Promise<GetSelfMetaResponseDto> {
     const result: GetSelfMetaResponseDto = new GetSelfMetaResponseDto();
     if (currentUser) {
       result.userMeta = {
@@ -58,19 +56,13 @@ export class AuthController {
     summary: "Login with given credentials.",
     description: "Return the logged-in user's metadata and token if success."
   })
-  async login(
-    @CurrentUser() currentUser: UserEntity,
-    @Body() request: LoginRequestDto
-  ): Promise<LoginResponseDto> {
+  async login(@CurrentUser() currentUser: UserEntity, @Body() request: LoginRequestDto): Promise<LoginResponseDto> {
     if (currentUser)
       return {
         error: LoginResponseError.ALREADY_LOGGEDIN
       };
 
-    const [error, user] = await this.authService.login(
-      request.username,
-      request.password
-    );
+    const [error, user] = await this.authService.login(request.username, request.password);
 
     if (error)
       return {
@@ -85,10 +77,7 @@ export class AuthController {
         bio: user.bio,
         isAdmin: user.isAdmin
       },
-      token: jwt.sign(
-        user.id.toString(),
-        this.configService.config.security.sessionSecret
-      )
+      token: jwt.sign(user.id.toString(), this.configService.config.security.sessionSecret)
     };
   }
 
@@ -106,20 +95,14 @@ export class AuthController {
   @ApiOperation({
     summary: "Check is a username or email is available."
   })
-  async checkAvailability(
-    @Query() request: CheckAvailabilityRequestDto
-  ): Promise<CheckAvailabilityResponseDto> {
+  async checkAvailability(@Query() request: CheckAvailabilityRequestDto): Promise<CheckAvailabilityResponseDto> {
     const result: CheckAvailabilityResponseDto = {};
     if (request.username != null) {
-      result.usernameAvailable = await this.userService.checkUsernameAvailability(
-        request.username
-      );
+      result.usernameAvailable = await this.userService.checkUsernameAvailability(request.username);
     }
 
     if (request.email != null) {
-      result.emailAvailable = await this.userService.checkEmailAvailability(
-        request.email
-      );
+      result.emailAvailable = await this.userService.checkEmailAvailability(request.email);
     }
 
     return result;
@@ -140,11 +123,7 @@ export class AuthController {
         error: RegisterResponseError.ALREADY_LOGGEDIN
       };
 
-    const [error, user] = await this.authService.register(
-      request.username,
-      request.email,
-      request.password
-    );
+    const [error, user] = await this.authService.register(request.username, request.email, request.password);
 
     if (error)
       return {
@@ -159,10 +138,7 @@ export class AuthController {
         bio: user.bio,
         isAdmin: user.isAdmin
       },
-      token: jwt.sign(
-        user.id.toString(),
-        this.configService.config.security.sessionSecret
-      )
+      token: jwt.sign(user.id.toString(), this.configService.config.security.sessionSecret)
     };
   }
 }

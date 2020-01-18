@@ -24,10 +24,7 @@ import {
 import { GroupService } from "./group.service";
 import { CurrentUser } from "@/common/user.decorator";
 import { UserEntity } from "@/user/user.entity";
-import {
-  UserPrivilegeService,
-  UserPrivilegeType
-} from "@/user/user-privilege.service";
+import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.service";
 
 @ApiTags("Group")
 @Controller("group")
@@ -43,12 +40,8 @@ export class GroupController {
   @ApiOperation({
     summary: "Get the metadata of a group by its ID."
   })
-  async getGroupMeta(
-    @Query() request: GetGroupMetaRequestDto
-  ): Promise<GetGroupMetaResponseDto> {
-    const group = await this.groupService.findGroupById(
-      parseInt(request.groupId)
-    );
+  async getGroupMeta(@Query() request: GetGroupMetaRequestDto): Promise<GetGroupMetaResponseDto> {
+    const group = await this.groupService.findGroupById(parseInt(request.groupId));
     if (!group)
       return {
         error: GetGroupMetaResponseError.NO_SUCH_GROUP
@@ -75,20 +68,14 @@ export class GroupController {
     if (
       !(
         currentUser &&
-        (await this.userPrivilegeService.userHasPrivilege(
-          currentUser,
-          UserPrivilegeType.MANAGE_USER_GROUP
-        ))
+        (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER_GROUP))
       )
     )
       return {
         error: CreateGroupResponseError.PERMISSION_DENIED
       };
 
-    const [error, group] = await this.groupService.createGroup(
-      currentUser.id,
-      request.groupName
-    );
+    const [error, group] = await this.groupService.createGroup(currentUser.id, request.groupName);
     if (error)
       return {
         error: error
@@ -103,8 +90,7 @@ export class GroupController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: "Delete a group.",
-    description:
-      "To delete a group with user or privilege, use the force option."
+    description: "To delete a group with user or privilege, use the force option."
   })
   async deleteGroup(
     @CurrentUser() currentUser: UserEntity,
@@ -113,20 +99,14 @@ export class GroupController {
     if (
       !(
         currentUser &&
-        (await this.userPrivilegeService.userHasPrivilege(
-          currentUser,
-          UserPrivilegeType.MANAGE_USER_GROUP
-        ))
+        (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER_GROUP))
       )
     )
       return {
         error: DeleteGroupResponseError.PERMISSION_DENIED
       };
 
-    const error = await this.groupService.deleteGroup(
-      request.groupId,
-      request.force
-    );
+    const error = await this.groupService.deleteGroup(request.groupId, request.force);
     if (error)
       return {
         error: error
@@ -158,10 +138,7 @@ export class GroupController {
     if (
       !(
         currentUser.id === group.ownerId ||
-        (await this.userPrivilegeService.userHasPrivilege(
-          currentUser,
-          UserPrivilegeType.MANAGE_USER_GROUP
-        )) ||
+        (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER_GROUP)) ||
         (await this.groupService.isGroupAdmin(currentUser.id, group.id))
       )
     )
@@ -201,10 +178,7 @@ export class GroupController {
     if (
       !(
         currentUser.id === group.ownerId ||
-        (await this.userPrivilegeService.userHasPrivilege(
-          currentUser,
-          UserPrivilegeType.MANAGE_USER_GROUP
-        )) ||
+        (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER_GROUP)) ||
         (await this.groupService.isGroupAdmin(currentUser.id, group.id))
       )
     )
@@ -212,10 +186,7 @@ export class GroupController {
         error: RemoveUserFromGroupResponseError.PERMISSION_DENIED
       };
 
-    const error = await this.groupService.removeUserFromGroup(
-      request.userId,
-      group
-    );
+    const error = await this.groupService.removeUserFromGroup(request.userId, group);
     if (error)
       return {
         error: error
@@ -247,21 +218,14 @@ export class GroupController {
     if (
       !(
         currentUser.id === group.ownerId ||
-        (await this.userPrivilegeService.userHasPrivilege(
-          currentUser,
-          UserPrivilegeType.MANAGE_USER_GROUP
-        ))
+        (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER_GROUP))
       )
     )
       return {
         error: SetGroupAdminResponseError.PERMISSION_DENIED
       };
 
-    const error = await this.groupService.setIsGroupAdmin(
-      request.userId,
-      request.groupId,
-      request.isGroupAdmin
-    );
+    const error = await this.groupService.setIsGroupAdmin(request.userId, request.groupId, request.isGroupAdmin);
     if (error)
       return {
         error: error

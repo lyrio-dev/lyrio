@@ -65,10 +65,7 @@ export class UserService {
       if (password == null) await this.userRepository.save(user);
       else
         await this.connection.transaction(async transactionalEntityManager => {
-          await this.authService.changePassword(
-            await this.authService.findUserAuthByUserId(user.id),
-            password
-          );
+          await this.authService.changePassword(await this.authService.findUserAuthByUserId(user.id), password);
           await transactionalEntityManager.save(user);
         });
     } catch (e) {

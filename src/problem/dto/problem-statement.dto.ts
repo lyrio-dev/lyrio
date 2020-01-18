@@ -1,13 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import {
-  IsString,
-  Length,
-  ValidateNested,
-  IsEnum,
-  ArrayNotEmpty,
-  IsArray,
-  ArrayMaxSize
-} from "class-validator";
+import { IsString, Length, ValidateNested, IsEnum, ArrayNotEmpty, IsArray, ArrayMaxSize } from "class-validator";
 
 import { Locale } from "@/common/locale.type";
 import { If } from "@/common/validators";
@@ -37,9 +29,7 @@ export class ProblemStatementDto {
   @ValidateNested({ each: true })
   @If<ProblemLocalizedContentDto[]>(
     localizedContents =>
-      new Set(
-        localizedContents.map(localizedContent => localizedContent.locale)
-      ).size === localizedContents.length,
+      new Set(localizedContents.map(localizedContent => localizedContent.locale)).size === localizedContents.length,
     {
       message: "locale is not unique"
     }

@@ -11,9 +11,7 @@ const getXdomainProxyHtml = whiteList =>
   <title>xdomain proxy page</title>
   <script src="xdomain.min.js"></script>
   <script>
-    xdomain.masters(${serialize(
-      (Object as any).fromEntries(whiteList.map(origin => [origin, "*"]))
-    )});
+    xdomain.masters(${serialize((Object as any).fromEntries(whiteList.map(origin => [origin, "*"])))});
   </script>
 </head>`;
 
@@ -32,9 +30,7 @@ export class CorsController {
       return "Requested cors proxy page, but cross origin is NOT enabled";
     }
 
-    return getXdomainProxyHtml(
-      this.configService.config.security.crossOrigin.whiteList
-    );
+    return getXdomainProxyHtml(this.configService.config.security.crossOrigin.whiteList);
   }
 
   @Get("xdomain.min.js")
@@ -48,8 +44,6 @@ export class CorsController {
       return "console.error('Requested cors/xdomain.min.js, but cross origin is NOT enabled');";
     }
 
-    return (
-      await fs.readFile(require.resolve("xdomain/dist/xdomain.min"))
-    ).toString("utf-8");
+    return (await fs.readFile(require.resolve("xdomain/dist/xdomain.min"))).toString("utf-8");
   }
 }

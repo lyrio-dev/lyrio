@@ -1,12 +1,4 @@
-import {
-  ValidateNested,
-  IsIP,
-  IsString,
-  IsIn,
-  IsBoolean,
-  IsInt,
-  Min
-} from "class-validator";
+import { ValidateNested, IsIP, IsString, IsIn, IsBoolean, IsInt, Min } from "class-validator";
 import { Type } from "class-transformer";
 import { IsPortNumber } from "@/common/validators";
 
