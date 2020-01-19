@@ -391,22 +391,20 @@ export class ProblemService {
     });
   }
 
-  async removeProblemFile(problem: ProblemEntity, type: ProblemFileType, filename: string): Promise<boolean> {
-    return await this.connection.transaction("SERIALIZABLE", async transactionalEntityManager => {
-      const problemFile = await transactionalEntityManager.findOne(ProblemFileEntity, {
-        problemId: problem.id,
-        type: type,
-        filename: filename
-      });
+  async removeProblemFiles(problem: ProblemEntity, type: ProblemFileType, filenames: string[]): Promise<void> {
+    await this.connection.transaction("SERIALIZABLE", async transactionalEntityManager => {
+      for (const filename of filenames) {
+        const problemFile = await transactionalEntityManager.findOne(ProblemFileEntity, {
+          problemId: problem.id,
+          type: type,
+          filename: filename
+        });
 
-      if (!problemFile) {
-        return false;
+        if (!problemFile) continue;
+
+        await transactionalEntityManager.remove(ProblemFileEntity, problemFile);
+        await this.fileService.dereferenceFile(problemFile.uuid, transactionalEntityManager);
       }
-
-      await transactionalEntityManager.remove(ProblemFileEntity, problemFile);
-      await this.fileService.dereferenceFile(problemFile.uuid, transactionalEntityManager);
-
-      return true;
     });
   }
 

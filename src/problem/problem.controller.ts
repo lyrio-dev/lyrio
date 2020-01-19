@@ -42,9 +42,9 @@ import {
   AddProblemFileRequestDto,
   AddProblemFileResponseDto,
   AddProblemFileResponseError,
-  RemoveProblemFileRequestDto,
-  RemoveProblemFileResponseDto,
-  RemoveProblemFileResponseError,
+  RemoveProblemFilesRequestDto,
+  RemoveProblemFilesResponseDto,
+  RemoveProblemFilesResponseError,
   ListProblemFilesRequestDto,
   ListProblemFilesResponseDto,
   ListProblemFilesResponseError,
@@ -425,30 +425,27 @@ export class ProblemController {
     return {};
   }
 
-  @Post("removeProblemFile")
+  @Post("removeProblemFiles")
   @ApiBearerAuth()
   @ApiOperation({
-    summary: "Remove a file from a problem's testdata or additional files."
+    summary: "Remove files from a problem's testdata or additional files."
   })
-  async removeProblemFile(
+  async removeProblemFiles(
     @CurrentUser() currentUser: UserEntity,
-    @Body() request: RemoveProblemFileRequestDto
-  ): Promise<RemoveProblemFileResponseDto> {
+    @Body() request: RemoveProblemFilesRequestDto
+  ): Promise<RemoveProblemFilesResponseDto> {
     const problem = await this.problemService.findProblemByDisplayId(request.problemId);
     if (!problem)
       return {
-        error: RemoveProblemFileResponseError.NO_SUCH_PROBLEM
+        error: RemoveProblemFilesResponseError.NO_SUCH_PROBLEM
       };
 
     if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.WRITE, problem)))
       return {
-        error: RemoveProblemFileResponseError.PERMISSION_DENIED
+        error: RemoveProblemFilesResponseError.PERMISSION_DENIED
       };
 
-    if (!(await this.problemService.removeProblemFile(problem, request.type, request.filename)))
-      return {
-        error: RemoveProblemFileResponseError.NO_SUCH_FILE
-      };
+    await this.problemService.removeProblemFiles(problem, request.type, request.filenames);
 
     return {};
   }
