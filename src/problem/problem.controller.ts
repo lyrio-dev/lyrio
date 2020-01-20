@@ -50,7 +50,10 @@ import {
   ListProblemFilesResponseError,
   DownloadProblemFilesRequestDto,
   DownloadProblemFilesResponseDto,
-  DownloadProblemFilesResponseError
+  DownloadProblemFilesResponseError,
+  GetProblemAllFilesAndJudgeInfoRequestDto,
+  GetProblemAllFilesAndJudgeInfoResponseDto,
+  GetProblemAllFilesAndJudgeInfoResponseError
 } from "./dto";
 
 @ApiTags("Problem")
@@ -89,7 +92,15 @@ export class ProblemController {
       const titleLocale = problem.locales.includes(request.locale) ? request.locale : problem.locales[0];
       const title = await this.problemService.getProblemLocalizedTitle(problem, titleLocale);
       response.result.push({
-        meta: problem,
+        meta: {
+          id: problem.id,
+          displayId: problem.displayId,
+          type: problem.type,
+          isPublic: problem.isPublic,
+          ownerId: problem.ownerId,
+          locales: problem.locales
+        },
+
         title: title,
         titleLocale: titleLocale
       });
@@ -512,6 +523,49 @@ export class ProblemController {
           downloadUrl: await this.fileService.getDownloadLink(problemFile.uuid)
         }))
       )
+    };
+  }
+
+  @Get("getProblemAllFilesAndJudgeInfo")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "get a problem's testdata, additional files and judge info by its ID or display ID."
+  })
+  async getProblemAllFilesAndJudgeInfo(
+    @CurrentUser() currentUser: UserEntity,
+    @Query() request: GetProblemAllFilesAndJudgeInfoRequestDto
+  ): Promise<GetProblemAllFilesAndJudgeInfoResponseDto> {
+    let problem: ProblemEntity;
+    if (request.id) problem = await this.problemService.findProblemById(parseInt(request.id));
+    else if (request.displayId) problem = await this.problemService.findProblemByDisplayId(parseInt(request.displayId));
+
+    if (!problem)
+      return {
+        error: GetProblemAllFilesAndJudgeInfoResponseError.NO_SUCH_PROBLEM
+      };
+
+    if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.READ, problem)))
+      return {
+        error: GetProblemAllFilesAndJudgeInfoResponseError.PERMISSION_DENIED
+      };
+
+    const testdata = await this.problemService.listProblemFiles(problem, ProblemFileType.TestData);
+    const additionalFiles = await this.problemService.listProblemFiles(problem, ProblemFileType.AdditionalFile);
+    const judgeInfo = await this.problemService.getProblemJudgeInfo(problem);
+
+    return {
+      meta: {
+        id: problem.id,
+        displayId: problem.displayId,
+        type: problem.type,
+        isPublic: problem.isPublic,
+        ownerId: problem.ownerId,
+        locales: problem.locales
+      },
+
+      testdata: testdata,
+      additionalFiles: additionalFiles,
+      judgeInfo: judgeInfo
     };
   }
 }
