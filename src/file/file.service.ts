@@ -13,6 +13,20 @@ import { FileDeleteEntity } from "./file-delete.entity";
 import FileCompressionType from "./file-compression-type.enum";
 import { Stream } from "stream";
 
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent
+function encodeRFC5987ValueChars(str: string) {
+  return (
+    encodeURIComponent(str)
+      // Note that although RFC3986 reserves "!", RFC5987 does not,
+      // so we do not need to escape it
+      .replace(/['()]/g, escape) // i.e., %27 %28 %29
+      .replace(/\*/g, "%2A")
+      // The following are not required for percent-encoding per RFC5987,
+      // so we can allow for a little better readability over the wire: |`^
+      .replace(/%(?:7C|60|5E)/g, unescape)
+  );
+}
+
 // 10 minutes upload expire time
 const FILE_UPLOAD_EXPIRE_TIME = 60 * 10;
 // 1 hour downlaod expire time
@@ -154,11 +168,14 @@ export class FileService {
     });
   }
 
-  async getDownloadLink(uuid: string): Promise<string> {
+  async getDownloadLink(uuid: string, filename: string): Promise<string> {
     return await this.minioClient.presignedGetObject(
       this.configService.config.fileStorage.bucket,
       uuid,
-      FILE_DOWNLOAD_EXPIRE_TIME
+      FILE_DOWNLOAD_EXPIRE_TIME,
+      {
+        "response-content-disposition": "attachment; filename*=UTF-8''" + encodeRFC5987ValueChars(filename)
+      }
     );
   }
 }

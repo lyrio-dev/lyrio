@@ -520,7 +520,7 @@ export class ProblemController {
       downloadInfo: await Promise.all(
         downloadList.map(async problemFile => ({
           filename: problemFile.filename,
-          downloadUrl: await this.fileService.getDownloadLink(problemFile.uuid)
+          downloadUrl: await this.fileService.getDownloadLink(problemFile.uuid, problemFile.filename)
         }))
       )
     };
