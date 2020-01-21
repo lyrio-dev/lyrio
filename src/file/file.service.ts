@@ -168,6 +168,19 @@ export class FileService {
     });
   }
 
+  async getFileSizes(uuids: string[]): Promise<number[]> {
+    return Promise.all(
+      uuids.map(
+        async uuid =>
+          (
+            await this.fileRepository.findOne({
+              uuid: uuid
+            })
+          ).size
+      )
+    );
+  }
+
   async getDownloadLink(uuid: string, filename: string): Promise<string> {
     return await this.minioClient.presignedGetObject(
       this.configService.config.fileStorage.bucket,
