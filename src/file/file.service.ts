@@ -187,7 +187,7 @@ export class FileService {
       uuid,
       FILE_DOWNLOAD_EXPIRE_TIME,
       {
-        "response-content-disposition": "attachment; filename*=UTF-8''" + encodeRFC5987ValueChars(filename)
+        "response-content-disposition": "attachment; filename=\"" + encodeRFC5987ValueChars(filename) + "\""
       }
     );
   }
