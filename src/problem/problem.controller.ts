@@ -53,7 +53,10 @@ import {
   DownloadProblemFilesResponseError,
   GetProblemAllFilesAndJudgeInfoRequestDto,
   GetProblemAllFilesAndJudgeInfoResponseDto,
-  GetProblemAllFilesAndJudgeInfoResponseError
+  GetProblemAllFilesAndJudgeInfoResponseError,
+  RenameProblemFileRequestDto,
+  RenameProblemFileResponseDto,
+  RenameProblemFileResponseError
 } from "./dto";
 
 @ApiTags("Problem")
@@ -566,5 +569,33 @@ export class ProblemController {
       additionalFiles: additionalFiles,
       judgeInfo: judgeInfo
     };
+  }
+
+  @Post("renameProblemFile")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Rename a file of a problem's testdata or additional files."
+  })
+  async renameProblemFile(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: RenameProblemFileRequestDto
+  ): Promise<RenameProblemFileResponseDto> {
+    const problem = await this.problemService.findProblemByDisplayId(request.problemId);
+    if (!problem)
+      return {
+        error: RenameProblemFileResponseError.NO_SUCH_PROBLEM
+      };
+
+    if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.WRITE, problem)))
+      return {
+        error: RenameProblemFileResponseError.PERMISSION_DENIED
+      };
+
+    if (!(await this.problemService.renameProblemFile(problem, request.type, request.filename, request.newFilename)))
+      return {
+        error: RenameProblemFileResponseError.NO_SUCH_FILE
+      };
+
+    return {};
   }
 }

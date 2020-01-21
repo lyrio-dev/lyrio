@@ -433,4 +433,26 @@ export class ProblemService {
 
     return problemFiles;
   }
+
+  async renameProblemFile(
+    problem: ProblemEntity,
+    type: ProblemFileType,
+    filename: string,
+    newFilename: string
+  ): Promise<boolean> {
+    const problemFile = await this.problemFileRepository.findOne({
+      problemId: problem.id,
+      type: type,
+      filename: filename
+    });
+
+    if (!problemFile) return false;
+
+    // Since filename is a PRIMARY key, use .save() will create another record
+    await this.problemFileRepository.update(problemFile, {
+      filename: newFilename
+    });
+
+    return true;
+  }
 }
