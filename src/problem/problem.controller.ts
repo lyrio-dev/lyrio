@@ -239,7 +239,7 @@ export class ProblemController {
     const samples = await this.problemService.getProblemSamples(problem);
     const judgeInfo = await this.problemService.getProblemJudgeInfo(problem);
     const permission = await this.problemService.getUserPermission(currentUser, problem);
-    const additionalFiles = await this.problemService.listProblemFiles(problem, ProblemFileType.AdditionalFile);
+    const additionalFiles = await this.problemService.listProblemFiles(problem, ProblemFileType.AdditionalFile, true);
 
     return {
       meta: {
@@ -481,7 +481,7 @@ export class ProblemController {
         error: ListProblemFilesResponseError.PERMISSION_DENIED
       };
 
-    const problemFiles = await this.problemService.listProblemFiles(problem, request.type);
+    const problemFiles = await this.problemService.listProblemFiles(problem, request.type, true);
 
     return {
       problemFiles: problemFiles.map(problemFile => ({
@@ -549,8 +549,8 @@ export class ProblemController {
         error: GetProblemAllFilesAndJudgeInfoResponseError.PERMISSION_DENIED
       };
 
-    const testdata = await this.problemService.listProblemFiles(problem, ProblemFileType.TestData);
-    const additionalFiles = await this.problemService.listProblemFiles(problem, ProblemFileType.AdditionalFile);
+    const testdata = await this.problemService.listProblemFiles(problem, ProblemFileType.TestData, true);
+    const additionalFiles = await this.problemService.listProblemFiles(problem, ProblemFileType.AdditionalFile, true);
     const judgeInfo = await this.problemService.getProblemJudgeInfo(problem);
 
     return {
@@ -562,7 +562,6 @@ export class ProblemController {
         ownerId: problem.ownerId,
         locales: problem.locales
       },
-
       testdata: testdata,
       additionalFiles: additionalFiles,
       judgeInfo: judgeInfo

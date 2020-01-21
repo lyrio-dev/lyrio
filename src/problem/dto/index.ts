@@ -1,4 +1,8 @@
+export * from "./problem-meta.dto";
+export * from "./problem-content-section.dto";
+export * from "./problem-sample-data-member.dto";
 export * from "./problem-statement.dto";
+export * from "./problem-file.dto";
 
 export * from "./query-problem-set-request.dto";
 export * from "./query-problem-set-response.dto";

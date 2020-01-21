@@ -10,7 +10,12 @@ import { ProblemJudgeInfoEntity } from "./problem-judge-info.entity";
 import { ProblemSampleEntity } from "./problem-sample.entity";
 import { ProblemFileType, ProblemFileEntity } from "./problem-file.entity";
 import { ProblemJudgeInfoService } from "./problem-judge-info.service";
-import { ProblemStatementDto, UpdateProblemStatementRequestDto, ProblemLocalizedContentDto } from "./dto";
+import {
+  ProblemStatementDto,
+  UpdateProblemStatementRequestDto,
+  ProblemLocalizedContentDto,
+  ProblemFileDto
+} from "./dto";
 import { LocalizedContentType } from "@/localized-content/localized-content.entity";
 import { Locale } from "@/common/locale.type";
 import { ProblemContentSection } from "./problem-content.interface";
@@ -408,10 +413,24 @@ export class ProblemService {
     });
   }
 
-  async listProblemFiles(problem: ProblemEntity, type: ProblemFileType): Promise<ProblemFileEntity[]> {
-    return await this.problemFileRepository.find({
+  async listProblemFiles(
+    problem: ProblemEntity,
+    type: ProblemFileType,
+    withSize: boolean = false
+  ): Promise<ProblemFileDto[]> {
+    const problemFiles: ProblemFileDto[] = await this.problemFileRepository.find({
       problemId: problem.id,
       type: type
     });
+
+    if (withSize) {
+      const fileSizes = await this.fileService.getFileSizes(problemFiles.map(problemFile => problemFile.uuid));
+      return problemFiles.map((problemFile, i) => ({
+        ...problemFile,
+        size: fileSizes[i]
+      }));
+    }
+
+    return problemFiles;
   }
 }
