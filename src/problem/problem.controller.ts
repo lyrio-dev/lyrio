@@ -51,9 +51,9 @@ import {
   DownloadProblemFilesRequestDto,
   DownloadProblemFilesResponseDto,
   DownloadProblemFilesResponseError,
-  GetProblemAllFilesAndJudgeInfoRequestDto,
-  GetProblemAllFilesAndJudgeInfoResponseDto,
-  GetProblemAllFilesAndJudgeInfoResponseError,
+  GetProblemAllFilesAndPermissionRequestDto,
+  GetProblemAllFilesAndPermissionResponseDto,
+  GetProblemAllFilesAndPermissionResponseError,
   RenameProblemFileRequestDto,
   RenameProblemFileResponseDto,
   RenameProblemFileResponseError
@@ -529,32 +529,32 @@ export class ProblemController {
     };
   }
 
-  @Get("getProblemAllFilesAndJudgeInfo")
+  @Get("getProblemAllFilesAndPermission")
   @ApiBearerAuth()
   @ApiOperation({
     summary: "get a problem's testdata, additional files and judge info by its ID or display ID."
   })
-  async getProblemAllFilesAndJudgeInfo(
+  async getProblemAllFilesAndPermission(
     @CurrentUser() currentUser: UserEntity,
-    @Query() request: GetProblemAllFilesAndJudgeInfoRequestDto
-  ): Promise<GetProblemAllFilesAndJudgeInfoResponseDto> {
+    @Query() request: GetProblemAllFilesAndPermissionRequestDto
+  ): Promise<GetProblemAllFilesAndPermissionResponseDto> {
     let problem: ProblemEntity;
     if (request.id) problem = await this.problemService.findProblemById(parseInt(request.id));
     else if (request.displayId) problem = await this.problemService.findProblemByDisplayId(parseInt(request.displayId));
 
     if (!problem)
       return {
-        error: GetProblemAllFilesAndJudgeInfoResponseError.NO_SUCH_PROBLEM
+        error: GetProblemAllFilesAndPermissionResponseError.NO_SUCH_PROBLEM
       };
 
     if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.READ, problem)))
       return {
-        error: GetProblemAllFilesAndJudgeInfoResponseError.PERMISSION_DENIED
+        error: GetProblemAllFilesAndPermissionResponseError.PERMISSION_DENIED
       };
 
     const testdata = await this.problemService.listProblemFiles(problem, ProblemFileType.TestData, true);
     const additionalFiles = await this.problemService.listProblemFiles(problem, ProblemFileType.AdditionalFile, true);
-    const judgeInfo = await this.problemService.getProblemJudgeInfo(problem);
+    const permission = await this.problemService.getUserPermission(currentUser, problem);
 
     return {
       meta: {
@@ -567,7 +567,7 @@ export class ProblemController {
       },
       testdata: testdata,
       additionalFiles: additionalFiles,
-      judgeInfo: judgeInfo
+      permission: permission
     };
   }
 

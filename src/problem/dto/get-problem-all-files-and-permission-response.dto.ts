@@ -2,16 +2,16 @@ import { ApiProperty } from "@nestjs/swagger";
 
 import { ProblemFileDto } from "./problem-file.dto";
 import { ProblemMetaDto } from "./problem-meta.dto";
-import { ProblemJudgeInfo } from "../judge-info/problem-judge-info.interface";
+import { ProblemPermissionType } from "../problem.service";
 
-export enum GetProblemAllFilesAndJudgeInfoResponseError {
+export enum GetProblemAllFilesAndPermissionResponseError {
   NO_SUCH_PROBLEM = "NO_SUCH_PROBLEM",
   PERMISSION_DENIED = "PERMISSION_DENIED"
 }
 
-export class GetProblemAllFilesAndJudgeInfoResponseDto {
+export class GetProblemAllFilesAndPermissionResponseDto {
   @ApiProperty()
-  error?: GetProblemAllFilesAndJudgeInfoResponseError;
+  error?: GetProblemAllFilesAndPermissionResponseError;
 
   @ApiProperty()
   meta?: ProblemMetaDto;
@@ -23,5 +23,5 @@ export class GetProblemAllFilesAndJudgeInfoResponseDto {
   additionalFiles?: ProblemFileDto[];
 
   @ApiProperty()
-  judgeInfo?: ProblemJudgeInfo;
+  permission?: Record<ProblemPermissionType, boolean>;
 }

@@ -43,8 +43,8 @@ export * from "./list-problem-files-response.dto";
 export * from "./download-problem-files-request.dto";
 export * from "./download-problem-files-response.dto";
 
-export * from "./get-problem-all-files-and-judge-info-request.dto";
-export * from "./get-problem-all-files-and-judge-info-response.dto";
+export * from "./get-problem-all-files-and-permission-request.dto";
+export * from "./get-problem-all-files-and-permission-response.dto";
 
 export * from "./rename-problem-file-request.dto";
 export * from "./rename-problem-file-response.dto";
