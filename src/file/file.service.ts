@@ -146,7 +146,9 @@ export class FileService {
       // Check if another user has uploaded a file with the same hash
       if ((await this.fileRepository.count({ sha256: sha256 })) != 0) {
         // Delete the uploading file and use that one
-        await this.minioClient.removeObject(this.configService.config.fileStorage.bucket, uuid);
+        const fileDelete = new FileDeleteEntity();
+        fileDelete.uuid = uuid;
+        await transactionalEntityManager.save(FileDeleteEntity, fileDelete);
         await transactionalEntityManager.remove(FileUploadEntity, fileUpload);
 
         const file = await this.fileRepository.findOne({ sha256: sha256 });
