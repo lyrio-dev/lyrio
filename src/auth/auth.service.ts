@@ -34,7 +34,7 @@ export class AuthService {
     // inserting will still fail if another with same username is inserted after we check
     try {
       let user: UserEntity;
-      await this.connection.transaction("SERIALIZABLE", async transactionalEntityManager => {
+      await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
         user = new UserEntity();
         user.username = username;
         user.email = email;

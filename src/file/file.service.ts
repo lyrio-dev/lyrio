@@ -107,7 +107,7 @@ export class FileService {
   async finishUpload(
     uuid: string
   ): Promise<["INVALID_OPERATION" | "NOT_UPLOADED" | "IO_ERROR" | "CHECKSUM_MISMATCH", string]> {
-    return await this.connection.transaction("SERIALIZABLE", async transactionalEntityManager => {
+    return await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
       const fileUpload = await transactionalEntityManager.findOne(FileUploadEntity, { uuid: uuid });
       if (!fileUpload) return ["INVALID_OPERATION", null];
 

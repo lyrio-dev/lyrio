@@ -176,7 +176,7 @@ export class ProblemService {
 
   async createProblem(owner: UserEntity, type: ProblemType, statement: ProblemStatementDto): Promise<ProblemEntity> {
     let problem: ProblemEntity;
-    await this.connection.transaction("SERIALIZABLE", async transactionalEntityManager => {
+    await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
       problem = new ProblemEntity();
       problem.displayId = null;
       problem.type = type;
@@ -368,7 +368,7 @@ export class ProblemService {
     type: ProblemFileType,
     filename: string
   ): Promise<boolean> {
-    return await this.connection.transaction("SERIALIZABLE", async transactionalEntityManager => {
+    return await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
       const uuid = await this.fileService.tryReferenceFile(sha256, transactionalEntityManager);
       if (!uuid) {
         return false;
@@ -397,7 +397,7 @@ export class ProblemService {
   }
 
   async removeProblemFiles(problem: ProblemEntity, type: ProblemFileType, filenames: string[]): Promise<void> {
-    await this.connection.transaction("SERIALIZABLE", async transactionalEntityManager => {
+    await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
       for (const filename of filenames) {
         const problemFile = await transactionalEntityManager.findOne(ProblemFileEntity, {
           problemId: problem.id,

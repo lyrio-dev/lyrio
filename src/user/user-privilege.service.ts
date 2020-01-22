@@ -41,7 +41,7 @@ export class UserPrivilegeService {
   ): Promise<SetUserPrivilegesResponseError> {
     if (!(await this.userService.userExists(userId))) return SetUserPrivilegesResponseError.NO_SUCH_USER;
 
-    await this.connection.transaction("SERIALIZABLE", async transactionalEntityManager => {
+    await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
       await transactionalEntityManager.delete(UserPrivilegeEntity, {
         userId: userId
       });

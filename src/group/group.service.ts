@@ -62,7 +62,7 @@ export class GroupService {
   async createGroup(ownerId: number, name: string): Promise<[CreateGroupResponseError, GroupEntity]> {
     try {
       let group: GroupEntity;
-      await this.connection.transaction("SERIALIZABLE", async transactionalEntityManager => {
+      await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
         group = new GroupEntity();
         group.name = name;
         group.ownerId = ownerId;
