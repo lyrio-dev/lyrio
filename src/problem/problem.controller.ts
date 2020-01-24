@@ -416,7 +416,7 @@ export class ProblemController {
     @CurrentUser() currentUser: UserEntity,
     @Body() request: AddProblemFileRequestDto
   ): Promise<AddProblemFileResponseDto> {
-    const problem = await this.problemService.findProblemByDisplayId(request.problemId);
+    const problem = await this.problemService.findProblemById(request.problemId);
     if (!problem)
       return {
         error: AddProblemFileResponseError.NO_SUCH_PROBLEM
@@ -448,7 +448,7 @@ export class ProblemController {
     @CurrentUser() currentUser: UserEntity,
     @Body() request: RemoveProblemFilesRequestDto
   ): Promise<RemoveProblemFilesResponseDto> {
-    const problem = await this.problemService.findProblemByDisplayId(request.problemId);
+    const problem = await this.problemService.findProblemById(request.problemId);
     if (!problem)
       return {
         error: RemoveProblemFilesResponseError.NO_SUCH_PROBLEM
@@ -473,7 +473,7 @@ export class ProblemController {
     @CurrentUser() currentUser: UserEntity,
     @Body() request: ListProblemFilesRequestDto
   ): Promise<ListProblemFilesResponseDto> {
-    const problem = await this.problemService.findProblemByDisplayId(request.problemId);
+    const problem = await this.problemService.findProblemById(request.problemId);
     if (!problem)
       return {
         error: ListProblemFilesResponseError.NO_SUCH_PROBLEM
@@ -503,7 +503,7 @@ export class ProblemController {
     @CurrentUser() currentUser: UserEntity,
     @Body() request: DownloadProblemFilesRequestDto
   ): Promise<DownloadProblemFilesResponseDto> {
-    const problem = await this.problemService.findProblemByDisplayId(request.problemId);
+    const problem = await this.problemService.findProblemById(request.problemId);
     if (!problem)
       return {
         error: DownloadProblemFilesResponseError.NO_SUCH_PROBLEM
@@ -580,7 +580,7 @@ export class ProblemController {
     @CurrentUser() currentUser: UserEntity,
     @Body() request: RenameProblemFileRequestDto
   ): Promise<RenameProblemFileResponseDto> {
-    const problem = await this.problemService.findProblemByDisplayId(request.problemId);
+    const problem = await this.problemService.findProblemById(request.problemId);
     if (!problem)
       return {
         error: RenameProblemFileResponseError.NO_SUCH_PROBLEM
