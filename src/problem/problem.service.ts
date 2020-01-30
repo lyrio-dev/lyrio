@@ -217,9 +217,9 @@ export class ProblemService {
   }
 
   async updateProblemStatement(problem: ProblemEntity, request: UpdateProblemStatementRequestDto): Promise<boolean> {
-    await this.connection.transaction(async transactionalEntityManager => {
+    await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
       if (request.samples != null) {
-        const problemSample = await this.problemSampleRepository.findOne({
+        const problemSample = await transactionalEntityManager.findOne(ProblemSampleEntity, {
           problemId: problem.id
         });
         problemSample.data = request.samples;

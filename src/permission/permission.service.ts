@@ -286,7 +286,7 @@ export class PermissionService {
     };
 
     if (transactionalEntityManager) runInTransaction(transactionalEntityManager);
-    else this.connection.transaction(runInTransaction);
+    else this.connection.transaction("READ COMMITTED", runInTransaction);
   }
 
   async userHasAnyPermission(user: UserEntity): Promise<boolean> {
