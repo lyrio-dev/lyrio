@@ -9,11 +9,10 @@ export { ProblemJudgeInfoTraditional } from "./problem-judge-info-traditional.in
 export class ProblemJudgeInfoTraditionalService implements ProblemJudgeInfoTypedService<ProblemJudgeInfoTraditional> {
   getDefaultJudgeInfo(): ProblemJudgeInfoTraditional {
     return {
-      defaultTimeLimit: 1000,
-      defaultMemoryLimit: 512,
+      timeLimit: 1000,
+      memoryLimit: 512,
       runSamples: true,
-      fileIo: null,
-      testdata: null
+      subtasks: []
     };
   }
 }
