@@ -56,7 +56,13 @@ import {
   GetProblemAllFilesAndPermissionResponseError,
   RenameProblemFileRequestDto,
   RenameProblemFileResponseDto,
-  RenameProblemFileResponseError
+  RenameProblemFileResponseError,
+  GetProblemJudgeInfoAndPermissionRequestDto,
+  GetProblemJudgeInfoAndPermissionResponseDto,
+  GetProblemJudgeInfoAndPermissionResponseError,
+  UpdateProblemJudgeInfoRequestDto,
+  UpdateProblemJudgeInfoResponseDto,
+  UpdateProblemJudgeInfoResponseError
 } from "./dto";
 
 @ApiTags("Problem")
@@ -489,7 +495,8 @@ export class ProblemController {
     return {
       problemFiles: problemFiles.map(problemFile => ({
         uuid: problemFile.uuid,
-        filename: problemFile.filename
+        filename: problemFile.filename,
+        size: problemFile.size
       }))
     };
   }
@@ -532,7 +539,7 @@ export class ProblemController {
   @Get("getProblemAllFilesAndPermission")
   @ApiBearerAuth()
   @ApiOperation({
-    summary: "get a problem's testdata, additional files and judge info by its ID or display ID."
+    summary: "Get a problem's testdata, additional files and permission of current user by its ID or display ID."
   })
   async getProblemAllFilesAndPermission(
     @CurrentUser() currentUser: UserEntity,
@@ -595,6 +602,71 @@ export class ProblemController {
       return {
         error: RenameProblemFileResponseError.NO_SUCH_FILE
       };
+
+    return {};
+  }
+
+  @Get("getProblemJudgeInfoAndPermission")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Get a problem's judge info and permission of current user by its ID or display ID."
+  })
+  async getProblemJudgeInfoAndPermission(
+    @CurrentUser() currentUser: UserEntity,
+    @Query() request: GetProblemJudgeInfoAndPermissionRequestDto
+  ): Promise<GetProblemJudgeInfoAndPermissionResponseDto> {
+    let problem: ProblemEntity;
+    if (request.id) problem = await this.problemService.findProblemById(parseInt(request.id));
+    else if (request.displayId) problem = await this.problemService.findProblemByDisplayId(parseInt(request.displayId));
+
+    if (!problem)
+      return {
+        error: GetProblemJudgeInfoAndPermissionResponseError.NO_SUCH_PROBLEM
+      };
+
+    if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.READ, problem)))
+      return {
+        error: GetProblemJudgeInfoAndPermissionResponseError.PERMISSION_DENIED
+      };
+
+    const judgeInfo = await this.problemService.getProblemJudgeInfo(problem);
+    const permission = await this.problemService.getUserPermission(currentUser, problem);
+
+    return {
+      meta: {
+        id: problem.id,
+        displayId: problem.displayId,
+        type: problem.type,
+        isPublic: problem.isPublic,
+        ownerId: problem.ownerId,
+        locales: problem.locales
+      },
+      judgeInfo: judgeInfo,
+      permission: permission
+    };
+  }
+
+  @Post("updateProblemJudgeInfo")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Update a problem's judge info."
+  })
+  async updateProblemJudgeInfo(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: UpdateProblemJudgeInfoRequestDto
+  ): Promise<UpdateProblemJudgeInfoResponseDto> {
+    const problem = await this.problemService.findProblemById(request.problemId);
+    if (!problem)
+      return {
+        error: UpdateProblemJudgeInfoResponseError.NO_SUCH_PROBLEM
+      };
+
+    if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.WRITE, problem)))
+      return {
+        error: UpdateProblemJudgeInfoResponseError.PERMISSION_DENIED
+      };
+
+    await this.problemService.updateProblemJudgeInfo(problem, request.judgeInfo);
 
     return {};
   }

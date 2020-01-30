@@ -270,6 +270,15 @@ export class ProblemService {
     return true;
   }
 
+  async updateProblemJudgeInfo(problem: ProblemEntity, judgeInfo: ProblemJudgeInfo): Promise<void> {
+    const problemJudgeInfo = await this.problemJudgeInfoRepository.findOne({
+      problemId: problem.id
+    });
+
+    problemJudgeInfo.judgeInfo = judgeInfo;
+    await this.problemJudgeInfoRepository.save(problemJudgeInfo);
+  }
+
   // Get a problem's title of a locale. If no title for this locale returns any one.
   async getProblemLocalizedTitle(problem: ProblemEntity, locale: Locale): Promise<string> {
     return await this.localizedContentService.get(problem.id, LocalizedContentType.PROBLEM_TITLE, locale);

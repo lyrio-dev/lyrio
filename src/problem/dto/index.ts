@@ -48,3 +48,9 @@ export * from "./get-problem-all-files-and-permission-response.dto";
 
 export * from "./rename-problem-file-request.dto";
 export * from "./rename-problem-file-response.dto";
+
+export * from "./get-problem-judge-info-and-permission-request.dto";
+export * from "./get-problem-judge-info-and-permission-response.dto";
+
+export * from "./update-problem-judge-info-request.dto";
+export * from "./update-problem-judge-info-response.dto";
