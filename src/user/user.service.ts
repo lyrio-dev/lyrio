@@ -1,10 +1,11 @@
 import { Injectable, forwardRef, Inject } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
-import { Repository, Connection } from "typeorm";
+import { Repository, Connection, Like } from "typeorm";
 
 import { UserEntity } from "./user.entity";
 import { AuthService } from "@/auth/auth.service";
 import { UpdateUserProfileResponseError } from "./dto";
+import { escapeLike } from "@/database/database.utils";
 
 @Injectable()
 export class UserService {
@@ -79,5 +80,17 @@ export class UserService {
     }
 
     return null;
+  }
+
+  async searchUser(query: string, maxTakeCount: number): Promise<UserEntity[]> {
+    return await this.userRepository.find({
+      where: {
+        username: Like("%" + escapeLike(query) + "%")
+      },
+      order: {
+        username: "ASC"
+      },
+      take: maxTakeCount
+    });
   }
 }

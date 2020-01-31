@@ -78,6 +78,14 @@ class QueryLimitConfig {
   @IsInt()
   @Min(0)
   readonly problemSetProblemsTake: number;
+
+  @IsInt()
+  @Min(0)
+  readonly searchUserTake: number;
+
+  @IsInt()
+  @Min(0)
+  readonly searchGroupTake: number;
 }
 
 export class AppConfig {

@@ -19,8 +19,11 @@ import {
   RemoveUserFromGroupResponseError,
   SetGroupAdminRequestDto,
   SetGroupAdminResponseDto,
-  SetGroupAdminResponseError
+  SetGroupAdminResponseError,
+  SearchGroupRequestDto,
+  SearchGroupResponseDto
 } from "./dto";
+import { ConfigService } from "@/config/config.service";
 import { GroupService } from "./group.service";
 import { CurrentUser } from "@/common/user.decorator";
 import { UserEntity } from "@/user/user.entity";
@@ -30,6 +33,7 @@ import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.s
 @Controller("group")
 export class GroupController {
   constructor(
+    private readonly configService: ConfigService,
     private readonly groupService: GroupService,
     private readonly userPrivilegeService: UserPrivilegeService
   ) {}
@@ -53,6 +57,25 @@ export class GroupController {
         name: group.name,
         ownerId: group.ownerId
       }
+    };
+  }
+
+  @Get("searchGroup")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Search group with a substring of the group name"
+  })
+  async searchGroup(@Query() request: SearchGroupRequestDto): Promise<SearchGroupResponseDto> {
+    const groups = await this.groupService.searchGroup(
+      request.query,
+      this.configService.config.queryLimit.searchGroupTake
+    );
+    return {
+      groupMetas: groups.map(group => ({
+        id: group.id,
+        name: group.name,
+        ownerId: group.ownerId
+      }))
     };
   }
 

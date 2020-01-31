@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
-import { Repository, Connection } from "typeorm";
+import { Repository, Connection, Like } from "typeorm";
 
 import {
   CreateGroupResponseError,
@@ -13,6 +13,7 @@ import {
 import { UserService } from "@/user/user.service";
 import { GroupEntity } from "./group.entity";
 import { GroupMembershipEntity } from "./group-membership.entity";
+import { escapeLike } from "@/database/database.utils";
 
 @Injectable()
 export class GroupService {
@@ -157,5 +158,17 @@ export class GroupService {
     await this.groupMembershipRepository.save(groupMembership);
 
     return null;
+  }
+
+  async searchGroup(query: string, maxTakeCount: number): Promise<GroupEntity[]> {
+    return await this.groupRepository.find({
+      where: {
+        name: Like("%" + escapeLike(query) + "%")
+      },
+      order: {
+        name: "ASC"
+      },
+      take: maxTakeCount
+    });
   }
 }

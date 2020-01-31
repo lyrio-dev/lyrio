@@ -13,7 +13,9 @@ import {
   SetUserPrivilegesResponseError,
   UpdateUserProfileRequestDto,
   UpdateUserProfileResponseDto,
-  UpdateUserProfileResponseError
+  UpdateUserProfileResponseError,
+  SearchUserRequestDto,
+  SearchUserResponseDto
 } from "./dto";
 import { UserPrivilegeType } from "./user-privilege.entity";
 import { AuthService } from "@/auth/auth.service";
@@ -28,6 +30,24 @@ export class UserController {
     private readonly configService: ConfigService,
     private readonly userPrivilegeService: UserPrivilegeService
   ) {}
+
+  @Get("searchUser")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Search users with a substring of the username"
+  })
+  async searchUser(@Query() request: SearchUserRequestDto): Promise<SearchUserResponseDto> {
+    const users = await this.userService.searchUser(request.query, this.configService.config.queryLimit.searchUserTake);
+    return {
+      userMetas: users.map(user => ({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        bio: user.bio,
+        isAdmin: user.isAdmin
+      }))
+    };
+  }
 
   @Get("getUserMeta")
   @ApiBearerAuth()

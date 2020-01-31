@@ -8,3 +8,6 @@ export * from "./set-user-privileges-response.dto";
 
 export * from "./update-user-profile-request.dto";
 export * from "./update-user-profile-response.dto";
+
+export * from "./search-user-request.dto";
+export * from "./search-user-response.dto";
