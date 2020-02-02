@@ -37,7 +37,11 @@ export class UserController {
     summary: "Search users with a substring of the username"
   })
   async searchUser(@Query() request: SearchUserRequestDto): Promise<SearchUserResponseDto> {
-    const users = await this.userService.searchUser(request.query, this.configService.config.queryLimit.searchUserTake);
+    const users = await this.userService.searchUser(
+      request.query,
+      request.wildcard,
+      this.configService.config.queryLimit.searchUserTake
+    );
     return {
       userMetas: await Promise.all(users.map(user => this.userService.getUserMeta(user)))
     };

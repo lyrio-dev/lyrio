@@ -64,6 +64,7 @@ export class GroupController {
   async searchGroup(@Query() request: SearchGroupRequestDto): Promise<SearchGroupResponseDto> {
     const groups = await this.groupService.searchGroup(
       request.query,
+      request.wildcard,
       this.configService.config.queryLimit.searchGroupTake
     );
     return {

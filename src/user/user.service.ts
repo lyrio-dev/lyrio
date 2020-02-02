@@ -92,10 +92,14 @@ export class UserService {
     return null;
   }
 
-  async searchUser(query: string, maxTakeCount: number): Promise<UserEntity[]> {
+  async searchUser(query: string, wildcard: "START" | "END" | "BOTH", maxTakeCount: number): Promise<UserEntity[]> {
+    query = escapeLike(query);
+    if (wildcard === "START" || wildcard === "BOTH") query = "%" + query;
+    if (wildcard === "END" || wildcard === "BOTH") query = query + "%";
+
     return await this.userRepository.find({
       where: {
-        username: Like("%" + escapeLike(query) + "%")
+        username: Like(query)
       },
       order: {
         username: "ASC"

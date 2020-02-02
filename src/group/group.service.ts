@@ -169,10 +169,14 @@ export class GroupService {
     return null;
   }
 
-  async searchGroup(query: string, maxTakeCount: number): Promise<GroupEntity[]> {
+  async searchGroup(query: string, wildcard: "START" | "END" | "BOTH", maxTakeCount: number): Promise<GroupEntity[]> {
+    query = escapeLike(query);
+    if (wildcard === "START" || wildcard === "BOTH") query = "%" + query;
+    if (wildcard === "END" || wildcard === "BOTH") query = query + "%";
+
     return await this.groupRepository.find({
       where: {
-        name: Like("%" + escapeLike(query) + "%")
+        name: Like(query)
       },
       order: {
         name: "ASC"
