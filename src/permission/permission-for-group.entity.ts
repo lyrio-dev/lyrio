@@ -1,7 +1,6 @@
-import { Entity, PrimaryColumn, Index, ManyToOne } from "typeorm";
+import { Entity, PrimaryColumn, Index, ManyToOne, Column } from "typeorm";
 
 import { PermissionObjectType } from "./permission-object-type.enum";
-import { PermissionType } from "./permission-type.enum";
 import { GroupEntity } from "@/group/group.entity";
 
 @Entity("permission_for_group")
@@ -20,6 +19,7 @@ export class PermissionForGroupEntity {
   @ManyToOne(type => GroupEntity, { onDelete: "CASCADE" })
   group: GroupEntity;
 
-  @PrimaryColumn({ type: "enum", enum: PermissionType })
-  permissionType: PermissionType;
+  // A number, larger means higher permission e.g. 1 for RO and 2 for RW
+  @Column({ type: "integer" })
+  permissionLevel: number;
 }

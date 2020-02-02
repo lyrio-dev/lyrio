@@ -8,6 +8,7 @@ import { ProblemSampleDataMemberDto } from "./problem-sample-data-member.dto";
 import { ProblemJudgeInfo } from "../judge-info/problem-judge-info.interface";
 import { ProblemPermissionType } from "../problem.service";
 import { ProblemFileDto } from "./problem-file.dto";
+import { UserMetaDto } from "@/user/dto";
 
 export enum GetProblemDetailResponseError {
   PERMISSION_DENIED = "PERMISSION_DENIED",

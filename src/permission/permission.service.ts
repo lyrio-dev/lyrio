@@ -5,7 +5,6 @@ import { Repository, EntityManager, Connection } from "typeorm";
 import { PermissionForUserEntity } from "./permission-for-user.entity";
 import { PermissionForGroupEntity } from "./permission-for-group.entity";
 import { PermissionObjectType } from "./permission-object-type.enum";
-import { PermissionType } from "./permission-type.enum";
 
 import { UserEntity } from "@/user/user.entity";
 import { GroupEntity } from "@/group/group.entity";
@@ -13,7 +12,6 @@ import { GroupEntity } from "@/group/group.entity";
 import { GroupService } from "@/group/group.service";
 
 export { PermissionObjectType } from "./permission-object-type.enum";
-export { PermissionType } from "./permission-type.enum";
 
 @Injectable()
 export class PermissionService {
@@ -27,17 +25,17 @@ export class PermissionService {
     private readonly groupService: GroupService
   ) {}
 
-  private async ensurePermissionForUser(
+  private async setUserPermissionLevel<PermissionLevel extends number>(
     user: UserEntity,
     objectId: number,
     objectType: PermissionObjectType,
-    permissionType: PermissionType,
+    permissionLevel: PermissionLevel,
     transactionalEntityManager?: EntityManager
   ): Promise<void> {
     const permissionForUser = new PermissionForUserEntity();
     permissionForUser.objectId = objectId;
     permissionForUser.objectType = objectType;
-    permissionForUser.permissionType = permissionType;
+    permissionForUser.permissionLevel = permissionLevel;
     permissionForUser.userId = user.id;
 
     const queryBuilder = transactionalEntityManager
@@ -47,21 +45,21 @@ export class PermissionService {
       .insert()
       .into(PermissionForUserEntity)
       .values(permissionForUser)
-      .orUpdate({ overwrite: ["permissionType"] }) // ON DUPLICATE KEY "IGNORE"
+      .orUpdate({ overwrite: ["permissionLevel"] })
       .execute();
   }
 
-  private async ensurePermissionForGroup(
+  private async setGroupPermissionLevel<PermissionLevel extends number>(
     group: GroupEntity,
     objectId: number,
     objectType: PermissionObjectType,
-    permissionType: PermissionType,
+    permissionLevel: PermissionLevel,
     transactionalEntityManager?: EntityManager
   ): Promise<void> {
     const permissionForGroup = new PermissionForGroupEntity();
     permissionForGroup.objectId = objectId;
     permissionForGroup.objectType = objectType;
-    permissionForGroup.permissionType = permissionType;
+    permissionForGroup.permissionLevel = permissionLevel;
     permissionForGroup.groupId = group.id;
 
     const queryBuilder = transactionalEntityManager
@@ -71,97 +69,89 @@ export class PermissionService {
       .insert()
       .into(PermissionForGroupEntity)
       .values(permissionForGroup)
-      .orUpdate({ overwrite: ["permissionType"] }) // ON DUPLICATE KEY "IGNORE"
+      .orUpdate({ overwrite: ["permissionLevel"] })
       .execute();
   }
 
-  private async revokePermissionForUser(
+  private async revokeUserPermission(
     user?: UserEntity,
     objectId?: number,
     objectType?: PermissionObjectType,
-    permissionType?: PermissionType,
     transactionalEntityManager?: EntityManager
   ): Promise<void> {
     const match: any = {};
     if (objectId) match.objectId = objectId;
     if (objectType) match.objectType = objectType;
-    if (permissionType) match.permissionType = permissionType;
     if (user) match.userId = user.id;
 
     if (transactionalEntityManager) await transactionalEntityManager.delete(PermissionForUserEntity, match);
     else await this.permissionForUserRepository.delete(match);
   }
 
-  private async revokePermissionForGroup(
+  private async revokeGroupPermission(
     group?: GroupEntity,
     objectId?: number,
     objectType?: PermissionObjectType,
-    permissionType?: PermissionType,
     transactionalEntityManager?: EntityManager
   ): Promise<void> {
     const match: any = {};
     if (objectId) match.objectId = objectId;
     if (objectType) match.objectType = objectType;
-    if (permissionType) match.permissionType = permissionType;
     if (group) match.groupId = group.id;
 
     if (transactionalEntityManager) await transactionalEntityManager.delete(PermissionForGroupEntity, match);
     else await this.permissionForGroupRepository.delete(match);
   }
 
-  private async userHasPermission(
+  private async getUserPermissionLevel<PermissionLevel extends number>(
     user: UserEntity,
     objectId: number,
-    objectType: PermissionObjectType,
-    permissionType: PermissionType
-  ): Promise<boolean> {
-    return (
-      (await this.permissionForUserRepository.count({
-        objectId: objectId,
-        objectType: objectType,
-        permissionType: permissionType,
-        userId: user.id
-      })) != 0
-    );
+    objectType: PermissionObjectType
+  ): Promise<PermissionLevel> {
+    const permissionForUser = await this.permissionForUserRepository.findOne({
+      objectId: objectId,
+      objectType: objectType,
+      userId: user.id
+    });
+    if (!permissionForUser) return null;
+    return permissionForUser.permissionLevel as PermissionLevel;
   }
 
-  private async groupHasPermission(
+  private async getGroupPermissionLevel<PermissionLevel extends number>(
     group: GroupEntity,
     objectId: number,
-    objectType: PermissionObjectType,
-    permissionType: PermissionType
-  ): Promise<boolean> {
-    return (
-      (await this.permissionForGroupRepository.count({
-        objectId: objectId,
-        objectType: objectType,
-        permissionType: permissionType,
-        groupId: group.id
-      })) != 0
-    );
+    objectType: PermissionObjectType
+  ): Promise<PermissionLevel> {
+    const permissionForGroup = await this.permissionForGroupRepository.findOne({
+      objectId: objectId,
+      objectType: objectType,
+      groupId: group.id
+    });
+    if (!permissionForGroup) return null;
+    return permissionForGroup.permissionLevel as PermissionLevel;
   }
 
-  async ensurePermission(
+  async setPermissionLevel<PermissionLevel extends number>(
     userOrGroup: UserEntity | GroupEntity,
     objectId: number,
     objectType: PermissionObjectType,
-    permissionType: PermissionType,
+    permission: PermissionLevel,
     transactionalEntityManager?: EntityManager
   ): Promise<void> {
     if (userOrGroup instanceof UserEntity)
-      return await this.ensurePermissionForUser(
+      return await this.setUserPermissionLevel(
         userOrGroup,
         objectId,
         objectType,
-        permissionType,
+        permission,
         transactionalEntityManager
       );
     else if (userOrGroup instanceof GroupEntity)
-      return await this.ensurePermissionForGroup(
+      return await this.setGroupPermissionLevel(
         userOrGroup,
         objectId,
         objectType,
-        permissionType,
+        permission,
         transactionalEntityManager
       );
     else throw new Error("userOrGroup is neither a user nor a group");
@@ -171,137 +161,195 @@ export class PermissionService {
     userOrGroup: UserEntity | GroupEntity,
     objectId?: number,
     objectType?: PermissionObjectType,
-    permissionType?: PermissionType,
     transactionalEntityManager?: EntityManager
   ): Promise<void> {
     if (userOrGroup instanceof UserEntity)
-      return await this.revokePermissionForUser(
-        userOrGroup,
-        objectId,
-        objectType,
-        permissionType,
-        transactionalEntityManager
-      );
+      return await this.revokeUserPermission(userOrGroup, objectId, objectType, transactionalEntityManager);
     else if (userOrGroup instanceof GroupEntity)
-      return await this.revokePermissionForGroup(
-        userOrGroup,
-        objectId,
-        objectType,
-        permissionType,
-        transactionalEntityManager
-      );
+      return await this.revokeGroupPermission(userOrGroup, objectId, objectType, transactionalEntityManager);
     else throw new Error("userOrGroup is neither a user nor a group");
   }
 
-  async hasPermission(
+  async getPermissionLevel<PermissionLevel extends number>(
     userOrGroup: UserEntity | GroupEntity,
     objectId: number,
-    objectType: PermissionObjectType,
-    permissionType: PermissionType
-  ): Promise<boolean> {
-    if (userOrGroup instanceof UserEntity)
-      return await this.userHasPermission(userOrGroup, objectId, objectType, permissionType);
+    objectType: PermissionObjectType
+  ): Promise<PermissionLevel> {
+    if (userOrGroup instanceof UserEntity) return await this.getUserPermissionLevel(userOrGroup, objectId, objectType);
     else if (userOrGroup instanceof GroupEntity)
-      return await this.groupHasPermission(userOrGroup, objectId, objectType, permissionType);
+      return await this.getGroupPermissionLevel(userOrGroup, objectId, objectType);
     else throw new Error("userOrGroup is neither a user nor a group");
   }
 
-  async userOrItsGroupsHavePermission(
+  async userOrItsGroupsHavePermission<PermissionLevel extends number>(
     user: UserEntity,
     objectId: number,
     objectType: PermissionObjectType,
-    permissionType: PermissionType
+    permissionLevelRequired: PermissionLevel
   ): Promise<boolean> {
-    if (await this.hasPermission(user, objectId, objectType, permissionType)) return true;
+    if ((await this.getPermissionLevel(user, objectId, objectType)) >= permissionLevelRequired) return true;
 
-    const groupIdsWithPermission = await this.getGroupsWithPermission(objectId, objectType, permissionType);
     const groupIdsOfUser = await this.groupService.getGroupIdsByUserId(user.id);
-    return groupIdsOfUser.some(groupId => groupIdsWithPermission.includes(groupId));
+    const queryResult =
+      groupIdsOfUser.length > 0 &&
+      (await this.permissionForGroupRepository
+        .createQueryBuilder()
+        .select("MAX(permissionLevel)", "maxPermissionLevel")
+        .where("objectId = :objectId AND objectType = :objectType AND groupId IN (:...groupIds)", {
+          objectId: objectId,
+          objectType: objectType,
+          groupIds: groupIdsOfUser
+        })
+        .getRawOne());
+
+    return queryResult && queryResult["maxPermissionLevel"] >= permissionLevelRequired;
   }
 
-  async getUsersWithPermission(
+  async getUserOrItsGroupsMaxPermissionLevel<PermissionLevel extends number>(
+    user: UserEntity,
+    objectId: number,
+    objectType: PermissionObjectType
+  ): Promise<PermissionLevel> {
+    const userPermission = await this.getPermissionLevel(user, objectId, objectType);
+
+    const groupIdsOfUser = await this.groupService.getGroupIdsByUserId(user.id);
+    const queryResult =
+      groupIdsOfUser.length > 0 &&
+      (await this.permissionForGroupRepository
+        .createQueryBuilder()
+        .select("MAX(permissionLevel)", "maxPermissionLevel")
+        .where("objectId = :objectId AND objectType = :objectType AND groupId IN (:...groupIds)", {
+          objectId: objectId,
+          objectType: objectType,
+          groupIds: groupIdsOfUser
+        })
+        .getRawOne());
+
+    if (!userPermission) return queryResult ? queryResult["maxPermissionLevel"] : null;
+    else if (!queryResult) return userPermission as PermissionLevel;
+    else return Math.max(userPermission, queryResult["maxPermissionLevel"]) as PermissionLevel;
+  }
+
+  async getUsersWithExactPermissionLevel<PermissionLevel extends number>(
     objectId: number,
     objectType: PermissionObjectType,
-    permissionType: PermissionType
+    permissionLevel: PermissionLevel
   ): Promise<number[]> {
     return (
       await this.permissionForUserRepository.find({
         objectId: objectId,
         objectType: objectType,
-        permissionType: permissionType
+        permissionLevel: permissionLevel
       })
     ).map(permissionForUser => permissionForUser.userId);
   }
 
-  async getGroupsWithPermission(
+  async getGroupsWithExactPermissionLevel<PermissionLevel extends number>(
     objectId: number,
     objectType: PermissionObjectType,
-    permissionType: PermissionType
+    permissionLevel: PermissionLevel
   ): Promise<number[]> {
     return (
       await this.permissionForGroupRepository.find({
         objectId: objectId,
         objectType: objectType,
-        permissionType: permissionType
+        permissionLevel: permissionLevel
       })
     ).map(permissionForGroup => permissionForGroup.groupId);
   }
 
-  async getUsersAndGroupsWithPermission(
+  async getUsersAndGroupsWithExactPermissionLevel<PermissionLevel extends number>(
     objectId: number,
     objectType: PermissionObjectType,
-    permissionType: PermissionType
+    permissionLevel: PermissionLevel
   ): Promise<[number[], number[]]> {
     return [
-      await this.getUsersWithPermission(objectId, objectType, permissionType),
-      await this.getGroupsWithPermission(objectId, objectType, permissionType)
+      await this.getUsersWithExactPermissionLevel(objectId, objectType, permissionLevel),
+      await this.getGroupsWithExactPermissionLevel(objectId, objectType, permissionLevel)
     ];
   }
 
-  async replaceUsersAndGroupsPermissionForObject(
+  async getUserPermissionListOfObject<PermissionLevel extends number>(
+    objectId: number,
+    objectType: PermissionObjectType
+  ): Promise<[number, PermissionLevel][]> {
+    return (
+      await this.permissionForUserRepository.find({
+        objectId: objectId,
+        objectType: objectType
+      })
+    ).map(permissionForUser => [permissionForUser.userId, permissionForUser.permissionLevel as PermissionLevel]);
+  }
+
+  async getGroupPermissionListOfObject<PermissionLevel extends number>(
+    objectId: number,
+    objectType: PermissionObjectType
+  ): Promise<[number, PermissionLevel][]> {
+    return (
+      await this.permissionForGroupRepository.find({
+        objectId: objectId,
+        objectType: objectType
+      })
+    ).map(permissionForGroup => [permissionForGroup.groupId, permissionForGroup.permissionLevel as PermissionLevel]);
+  }
+
+  async getUserAndGroupPermissionListOfObject<PermissionLevel extends number>(
+    objectId: number,
+    objectType: PermissionObjectType
+  ): Promise<[[number, PermissionLevel][], [number, PermissionLevel][]]> {
+    return [
+      await this.getUserPermissionListOfObject(objectId, objectType),
+      await this.getGroupPermissionListOfObject(objectId, objectType)
+    ];
+  }
+
+  async replaceUsersAndGroupsPermissionForObject<PermissionLevel extends number>(
     objectId: number,
     objectType: PermissionObjectType,
-    permissionType: PermissionType,
-    users: UserEntity[],
-    groups: GroupEntity[],
+    userPermissions: [UserEntity, PermissionLevel][],
+    groupPermissions: [GroupEntity, PermissionLevel][],
     transactionalEntityManager?: EntityManager
   ): Promise<void> {
     const runInTransaction = async (transactionalEntityManager: EntityManager) => {
       await transactionalEntityManager.delete(PermissionForUserEntity, {
         objectId: objectId,
-        objectType: objectType,
-        permissionType: permissionType
+        objectType: objectType
       });
 
       await transactionalEntityManager.delete(PermissionForGroupEntity, {
         objectId: objectId,
-        objectType: objectType,
-        permissionType: permissionType
+        objectType: objectType
       });
 
-      for (const user of users)
-        await this.ensurePermissionForUser(user, objectId, objectType, permissionType, transactionalEntityManager);
-      for (const group of groups)
-        await this.ensurePermissionForGroup(group, objectId, objectType, permissionType, transactionalEntityManager);
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .insert()
+        .into(PermissionForUserEntity)
+        .values(
+          userPermissions.map(([user, permissionLevel]) => ({
+            objectId: objectId,
+            objectType: objectType,
+            userId: user.id,
+            permissionLevel: permissionLevel
+          }))
+        )
+        .execute();
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .insert()
+        .into(PermissionForGroupEntity)
+        .values(
+          groupPermissions.map(([group, permissionLevel]) => ({
+            objectId: objectId,
+            objectType: objectType,
+            groupId: group.id,
+            permissionLevel: permissionLevel
+          }))
+        )
+        .execute();
     };
 
     if (transactionalEntityManager) runInTransaction(transactionalEntityManager);
     else this.connection.transaction("READ COMMITTED", runInTransaction);
-  }
-
-  async userHasAnyPermission(user: UserEntity): Promise<boolean> {
-    return (
-      (await this.permissionForUserRepository.count({
-        userId: user.id
-      })) != 0
-    );
-  }
-
-  async groupHasAnyPermission(group: GroupEntity): Promise<boolean> {
-    return (
-      (await this.permissionForGroupRepository.count({
-        groupId: group.id
-      })) != 0
-    );
   }
 }

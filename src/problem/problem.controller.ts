@@ -5,7 +5,7 @@ import { ConfigService } from "@/config/config.service";
 import { UserService } from "@/user/user.service";
 import { GroupService } from "@/group/group.service";
 import { FileService } from "@/file/file.service";
-import { ProblemService, ProblemPermissionType } from "./problem.service";
+import { ProblemService, ProblemPermissionType, ProblemPermissionLevel } from "./problem.service";
 import { CurrentUser } from "@/common/user.decorator";
 import { UserEntity } from "@/user/user.entity";
 import { ProblemEntity } from "./problem.entity";
@@ -64,6 +64,7 @@ import {
   UpdateProblemJudgeInfoResponseDto,
   UpdateProblemJudgeInfoResponseError
 } from "./dto";
+import { GroupEntity } from "@/group/group.entity";
 
 @ApiTags("Problem")
 @Controller("problem")
@@ -220,7 +221,7 @@ export class ProblemController {
   @Get("getProblemDetail")
   @ApiBearerAuth()
   @ApiOperation({
-    summary: "Get a problem's meta, title, contents, samples, additional files and judge info of given locale.",
+    summary: "Get a problem's meta, owner, title, contents, samples, additional files and judge info of given locale.",
     description: "Title and contents are fallbacked to default (first) locale if none for given locale."
   })
   async getProblemDetail(
@@ -290,8 +291,8 @@ export class ProblemController {
         error: SetProblemPermissionsResponseError.PERMISSION_DENIED
       };
 
-    const users = [];
-    for (const userId of request.userIds) {
+    const userPermissions: [UserEntity, ProblemPermissionLevel][] = [];
+    for (const { userId, permissionLevel } of request.userPermissions) {
       const user = await this.userService.findUserById(userId);
       if (!user)
         return {
@@ -299,11 +300,11 @@ export class ProblemController {
           errorObjectId: userId
         };
 
-      users.push(user);
+      userPermissions.push([user, permissionLevel]);
     }
 
-    const groups = [];
-    for (const groupId of request.groupIds) {
+    const groupPermissions: [GroupEntity, ProblemPermissionLevel][] = [];
+    for (const { groupId, permissionLevel } of request.groupPermissions) {
       const group = await this.groupService.findGroupById(groupId);
       if (!group)
         return {
@@ -311,10 +312,10 @@ export class ProblemController {
           errorObjectId: groupId
         };
 
-      groups.push(group);
+      groupPermissions.push([group, permissionLevel]);
     }
 
-    await this.problemService.setProblemPermissions(problem, request.permissionType, users, groups);
+    await this.problemService.setProblemPermissions(problem, userPermissions, groupPermissions);
 
     return {};
   }
@@ -334,16 +335,40 @@ export class ProblemController {
         error: GetProblemPermissionsResponseError.NO_SUCH_PROBLEM
       };
 
-    if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.CONTROL, problem)))
+    if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.READ, problem)))
       return {
         error: GetProblemPermissionsResponseError.PERMISSION_DENIED
       };
 
-    const [users, groups] = await this.problemService.getProblemPermissions(problem, request.permissionType);
+    const [userPermissions, groupPermissions] = await this.problemService.getProblemPermissions(problem);
+    const owner = await this.userService.findUserById(problem.ownerId);
 
     return {
-      users: users,
-      groups: groups
+      owner: {
+        id: owner.id,
+        username: owner.username,
+        email: owner.email,
+        bio: owner.bio,
+        isAdmin: owner.isAdmin
+      },
+      userPermissions: userPermissions.map(([user, permissionLevel]) => ({
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          bio: user.bio,
+          isAdmin: user.isAdmin
+        },
+        permissionLevel: permissionLevel
+      })),
+      groupPermissions: groupPermissions.map(([group, permissionLevel]) => ({
+        group: {
+          id: group.id,
+          name: group.name,
+          ownerId: group.ownerId
+        },
+        permissionLevel: permissionLevel
+      }))
     };
   }
 

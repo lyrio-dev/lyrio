@@ -22,7 +22,7 @@ import { ProblemContentSection } from "./problem-content.interface";
 import { ProblemSampleData } from "./problem-sample-data.interface";
 import { ProblemJudgeInfo } from "./judge-info/problem-judge-info.interface";
 import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.service";
-import { PermissionService, PermissionObjectType, PermissionType } from "@/permission/permission.service";
+import { PermissionService, PermissionObjectType } from "@/permission/permission.service";
 import { UserService } from "@/user/user.service";
 import { GroupService } from "@/group/group.service";
 import { FileService } from "@/file/file.service";
@@ -33,6 +33,11 @@ export enum ProblemPermissionType {
   WRITE = "WRITE",
   CONTROL = "CONTROL",
   FULL_CONTROL = "FULL_CONTROL"
+}
+
+export enum ProblemPermissionLevel {
+  READ = 1,
+  WRITE = 2
 }
 
 @Injectable()
@@ -87,7 +92,7 @@ export class ProblemService {
             user,
             problem.id,
             PermissionObjectType.PROBLEM,
-            PermissionType.READ
+            ProblemPermissionLevel.READ
           );
 
       // Owner, admins and those who has write permission can write a problem
@@ -101,7 +106,7 @@ export class ProblemService {
             user,
             problem.id,
             PermissionObjectType.PROBLEM,
-            PermissionType.WRITE
+            ProblemPermissionLevel.WRITE
           );
 
       // Owner and admins can control a problem (i.e. manage its permissions)
@@ -143,20 +148,26 @@ export class ProblemService {
       result[ProblemPermissionType.READ] = true;
       result[ProblemPermissionType.WRITE] = true;
       result[ProblemPermissionType.CONTROL] = true;
-    } else if (
-      problem &&
-      user &&
-      (await this.permissionService.userOrItsGroupsHavePermission(
-        user,
-        problem.id,
-        PermissionObjectType.PROBLEM,
-        PermissionType.WRITE
-      ))
-    ) {
-      result[ProblemPermissionType.READ] = true;
-      result[ProblemPermissionType.WRITE] = true;
-    } else if (problem && problem.isPublic) {
-      result[ProblemPermissionType.READ] = true;
+    } else {
+      if (problem && user) {
+        const permissionLevel = await this.permissionService.getUserOrItsGroupsMaxPermissionLevel(
+          user,
+          problem.id,
+          PermissionObjectType.PROBLEM
+        );
+
+        if (permissionLevel >= ProblemPermissionLevel.READ) {
+          result[ProblemPermissionType.READ] = true;
+        }
+
+        if (permissionLevel >= ProblemPermissionLevel.WRITE) {
+          result[ProblemPermissionType.WRITE] = true;
+        }
+      }
+
+      if (problem && problem.isPublic) {
+        result[ProblemPermissionType.READ] = true;
+      }
     }
 
     return result;
@@ -316,31 +327,44 @@ export class ProblemService {
 
   async setProblemPermissions(
     problem: ProblemEntity,
-    permissionType: PermissionType,
-    users: UserEntity[],
-    groups: GroupEntity[]
+    userPermissions: [UserEntity, ProblemPermissionLevel][],
+    groupPermissions: [GroupEntity, ProblemPermissionLevel][]
   ): Promise<void> {
     await this.permissionService.replaceUsersAndGroupsPermissionForObject(
       problem.id,
       PermissionObjectType.PROBLEM,
-      permissionType,
-      users,
-      groups
+      userPermissions,
+      groupPermissions
     );
   }
 
   async getProblemPermissions(
-    problem: ProblemEntity,
-    permissionType: PermissionType
-  ): Promise<[UserEntity[], GroupEntity[]]> {
-    const [userIds, groupIds] = await this.permissionService.getUsersAndGroupsWithPermission(
+    problem: ProblemEntity
+  ): Promise<[[UserEntity, ProblemPermissionLevel][], [GroupEntity, ProblemPermissionLevel][]]> {
+    const [
+      userPermissionList,
+      groupPermissionList
+    ] = await this.permissionService.getUserAndGroupPermissionListOfObject<ProblemPermissionLevel>(
       problem.id,
-      PermissionObjectType.PROBLEM,
-      permissionType
+      PermissionObjectType.PROBLEM
     );
     return [
-      await Promise.all(userIds.map(async userId => await this.userService.findUserById(userId))),
-      await Promise.all(groupIds.map(async groupId => await this.groupService.findGroupById(groupId)))
+      await Promise.all(
+        userPermissionList.map(
+          async ([userId, permission]): Promise<[UserEntity, ProblemPermissionLevel]> => [
+            await this.userService.findUserById(userId),
+            permission
+          ]
+        )
+      ),
+      await Promise.all(
+        groupPermissionList.map(
+          async ([groupId, permission]): Promise<[GroupEntity, ProblemPermissionLevel]> => [
+            await this.groupService.findGroupById(groupId),
+            permission
+          ]
+        )
+      )
     ];
   }
 
