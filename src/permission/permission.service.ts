@@ -321,35 +321,40 @@ export class PermissionService {
         objectType: objectType
       });
 
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .insert()
-        .into(PermissionForUserEntity)
-        .values(
-          userPermissions.map(([user, permissionLevel]) => ({
-            objectId: objectId,
-            objectType: objectType,
-            userId: user.id,
-            permissionLevel: permissionLevel
-          }))
-        )
-        .execute();
-      await transactionalEntityManager
-        .createQueryBuilder()
-        .insert()
-        .into(PermissionForGroupEntity)
-        .values(
-          groupPermissions.map(([group, permissionLevel]) => ({
-            objectId: objectId,
-            objectType: objectType,
-            groupId: group.id,
-            permissionLevel: permissionLevel
-          }))
-        )
-        .execute();
+      if (userPermissions.length > 0) {
+        await transactionalEntityManager
+          .createQueryBuilder()
+          .insert()
+          .into(PermissionForUserEntity)
+          .values(
+            userPermissions.map(([user, permissionLevel]) => ({
+              objectId: objectId,
+              objectType: objectType,
+              userId: user.id,
+              permissionLevel: permissionLevel
+            }))
+          )
+          .execute();
+      }
+
+      if (groupPermissions.length > 0) {
+        await transactionalEntityManager
+          .createQueryBuilder()
+          .insert()
+          .into(PermissionForGroupEntity)
+          .values(
+            groupPermissions.map(([group, permissionLevel]) => ({
+              objectId: objectId,
+              objectType: objectType,
+              groupId: group.id,
+              permissionLevel: permissionLevel
+            }))
+          )
+          .execute();
+      }
     };
 
-    if (transactionalEntityManager) runInTransaction(transactionalEntityManager);
-    else this.connection.transaction("READ COMMITTED", runInTransaction);
+    if (transactionalEntityManager) await runInTransaction(transactionalEntityManager);
+    else await this.connection.transaction("READ COMMITTED", runInTransaction);
   }
 }
