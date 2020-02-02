@@ -110,7 +110,8 @@ export class ProblemService {
       // Controlled by the application preference, the owner may have the permission
       case ProblemPermissionType.MANAGE_PERMISSION:
         if (!user) return false;
-        else if (user.id === problem.ownerId && this.configService.config.preference.allowOwnerManageProblemPermission) return true;
+        else if (user.id === problem.ownerId && this.configService.config.preference.allowOwnerManageProblemPermission)
+          return true;
         else if (user.isAdmin) return true;
         else if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM)) return true;
         else return false;
@@ -126,7 +127,8 @@ export class ProblemService {
       // Controlled by the application preference, the owner may have the permission
       case ProblemPermissionType.DELETE:
         if (!user) return false;
-        else if (user.id === problem.ownerId && this.configService.config.preference.allowOwnerDeleteProblem) return true;
+        else if (user.id === problem.ownerId && this.configService.config.preference.allowOwnerDeleteProblem)
+          return true;
         else if (user.isAdmin) return true;
         else if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM)) return true;
         else return false;

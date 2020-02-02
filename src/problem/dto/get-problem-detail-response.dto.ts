@@ -16,13 +16,13 @@ export enum GetProblemDetailResponseError {
 export class GetProblemDetailResponsePermissionDto {
   @ApiProperty()
   modify: boolean;
-  
+
   @ApiProperty()
   managePermission: boolean;
 
   @ApiProperty()
   managePublicness: boolean;
-  
+
   @ApiProperty()
   delete: boolean;
 }

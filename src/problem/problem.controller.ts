@@ -160,7 +160,7 @@ export class ProblemController {
         error: UpdateProblemStatementResponseError.NO_SUCH_PROBLEM
       };
 
-      if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.MODIFY)))
+    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.MODIFY)))
       return {
         error: UpdateProblemStatementResponseError.PERMISSION_DENIED
       };
@@ -193,7 +193,7 @@ export class ProblemController {
         error: GetProblemStatementsAllLocalesResponseError.NO_SUCH_PROBLEM
       };
 
-      if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.VIEW)))
+    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.VIEW)))
       return {
         error: GetProblemStatementsAllLocalesResponseError.PERMISSION_DENIED
       };
@@ -214,7 +214,11 @@ export class ProblemController {
         samples: samples,
         localizedContents: localizedContents
       },
-      haveWritePermission: await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.MODIFY)
+      haveWritePermission: await this.problemService.userHasPermission(
+        currentUser,
+        problem,
+        ProblemPermissionType.MODIFY
+      )
     };
   }
 
@@ -261,8 +265,16 @@ export class ProblemController {
       },
       permission: {
         modify: await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.MODIFY),
-        managePermission: await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.MANAGE_PERMISSION),
-        managePublicness: await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.MANAGE_PUBLICNESS),
+        managePermission: await this.problemService.userHasPermission(
+          currentUser,
+          problem,
+          ProblemPermissionType.MANAGE_PERMISSION
+        ),
+        managePublicness: await this.problemService.userHasPermission(
+          currentUser,
+          problem,
+          ProblemPermissionType.MANAGE_PUBLICNESS
+        ),
         delete: await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.DELETE)
       },
       resultLocale: resultLocale,
@@ -590,7 +602,11 @@ export class ProblemController {
       },
       testdata: testdata,
       additionalFiles: additionalFiles,
-      haveWritePermission: await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.MODIFY)
+      haveWritePermission: await this.problemService.userHasPermission(
+        currentUser,
+        problem,
+        ProblemPermissionType.MODIFY
+      )
     };
   }
 
@@ -657,7 +673,11 @@ export class ProblemController {
         locales: problem.locales
       },
       judgeInfo: judgeInfo,
-      haveWritePermission: await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.MODIFY)
+      haveWritePermission: await this.problemService.userHasPermission(
+        currentUser,
+        problem,
+        ProblemPermissionType.MODIFY
+      )
     };
   }
 
