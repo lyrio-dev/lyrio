@@ -2,7 +2,7 @@ import { ApiProperty } from "@nestjs/swagger";
 import { IsOptional } from "class-validator";
 import { IsIntString } from "@/common/validators";
 
-export class GetProblemJudgeInfoAndPermissionRequestDto {
+export class GetProblemAllFilesRequestDto {
   @ApiProperty({
     required: false
   })

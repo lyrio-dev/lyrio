@@ -1,7 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { ProblemMetaDto } from "./problem-meta.dto";
 import { ProblemStatementDto } from "./problem-statement.dto";
-import { ProblemPermissionType } from "../problem.service";
 
 export enum GetProblemStatementsAllLocalesResponseError {
   PERMISSION_DENIED = "PERMISSION_DENIED",
@@ -16,8 +15,8 @@ export class GetProblemStatementsAllLocalesResponseDto {
   meta?: ProblemMetaDto;
 
   @ApiProperty()
-  permission?: Record<ProblemPermissionType, boolean>;
+  statement?: ProblemStatementDto;
 
   @ApiProperty()
-  statement?: ProblemStatementDto;
+  haveWritePermission?: boolean;
 }

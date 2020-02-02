@@ -29,7 +29,9 @@
         "sessionSecret": "don't leak this"
     },
     "preference": {
-        "allowUserChangeUsername": true
+        "allowUserChangeUsername": true,
+        "allowOwnerManageProblemPermission": false,
+        "allowOwnerDeleteProblem": true
     },
     "queryLimit": {
         "problemSetProblemsTake": 100,

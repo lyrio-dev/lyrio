@@ -72,6 +72,12 @@ class SecurityConfig {
 class PreferenceConfig {
   @IsBoolean()
   readonly allowUserChangeUsername: boolean;
+
+  @IsBoolean()
+  readonly allowOwnerManageProblemPermission: boolean;
+
+  @IsBoolean()
+  readonly allowOwnerDeleteProblem: boolean;
 }
 
 class QueryLimitConfig {

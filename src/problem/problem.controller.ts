@@ -51,15 +51,15 @@ import {
   DownloadProblemFilesRequestDto,
   DownloadProblemFilesResponseDto,
   DownloadProblemFilesResponseError,
-  GetProblemAllFilesAndPermissionRequestDto,
-  GetProblemAllFilesAndPermissionResponseDto,
-  GetProblemAllFilesAndPermissionResponseError,
+  GetProblemAllFilesRequestDto,
+  GetProblemAllFilesResponseDto,
+  GetProblemAllFilesResponseError,
   RenameProblemFileRequestDto,
   RenameProblemFileResponseDto,
   RenameProblemFileResponseError,
-  GetProblemJudgeInfoAndPermissionRequestDto,
-  GetProblemJudgeInfoAndPermissionResponseDto,
-  GetProblemJudgeInfoAndPermissionResponseError,
+  GetProblemJudgeInfoRequestDto,
+  GetProblemJudgeInfoResponseDto,
+  GetProblemJudgeInfoResponseError,
   UpdateProblemJudgeInfoRequestDto,
   UpdateProblemJudgeInfoResponseDto,
   UpdateProblemJudgeInfoResponseError
@@ -128,7 +128,8 @@ export class ProblemController {
     @CurrentUser() currentUser: UserEntity,
     @Body() request: CreateProblemRequestDto
   ): Promise<CreateProblemResponseDto> {
-    if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.CREATE)))
+    // TODO: Add permission for create problem
+    if (false)
       return {
         error: CreateProblemResponseError.PERMISSION_DENIED
       };
@@ -159,7 +160,7 @@ export class ProblemController {
         error: UpdateProblemStatementResponseError.NO_SUCH_PROBLEM
       };
 
-    if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.WRITE, problem)))
+      if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.MODIFY)))
       return {
         error: UpdateProblemStatementResponseError.PERMISSION_DENIED
       };
@@ -192,13 +193,12 @@ export class ProblemController {
         error: GetProblemStatementsAllLocalesResponseError.NO_SUCH_PROBLEM
       };
 
-    if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.READ, problem)))
+      if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.VIEW)))
       return {
         error: GetProblemStatementsAllLocalesResponseError.PERMISSION_DENIED
       };
 
     const samples = await this.problemService.getProblemSamples(problem);
-    const permission = await this.problemService.getUserPermission(currentUser, problem);
     const localizedContents = await this.problemService.getProblemAllLocalizedContents(problem);
 
     return {
@@ -210,11 +210,11 @@ export class ProblemController {
         ownerId: problem.ownerId,
         locales: problem.locales
       },
-      permission: permission,
       statement: {
         samples: samples,
         localizedContents: localizedContents
-      }
+      },
+      haveWritePermission: await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.MODIFY)
     };
   }
 
@@ -237,7 +237,7 @@ export class ProblemController {
         error: GetProblemDetailResponseError.NO_SUCH_PROBLEM
       };
 
-    if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.READ, problem)))
+    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.VIEW)))
       return {
         error: GetProblemDetailResponseError.PERMISSION_DENIED
       };
@@ -248,7 +248,6 @@ export class ProblemController {
     const contentSections = await this.problemService.getProblemLocalizedContent(problem, resultLocale);
     const samples = await this.problemService.getProblemSamples(problem);
     const judgeInfo = await this.problemService.getProblemJudgeInfo(problem);
-    const permission = await this.problemService.getUserPermission(currentUser, problem);
     const additionalFiles = await this.problemService.listProblemFiles(problem, ProblemFileType.AdditionalFile, true);
 
     return {
@@ -260,7 +259,12 @@ export class ProblemController {
         ownerId: problem.ownerId,
         locales: problem.locales
       },
-      permission: permission,
+      permission: {
+        modify: await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.MODIFY),
+        managePermission: await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.MANAGE_PERMISSION),
+        managePublicness: await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.MANAGE_PUBLICNESS),
+        delete: await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.DELETE)
+      },
       resultLocale: resultLocale,
       title: title,
       samples: samples,
@@ -286,7 +290,7 @@ export class ProblemController {
         errorObjectId: request.problemId
       };
 
-    if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.CONTROL, problem)))
+    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.MANAGE_PERMISSION)))
       return {
         error: SetProblemPermissionsResponseError.PERMISSION_DENIED
       };
@@ -335,7 +339,7 @@ export class ProblemController {
         error: GetProblemPermissionsResponseError.NO_SUCH_PROBLEM
       };
 
-    if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.READ, problem)))
+    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.VIEW)))
       return {
         error: GetProblemPermissionsResponseError.PERMISSION_DENIED
       };
@@ -376,7 +380,7 @@ export class ProblemController {
         error: SetProblemDisplayIdResponseError.NO_SUCH_PROBLEM
       };
 
-    if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.FULL_CONTROL, problem)))
+    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.MANAGE_PUBLICNESS)))
       return {
         error: SetProblemDisplayIdResponseError.PERMISSION_DENIED
       };
@@ -416,7 +420,7 @@ export class ProblemController {
         error: SetProblemPublicResponseError.NO_DISPLAY_ID
       };
 
-    if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.FULL_CONTROL, problem)))
+    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.MANAGE_PUBLICNESS)))
       return {
         error: SetProblemPublicResponseError.PERMISSION_DENIED
       };
@@ -441,7 +445,7 @@ export class ProblemController {
         error: AddProblemFileResponseError.NO_SUCH_PROBLEM
       };
 
-    if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.WRITE, problem)))
+    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.MODIFY)))
       return {
         error: AddProblemFileResponseError.PERMISSION_DENIED
       };
@@ -473,7 +477,7 @@ export class ProblemController {
         error: RemoveProblemFilesResponseError.NO_SUCH_PROBLEM
       };
 
-    if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.WRITE, problem)))
+    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.MODIFY)))
       return {
         error: RemoveProblemFilesResponseError.PERMISSION_DENIED
       };
@@ -498,7 +502,7 @@ export class ProblemController {
         error: ListProblemFilesResponseError.NO_SUCH_PROBLEM
       };
 
-    if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.READ, problem)))
+    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.VIEW)))
       return {
         error: ListProblemFilesResponseError.PERMISSION_DENIED
       };
@@ -529,7 +533,7 @@ export class ProblemController {
         error: DownloadProblemFilesResponseError.NO_SUCH_PROBLEM
       };
 
-    if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.READ, problem)))
+    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.VIEW)))
       return {
         error: DownloadProblemFilesResponseError.PERMISSION_DENIED
       };
@@ -549,32 +553,31 @@ export class ProblemController {
     };
   }
 
-  @Get("getProblemAllFilesAndPermission")
+  @Get("getProblemAllFiles")
   @ApiBearerAuth()
   @ApiOperation({
     summary: "Get a problem's testdata, additional files and permission of current user by its ID or display ID."
   })
-  async getProblemAllFilesAndPermission(
+  async getProblemAllFiles(
     @CurrentUser() currentUser: UserEntity,
-    @Query() request: GetProblemAllFilesAndPermissionRequestDto
-  ): Promise<GetProblemAllFilesAndPermissionResponseDto> {
+    @Query() request: GetProblemAllFilesRequestDto
+  ): Promise<GetProblemAllFilesResponseDto> {
     let problem: ProblemEntity;
     if (request.id) problem = await this.problemService.findProblemById(parseInt(request.id));
     else if (request.displayId) problem = await this.problemService.findProblemByDisplayId(parseInt(request.displayId));
 
     if (!problem)
       return {
-        error: GetProblemAllFilesAndPermissionResponseError.NO_SUCH_PROBLEM
+        error: GetProblemAllFilesResponseError.NO_SUCH_PROBLEM
       };
 
-    if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.READ, problem)))
+    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.VIEW)))
       return {
-        error: GetProblemAllFilesAndPermissionResponseError.PERMISSION_DENIED
+        error: GetProblemAllFilesResponseError.PERMISSION_DENIED
       };
 
     const testdata = await this.problemService.listProblemFiles(problem, ProblemFileType.TestData, true);
     const additionalFiles = await this.problemService.listProblemFiles(problem, ProblemFileType.AdditionalFile, true);
-    const permission = await this.problemService.getUserPermission(currentUser, problem);
 
     return {
       meta: {
@@ -587,7 +590,7 @@ export class ProblemController {
       },
       testdata: testdata,
       additionalFiles: additionalFiles,
-      permission: permission
+      haveWritePermission: await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.MODIFY)
     };
   }
 
@@ -606,7 +609,7 @@ export class ProblemController {
         error: RenameProblemFileResponseError.NO_SUCH_PROBLEM
       };
 
-    if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.WRITE, problem)))
+    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.MODIFY)))
       return {
         error: RenameProblemFileResponseError.PERMISSION_DENIED
       };
@@ -619,31 +622,30 @@ export class ProblemController {
     return {};
   }
 
-  @Get("getProblemJudgeInfoAndPermission")
+  @Get("getProblemJudgeInfo")
   @ApiBearerAuth()
   @ApiOperation({
     summary: "Get a problem's judge info and permission of current user by its ID or display ID."
   })
-  async getProblemJudgeInfoAndPermission(
+  async getProblemJudgeInfo(
     @CurrentUser() currentUser: UserEntity,
-    @Query() request: GetProblemJudgeInfoAndPermissionRequestDto
-  ): Promise<GetProblemJudgeInfoAndPermissionResponseDto> {
+    @Query() request: GetProblemJudgeInfoRequestDto
+  ): Promise<GetProblemJudgeInfoResponseDto> {
     let problem: ProblemEntity;
     if (request.id) problem = await this.problemService.findProblemById(parseInt(request.id));
     else if (request.displayId) problem = await this.problemService.findProblemByDisplayId(parseInt(request.displayId));
 
     if (!problem)
       return {
-        error: GetProblemJudgeInfoAndPermissionResponseError.NO_SUCH_PROBLEM
+        error: GetProblemJudgeInfoResponseError.NO_SUCH_PROBLEM
       };
 
-    if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.READ, problem)))
+    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.VIEW)))
       return {
-        error: GetProblemJudgeInfoAndPermissionResponseError.PERMISSION_DENIED
+        error: GetProblemJudgeInfoResponseError.PERMISSION_DENIED
       };
 
     const judgeInfo = await this.problemService.getProblemJudgeInfo(problem);
-    const permission = await this.problemService.getUserPermission(currentUser, problem);
 
     return {
       meta: {
@@ -655,7 +657,7 @@ export class ProblemController {
         locales: problem.locales
       },
       judgeInfo: judgeInfo,
-      permission: permission
+      haveWritePermission: await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.MODIFY)
     };
   }
 
@@ -674,7 +676,7 @@ export class ProblemController {
         error: UpdateProblemJudgeInfoResponseError.NO_SUCH_PROBLEM
       };
 
-    if (!(await this.problemService.userHasPermission(currentUser, ProblemPermissionType.WRITE, problem)))
+    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.MODIFY)))
       return {
         error: UpdateProblemJudgeInfoResponseError.PERMISSION_DENIED
       };

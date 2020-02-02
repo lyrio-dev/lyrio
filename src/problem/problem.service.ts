@@ -26,13 +26,14 @@ import { PermissionService, PermissionObjectType } from "@/permission/permission
 import { UserService } from "@/user/user.service";
 import { GroupService } from "@/group/group.service";
 import { FileService } from "@/file/file.service";
+import { ConfigService } from "@/config/config.service";
 
 export enum ProblemPermissionType {
-  CREATE = "CREATE",
-  READ = "READ",
-  WRITE = "WRITE",
-  CONTROL = "CONTROL",
-  FULL_CONTROL = "FULL_CONTROL"
+  VIEW = "VIEW",
+  MODIFY = "MODIFY",
+  MANAGE_PERMISSION = "MANAGE_PERMISSION",
+  MANAGE_PUBLICNESS = "MANAGE_PUBLICNESS",
+  DELETE = "DELETE"
 }
 
 export enum ProblemPermissionLevel {
@@ -59,7 +60,8 @@ export class ProblemService {
     private readonly userService: UserService,
     private readonly groupService: GroupService,
     private readonly permissionService: PermissionService,
-    private readonly fileService: FileService
+    private readonly fileService: FileService,
+    private readonly configService: ConfigService
   ) {}
 
   async findProblemById(id: number): Promise<ProblemEntity> {
@@ -72,16 +74,11 @@ export class ProblemService {
     });
   }
 
-  async userHasPermission(user: UserEntity, type: ProblemPermissionType, problem?: ProblemEntity): Promise<boolean> {
+  async userHasPermission(user: UserEntity, problem: ProblemEntity, type: ProblemPermissionType): Promise<boolean> {
     switch (type) {
-      // Everyone can create a problem
-      case ProblemPermissionType.CREATE:
-        if (!user) return false;
-        else return true;
-
       // Everyone can read a public problem
-      // Owner, admins and those who has read permission can read a non-public problem
-      case ProblemPermissionType.READ:
+      // Owner, admins and those who has read permission can view a non-public problem
+      case ProblemPermissionType.VIEW:
         if (problem.isPublic) return true;
         else if (!user) return false;
         else if (user.id === problem.ownerId) return true;
@@ -95,8 +92,8 @@ export class ProblemService {
             ProblemPermissionLevel.READ
           );
 
-      // Owner, admins and those who has write permission can write a problem
-      case ProblemPermissionType.WRITE:
+      // Owner, admins and those who has write permission can modify a problem
+      case ProblemPermissionType.MODIFY:
         if (!user) return false;
         else if (user.id === problem.ownerId) return true;
         else if (user.isAdmin) return true;
@@ -109,68 +106,31 @@ export class ProblemService {
             ProblemPermissionLevel.WRITE
           );
 
-      // Owner and admins can control a problem (i.e. manage its permissions)
-      case ProblemPermissionType.CONTROL:
+      // Admins can manage a problem's permission
+      // Controlled by the application preference, the owner may have the permission
+      case ProblemPermissionType.MANAGE_PERMISSION:
         if (!user) return false;
-        else if (user.id === problem.ownerId) return true;
+        else if (user.id === problem.ownerId && this.configService.config.preference.allowOwnerManageProblemPermission) return true;
         else if (user.isAdmin) return true;
         else if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM)) return true;
+        else return false;
 
-      // Admins can full control a problem (i.e. set it's public or not / set its display id)
-      case ProblemPermissionType.FULL_CONTROL:
+      // Admins can manage a problem's publicness (set display id / make public or non-public)
+      case ProblemPermissionType.MANAGE_PUBLICNESS:
         if (!user) return false;
         else if (user.isAdmin) return true;
         else if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM)) return true;
+        else return false;
+
+      // Admins can delete a problem
+      // Controlled by the application preference, the owner may have the permission
+      case ProblemPermissionType.DELETE:
+        if (!user) return false;
+        else if (user.id === problem.ownerId && this.configService.config.preference.allowOwnerDeleteProblem) return true;
+        else if (user.isAdmin) return true;
+        else if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM)) return true;
+        else return false;
     }
-  }
-
-  async getUserPermission(user: UserEntity, problem?: ProblemEntity): Promise<Record<ProblemPermissionType, boolean>> {
-    const result: Record<ProblemPermissionType, boolean> = {
-      CREATE: false,
-      READ: false,
-      WRITE: false,
-      CONTROL: false,
-      FULL_CONTROL: false
-    };
-
-    result[ProblemPermissionType.CREATE] = true;
-
-    if (
-      user &&
-      user.isAdmin &&
-      (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM))
-    ) {
-      result[ProblemPermissionType.READ] = true;
-      result[ProblemPermissionType.WRITE] = true;
-      result[ProblemPermissionType.CONTROL] = true;
-      result[ProblemPermissionType.FULL_CONTROL] = true;
-    } else if (problem && user && problem.ownerId === user.id) {
-      result[ProblemPermissionType.READ] = true;
-      result[ProblemPermissionType.WRITE] = true;
-      result[ProblemPermissionType.CONTROL] = true;
-    } else {
-      if (problem && user) {
-        const permissionLevel = await this.permissionService.getUserOrItsGroupsMaxPermissionLevel(
-          user,
-          problem.id,
-          PermissionObjectType.PROBLEM
-        );
-
-        if (permissionLevel >= ProblemPermissionLevel.READ) {
-          result[ProblemPermissionType.READ] = true;
-        }
-
-        if (permissionLevel >= ProblemPermissionLevel.WRITE) {
-          result[ProblemPermissionType.WRITE] = true;
-        }
-      }
-
-      if (problem && problem.isPublic) {
-        result[ProblemPermissionType.READ] = true;
-      }
-    }
-
-    return result;
   }
 
   async queryProblemsAndCount(skipCount: number, takeCount: number): Promise<[ProblemEntity[], number]> {
