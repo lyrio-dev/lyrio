@@ -52,11 +52,7 @@ export class GroupController {
       };
 
     return {
-      groupMeta: {
-        id: group.id,
-        name: group.name,
-        ownerId: group.ownerId
-      }
+      groupMeta: await this.groupService.getGroupMeta(group)
     };
   }
 
@@ -71,11 +67,7 @@ export class GroupController {
       this.configService.config.queryLimit.searchGroupTake
     );
     return {
-      groupMetas: groups.map(group => ({
-        id: group.id,
-        name: group.name,
-        ownerId: group.ownerId
-      }))
+      groupMetas: await Promise.all(groups.map(async group => await this.groupService.getGroupMeta(group)))
     };
   }
 

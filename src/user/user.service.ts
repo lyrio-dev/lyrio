@@ -4,7 +4,7 @@ import { Repository, Connection, Like } from "typeorm";
 
 import { UserEntity } from "./user.entity";
 import { AuthService } from "@/auth/auth.service";
-import { UpdateUserProfileResponseError } from "./dto";
+import { UpdateUserProfileResponseError, UserMetaDto } from "./dto";
 import { escapeLike } from "@/database/database.utils";
 
 @Injectable()
@@ -26,6 +26,16 @@ export class UserService {
     return await this.userRepository.findOne({
       username: username
     });
+  }
+
+  async getUserMeta(user: UserEntity): Promise<UserMetaDto> {
+    return {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      bio: user.bio,
+      isAdmin: user.isAdmin
+    };
   }
 
   async userExists(id: number): Promise<boolean> {

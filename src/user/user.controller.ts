@@ -39,13 +39,7 @@ export class UserController {
   async searchUser(@Query() request: SearchUserRequestDto): Promise<SearchUserResponseDto> {
     const users = await this.userService.searchUser(request.query, this.configService.config.queryLimit.searchUserTake);
     return {
-      userMetas: users.map(user => ({
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        bio: user.bio,
-        isAdmin: user.isAdmin
-      }))
+      userMetas: await Promise.all(users.map(user => this.userService.getUserMeta(user)))
     };
   }
 
@@ -65,13 +59,7 @@ export class UserController {
     if (!user) return {};
 
     const result: GetUserMetaResponseDto = {
-      userMeta: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        bio: user.bio,
-        isAdmin: user.isAdmin
-      }
+      userMeta: await this.userService.getUserMeta(user)
     };
 
     if (request.getPrivileges) {

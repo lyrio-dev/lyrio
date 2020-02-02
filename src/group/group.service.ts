@@ -7,7 +7,8 @@ import {
   AddUserToGroupResponseError,
   RemoveUserFromGroupResponseError,
   DeleteGroupResponseError,
-  SetGroupAdminResponseError
+  SetGroupAdminResponseError,
+  GroupMetaDto
 } from "./dto";
 
 import { UserService } from "@/user/user.service";
@@ -40,6 +41,14 @@ export class GroupService {
       userId: userId,
       groupId: groupId
     });
+  }
+
+  async getGroupMeta(group: GroupEntity): Promise<GroupMetaDto> {
+    return {
+      id: group.id,
+      name: group.name,
+      ownerId: group.ownerId
+    };
   }
 
   async isGroupAdmin(userId: number, groupId: number): Promise<boolean> {

@@ -344,31 +344,19 @@ export class ProblemController {
     const owner = await this.userService.findUserById(problem.ownerId);
 
     return {
-      owner: {
-        id: owner.id,
-        username: owner.username,
-        email: owner.email,
-        bio: owner.bio,
-        isAdmin: owner.isAdmin
-      },
-      userPermissions: userPermissions.map(([user, permissionLevel]) => ({
-        user: {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          bio: user.bio,
-          isAdmin: user.isAdmin
-        },
-        permissionLevel: permissionLevel
-      })),
-      groupPermissions: groupPermissions.map(([group, permissionLevel]) => ({
-        group: {
-          id: group.id,
-          name: group.name,
-          ownerId: group.ownerId
-        },
-        permissionLevel: permissionLevel
-      }))
+      owner: await this.userService.getUserMeta(owner),
+      userPermissions: await Promise.all(
+        userPermissions.map(async ([user, permissionLevel]) => ({
+          user: await this.userService.getUserMeta(user),
+          permissionLevel: permissionLevel
+        }))
+      ),
+      groupPermissions: await Promise.all(
+        groupPermissions.map(async ([group, permissionLevel]) => ({
+          group: await this.groupService.getGroupMeta(group),
+          permissionLevel: permissionLevel
+        }))
+      )
     };
   }
 
