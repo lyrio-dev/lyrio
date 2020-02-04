@@ -1,4 +1,4 @@
-import { Injectable, Inject } from "@nestjs/common";
+import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
 import { Repository, Connection, EntityManager } from "typeorm";
 import * as Minio from "minio";
@@ -36,7 +36,7 @@ const FILE_DOWNLOAD_EXPIRE_TIME = 1 * 60 * 60;
 // TODO: Setup delayed tasks to delete files
 // TODO: Add upload file size limit
 @Injectable()
-export class FileService {
+export class FileService implements OnModuleInit {
   private readonly minioClient: Minio.Client;
 
   constructor(
@@ -57,6 +57,22 @@ export class FileService {
       accessKey: this.configService.config.fileStorage.accessKey,
       secretKey: this.configService.config.fileStorage.secretKey
     });
+  }
+
+  async onModuleInit(): Promise<void> {
+    let bucketExists: boolean;
+    try {
+      bucketExists = await this.minioClient.bucketExists(this.configService.config.fileStorage.bucket);
+    } catch (e) {
+      throw new Error(
+        `Error initializing the MinIO client. Please check your configuration file and MinIO server. ${e}`
+      );
+    }
+
+    if (!bucketExists)
+      throw new Error(
+        `MinIO bucket ${this.configService.config.fileStorage.bucket} doesn't exist. Please check your configuration file and MinIO server.`
+      );
   }
 
   async tryReferenceFile(sha256: string, transactionalEntityManager: EntityManager): Promise<string> {

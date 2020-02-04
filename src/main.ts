@@ -48,4 +48,8 @@ async function bootstrap() {
   );
 }
 
-bootstrap();
+bootstrap().catch(err => {
+  console.error(err);
+  console.error("Error bootstrapping the application, exiting...");
+  process.exit(1);
+});
