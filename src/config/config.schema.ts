@@ -30,7 +30,7 @@ class DatabaseConfig {
   readonly database: string;
 }
 
-class FileStorageConfig {
+class MinioConfig {
   @IsString()
   readonly endPoint: string;
 
@@ -48,6 +48,16 @@ class FileStorageConfig {
 
   @IsString()
   readonly bucket: string;
+}
+
+class ServicesConfig {
+  @ValidateNested()
+  @Type(() => DatabaseConfig)
+  readonly database: DatabaseConfig;
+
+  @ValidateNested()
+  @Type(() => MinioConfig)
+  readonly minio: MinioConfig;
 }
 
 class CrossOriginConfig {
@@ -100,12 +110,8 @@ export class AppConfig {
   readonly server: ServerConfig;
 
   @ValidateNested()
-  @Type(() => DatabaseConfig)
-  readonly database: DatabaseConfig;
-
-  @ValidateNested()
-  @Type(() => FileStorageConfig)
-  readonly fileStorage: FileStorageConfig;
+  @Type(() => ServicesConfig)
+  readonly services: ServicesConfig;
 
   @ValidateNested()
   @Type(() => SecurityConfig)

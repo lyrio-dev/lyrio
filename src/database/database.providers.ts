@@ -20,18 +20,18 @@ export const databaseProviders = [
   TypeOrmModule.forRootAsync({
     imports: [ConfigModule],
     useFactory: (configService: ConfigService) => {
-      if (configService.config.database.type === "mariadb" && !patched) {
+      if (configService.config.services.database.type === "mariadb" && !patched) {
         patchTypeOrm();
         patched = true;
       }
 
       return {
-        type: configService.config.database.type,
-        host: configService.config.database.host,
-        port: configService.config.database.port,
-        username: configService.config.database.username,
-        password: configService.config.database.password,
-        database: configService.config.database.database,
+        type: configService.config.services.database.type,
+        host: configService.config.services.database.host,
+        port: configService.config.services.database.port,
+        username: configService.config.services.database.username,
+        password: configService.config.services.database.password,
+        database: configService.config.services.database.database,
         entities: [__dirname + "/../**/*.entity{.ts,.js}"],
         logging: !!process.env["SYZOJ_NG_LOG_SQL"],
         synchronize: true

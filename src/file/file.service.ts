@@ -51,18 +51,18 @@ export class FileService implements OnModuleInit {
     private readonly configService: ConfigService
   ) {
     this.minioClient = new Minio.Client({
-      endPoint: this.configService.config.fileStorage.endPoint,
-      port: this.configService.config.fileStorage.port,
-      useSSL: this.configService.config.fileStorage.useSSL,
-      accessKey: this.configService.config.fileStorage.accessKey,
-      secretKey: this.configService.config.fileStorage.secretKey
+      endPoint: this.configService.config.services.minio.endPoint,
+      port: this.configService.config.services.minio.port,
+      useSSL: this.configService.config.services.minio.useSSL,
+      accessKey: this.configService.config.services.minio.accessKey,
+      secretKey: this.configService.config.services.minio.secretKey
     });
   }
 
   async onModuleInit(): Promise<void> {
     let bucketExists: boolean;
     try {
-      bucketExists = await this.minioClient.bucketExists(this.configService.config.fileStorage.bucket);
+      bucketExists = await this.minioClient.bucketExists(this.configService.config.services.minio.bucket);
     } catch (e) {
       throw new Error(
         `Error initializing the MinIO client. Please check your configuration file and MinIO server. ${e}`
@@ -71,7 +71,7 @@ export class FileService implements OnModuleInit {
 
     if (!bucketExists)
       throw new Error(
-        `MinIO bucket ${this.configService.config.fileStorage.bucket} doesn't exist. Please check your configuration file and MinIO server.`
+        `MinIO bucket ${this.configService.config.services.minio.bucket} doesn't exist. Please check your configuration file and MinIO server.`
       );
   }
 
@@ -103,7 +103,7 @@ export class FileService implements OnModuleInit {
   async createUploadUrl(sha256: string, transactionalEntityManager?: EntityManager): Promise<[string, string]> {
     const uuid = UUID();
     const url = await this.minioClient.presignedPutObject(
-      this.configService.config.fileStorage.bucket,
+      this.configService.config.services.minio.bucket,
       uuid,
       FILE_UPLOAD_EXPIRE_TIME
     );
@@ -130,7 +130,7 @@ export class FileService implements OnModuleInit {
       // Get file stream
       let fileStream: Stream;
       try {
-        fileStream = await this.minioClient.getObject(this.configService.config.fileStorage.bucket, uuid);
+        fileStream = await this.minioClient.getObject(this.configService.config.services.minio.bucket, uuid);
       } catch (e) {
         if (e.message === "The specified key does not exist.") {
           return ["NOT_UPLOADED", null];
@@ -201,7 +201,7 @@ export class FileService implements OnModuleInit {
 
   async getDownloadLink(uuid: string, filename: string): Promise<string> {
     return await this.minioClient.presignedGetObject(
-      this.configService.config.fileStorage.bucket,
+      this.configService.config.services.minio.bucket,
       uuid,
       FILE_DOWNLOAD_EXPIRE_TIME,
       {

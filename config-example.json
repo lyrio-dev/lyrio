@@ -3,21 +3,23 @@
         "hostname": "127.0.0.1",
         "port": 2002
     },
-    "database": {
-        "type": "mariadb",
-        "host": "127.0.0.1",
-        "port": 3306,
-        "username": "syzoj-ng",
-        "password": "syzoj-ng",
-        "database": "syzoj-ng"
-    },
-    "fileStorage": {
-        "endPoint": "syzoj-ng.test",
-        "port": 9000,
-        "useSSL": false,
-        "accessKey": "minioadmin",
-        "secretKey": "minioadmin",
-        "bucket": "syzoj-ng-files"
+    "services": {
+        "database": {
+            "type": "mariadb",
+            "host": "127.0.0.1",
+            "port": 3306,
+            "username": "syzoj-ng",
+            "password": "syzoj-ng",
+            "database": "syzoj-ng"
+        },
+        "minio": {
+            "endPoint": "syzoj-ng.test",
+            "port": 9000,
+            "useSSL": false,
+            "accessKey": "minioadmin",
+            "secretKey": "minioadmin",
+            "bucket": "syzoj-ng-files"
+        }
     },
     "security": {
         "crossOrigin": {
