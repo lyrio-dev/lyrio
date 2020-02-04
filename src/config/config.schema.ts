@@ -58,6 +58,9 @@ class ServicesConfig {
   @ValidateNested()
   @Type(() => MinioConfig)
   readonly minio: MinioConfig;
+
+  @IsString()
+  readonly redis: string;
 }
 
 class CrossOriginConfig {

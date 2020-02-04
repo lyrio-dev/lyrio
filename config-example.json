@@ -19,7 +19,8 @@
             "accessKey": "minioadmin",
             "secretKey": "minioadmin",
             "bucket": "syzoj-ng-files"
-        }
+        },
+        "redis": "redis://127.0.0.1:6379"
     },
     "security": {
         "crossOrigin": {
