@@ -2,28 +2,35 @@ import { Module, NestModule, MiddlewareConsumer, RequestMethod } from "@nestjs/c
 
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
-import { DatabaseModule } from "./database/database.module";
+import { AuthMiddleware } from "./auth/auth.middleware";
+
 import { ConfigModule } from "./config/config.module";
+import { RedisModule } from "./redis/redis.module";
+import { DatabaseModule } from "./database/database.module";
 import { UserModule } from "./user/user.module";
 import { AuthModule } from "./auth/auth.module";
-import { AuthMiddleware } from "./auth/auth.middleware";
 import { CorsModule } from "./cors/cors.module";
 import { GroupModule } from "./group/group.module";
 import { ProblemModule } from "./problem/problem.module";
 import { LocalizedContentModule } from "./localized-content/localized-content.module";
 import { PermissionModule } from "./permission/permission.module";
+import { FileModule } from "./file/file.module";
+import { SubmissionModule } from "./submission/submission.module";
 
 @Module({
   imports: [
-    DatabaseModule,
     ConfigModule,
+    DatabaseModule,
+    RedisModule,
     UserModule,
     AuthModule,
     CorsModule,
     GroupModule,
     ProblemModule,
     LocalizedContentModule,
-    PermissionModule
+    PermissionModule,
+    FileModule,
+    SubmissionModule
   ],
   controllers: [AppController],
   providers: [AppService]

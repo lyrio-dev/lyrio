@@ -1,4 +1,4 @@
-import { ProblemJudgeInfo } from "./problem-judge-info.interface";
+import { ProblemJudgeInfo } from "../problem-judge-info.interface";
 
 export interface ProblemJudgeInfoTraditional extends ProblemJudgeInfo {
   /*

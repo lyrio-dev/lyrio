@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { InjectConnection, InjectRepository } from "@nestjs/typeorm";
-import { Connection, Repository, FindConditions, FindManyOptions } from "typeorm";
+import { Connection, Repository, FindConditions, FindManyOptions, EntityManager } from "typeorm";
 
 import { UserEntity } from "@/user/user.entity";
 import { GroupEntity } from "@/group/group.entity";
@@ -9,7 +9,8 @@ import { ProblemEntity, ProblemType } from "./problem.entity";
 import { ProblemJudgeInfoEntity } from "./problem-judge-info.entity";
 import { ProblemSampleEntity } from "./problem-sample.entity";
 import { ProblemFileType, ProblemFileEntity } from "./problem-file.entity";
-import { ProblemJudgeInfoService } from "./problem-judge-info.service";
+import { ProblemStatisticsEntity } from "./problem-statistics.entity";
+import { ProblemTypeService } from "./type/problem-type.service";
 import {
   ProblemStatementDto,
   UpdateProblemStatementRequestDto,
@@ -20,7 +21,7 @@ import { LocalizedContentType } from "@/localized-content/localized-content.enti
 import { Locale } from "@/common/locale.type";
 import { ProblemContentSection } from "./problem-content.interface";
 import { ProblemSampleData } from "./problem-sample-data.interface";
-import { ProblemJudgeInfo } from "./judge-info/problem-judge-info.interface";
+import { ProblemJudgeInfo } from "./type/problem-judge-info.interface";
 import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.service";
 import { PermissionService, PermissionObjectType } from "@/permission/permission.service";
 import { UserService } from "@/user/user.service";
@@ -54,7 +55,9 @@ export class ProblemService {
     private readonly problemSampleRepository: Repository<ProblemSampleEntity>,
     @InjectRepository(ProblemFileEntity)
     private readonly problemFileRepository: Repository<ProblemFileEntity>,
-    private readonly problemJudgeInfoService: ProblemJudgeInfoService,
+    @InjectRepository(ProblemStatisticsEntity)
+    private readonly problemStatisticsRepository: Repository<ProblemStatisticsEntity>,
+    private readonly problemTypeService: ProblemTypeService,
     private readonly localizedContentService: LocalizedContentService,
     private readonly userPrivilegeService: UserPrivilegeService,
     private readonly userService: UserService,
@@ -160,13 +163,19 @@ export class ProblemService {
 
       const problemJudgeInfo = new ProblemJudgeInfoEntity();
       problemJudgeInfo.problemId = problem.id;
-      problemJudgeInfo.judgeInfo = this.problemJudgeInfoService.getDefaultJudgeInfoOfType(type);
+      problemJudgeInfo.judgeInfo = this.problemTypeService.getDefaultJudgeInfo(type);
       await transactionalEntityManager.save(problemJudgeInfo);
 
       const problemSample = new ProblemSampleEntity();
       problemSample.problemId = problem.id;
       problemSample.data = statement.samples;
       await transactionalEntityManager.save(problemSample);
+
+      const problemStatistics = new ProblemStatisticsEntity();
+      problemStatistics.problemId = problem.id;
+      problemStatistics.submissionCount = 0;
+      problemStatistics.acceptedSubmissionCount = 0;
+      await transactionalEntityManager.save(problemStatistics);
 
       for (const localizedContent of statement.localizedContents) {
         await this.localizedContentService.createOrUpdate(
@@ -449,5 +458,28 @@ export class ProblemService {
     });
 
     return true;
+  }
+
+  async updateProblemStatistics(
+    problem: ProblemEntity,
+    incSubmissionCount: number,
+    incAcceptedSubmissionCount: number,
+    transactionalEntityManager: EntityManager
+  ): Promise<void> {
+    if (incSubmissionCount !== 0)
+      await transactionalEntityManager.increment(
+        ProblemStatisticsEntity,
+        { problemId: problem.id },
+        "submissionCount",
+        incSubmissionCount
+      );
+
+    if (incAcceptedSubmissionCount !== 0)
+      await transactionalEntityManager.increment(
+        ProblemStatisticsEntity,
+        { problemId: problem.id },
+        "acceptedSubmissionCount",
+        incAcceptedSubmissionCount
+      );
   }
 }

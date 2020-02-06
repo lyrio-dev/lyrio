@@ -2,8 +2,8 @@ import { Entity, PrimaryColumn, OneToOne, Column, JoinColumn } from "typeorm";
 
 import { ProblemEntity } from "@/problem/problem.entity";
 
-@Entity("problem_judge_info")
-export class ProblemJudgeInfoEntity {
+@Entity("problem_statistics")
+export class ProblemStatisticsEntity {
   @OneToOne(type => ProblemEntity, { onDelete: "CASCADE" })
   @JoinColumn()
   problem: Promise<ProblemEntity>;
@@ -11,6 +11,9 @@ export class ProblemJudgeInfoEntity {
   @PrimaryColumn()
   problemId: number;
 
-  @Column({ type: "json" })
-  judgeInfo: object;
+  @Column({ type: "integer" })
+  submissionCount: number;
+
+  @Column({ type: "integer" })
+  acceptedSubmissionCount: number;
 }

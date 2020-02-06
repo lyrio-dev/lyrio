@@ -5,7 +5,7 @@ import { Locale } from "@/common/locale.type";
 import { ProblemMetaDto } from "./problem-meta.dto";
 import { ProblemContentSectionDto } from "./problem-content-section.dto";
 import { ProblemSampleDataMemberDto } from "./problem-sample-data-member.dto";
-import { ProblemJudgeInfo } from "../judge-info/problem-judge-info.interface";
+import { ProblemJudgeInfo } from "../type/problem-judge-info.interface";
 import { ProblemFileDto } from "./problem-file.dto";
 
 export enum GetProblemDetailResponseError {
