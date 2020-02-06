@@ -8,7 +8,7 @@ export class RedisService implements OnModuleInit {
   private readonly client: Redis.Redis;
   private readonly untilReady: Promise<void>;
 
-  constructor(public readonly configService: ConfigService) {
+  constructor(private readonly configService: ConfigService) {
     this.client = new Redis(this.configService.config.services.redis, {
       enableReadyCheck: true
     });
