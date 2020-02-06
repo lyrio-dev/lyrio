@@ -18,9 +18,9 @@ import {
   UpdateProblemStatementResponseDto,
   UpdateProblemStatementRequestDto,
   UpdateProblemStatementResponseError,
-  GetProblemDetailRequestDto,
-  GetProblemDetailResponseDto,
-  GetProblemDetailResponseError,
+  GetProblemRequestDto,
+  GetProblemResponseDto,
+  GetProblemResponseError,
   SetProblemPermissionsRequestDto,
   SetProblemPermissionsResponseDto,
   SetProblemPermissionsResponseError,
@@ -30,36 +30,21 @@ import {
   SetProblemPublicRequestDto,
   SetProblemPublicResponseDto,
   SetProblemPublicResponseError,
-  GetProblemPermissionsRequestDto,
-  GetProblemPermissionsResponseDto,
-  GetProblemPermissionsResponseError,
   QueryProblemSetRequestDto,
   QueryProblemSetResponseDto,
   QueryProblemSetErrorDto,
-  GetProblemStatementsAllLocalesRequestDto,
-  GetProblemStatementsAllLocalesResponseDto,
-  GetProblemStatementsAllLocalesResponseError,
   AddProblemFileRequestDto,
   AddProblemFileResponseDto,
   AddProblemFileResponseError,
   RemoveProblemFilesRequestDto,
   RemoveProblemFilesResponseDto,
   RemoveProblemFilesResponseError,
-  ListProblemFilesRequestDto,
-  ListProblemFilesResponseDto,
-  ListProblemFilesResponseError,
   DownloadProblemFilesRequestDto,
   DownloadProblemFilesResponseDto,
   DownloadProblemFilesResponseError,
-  GetProblemAllFilesRequestDto,
-  GetProblemAllFilesResponseDto,
-  GetProblemAllFilesResponseError,
   RenameProblemFileRequestDto,
   RenameProblemFileResponseDto,
   RenameProblemFileResponseError,
-  GetProblemJudgeInfoRequestDto,
-  GetProblemJudgeInfoResponseDto,
-  GetProblemJudgeInfoResponseError,
   UpdateProblemJudgeInfoRequestDto,
   UpdateProblemJudgeInfoResponseDto,
   UpdateProblemJudgeInfoResponseError
@@ -175,33 +160,32 @@ export class ProblemController {
     return {};
   }
 
-  @Get("getProblemStatementsAllLocales")
+  @Post("getProblem")
   @ApiBearerAuth()
   @ApiOperation({
-    summary: "Get a problem's meta, title, contents, of ALL locales."
+    summary: "Get any parts of a problem.",
+    description:
+      "Get a problem's meta and any parts of its owner, localized contents of given locale, localized contents of all locales, samples, testdata, additional files, permissions of current user, permission for users and groups and judge info. If localized contents of given locale are request but not found, they are fallbacked to default (first) locale if none for given locale."
   })
-  async getProblemStatementsAllLocales(
+  async getProblem(
     @CurrentUser() currentUser: UserEntity,
-    @Query() request: GetProblemStatementsAllLocalesRequestDto
-  ): Promise<GetProblemStatementsAllLocalesResponseDto> {
+    @Body() request: GetProblemRequestDto
+  ): Promise<GetProblemResponseDto> {
     let problem: ProblemEntity;
-    if (request.id) problem = await this.problemService.findProblemById(parseInt(request.id));
-    else if (request.displayId) problem = await this.problemService.findProblemByDisplayId(parseInt(request.displayId));
+    if (request.id) problem = await this.problemService.findProblemById(request.id);
+    else if (request.displayId) problem = await this.problemService.findProblemByDisplayId(request.displayId);
 
     if (!problem)
       return {
-        error: GetProblemStatementsAllLocalesResponseError.NO_SUCH_PROBLEM
+        error: GetProblemResponseError.NO_SUCH_PROBLEM
       };
 
     if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.VIEW)))
       return {
-        error: GetProblemStatementsAllLocalesResponseError.PERMISSION_DENIED
+        error: GetProblemResponseError.PERMISSION_DENIED
       };
 
-    const samples = await this.problemService.getProblemSamples(problem);
-    const localizedContents = await this.problemService.getProblemAllLocalizedContents(problem);
-
-    return {
+    const result: GetProblemResponseDto = {
       meta: {
         id: problem.id,
         displayId: problem.displayId,
@@ -209,81 +193,82 @@ export class ProblemController {
         isPublic: problem.isPublic,
         ownerId: problem.ownerId,
         locales: problem.locales
-      },
-      statement: {
-        samples: samples,
-        localizedContents: localizedContents
-      },
-      haveWritePermission: await this.problemService.userHasPermission(
-        currentUser,
+      }
+    };
+
+    if (request.owner) {
+      const owner = await this.userService.findUserById(problem.ownerId);
+      result.owner = await this.userService.getUserMeta(owner);
+    }
+
+    if (request.localizedContentsOfLocale != null) {
+      const resultLocale = problem.locales.includes(request.localizedContentsOfLocale)
+        ? request.localizedContentsOfLocale
+        : problem.locales[0];
+      const title = await this.problemService.getProblemLocalizedTitle(problem, resultLocale);
+      const contentSections = await this.problemService.getProblemLocalizedContent(problem, resultLocale);
+      result.localizedContentsOfLocale = {
+        locale: resultLocale,
+        title: title,
+        contentSections: contentSections
+      };
+    }
+
+    if (request.localizedContentsOfAllLocales) {
+      result.localizedContentsOfAllLocales = await this.problemService.getProblemAllLocalizedContents(problem);
+    }
+
+    if (request.samples) {
+      result.samples = await this.problemService.getProblemSamples(problem);
+    }
+
+    if (request.judgeInfo) {
+      result.judgeInfo = await this.problemService.getProblemJudgeInfo(problem);
+    }
+
+    if (request.testData) {
+      result.testData = await this.problemService.listProblemFiles(problem, ProblemFileType.TestData, true);
+    }
+
+    if (request.additionalFiles) {
+      result.additionalFiles = await this.problemService.listProblemFiles(
         problem,
-        ProblemPermissionType.MODIFY
-      )
-    };
-  }
+        ProblemFileType.AdditionalFile,
+        true
+      );
+    }
 
-  @Get("getProblemDetail")
-  @ApiBearerAuth()
-  @ApiOperation({
-    summary: "Get a problem's meta, owner, title, contents, samples, additional files and judge info of given locale.",
-    description: "Title and contents are fallbacked to default (first) locale if none for given locale."
-  })
-  async getProblemDetail(
-    @CurrentUser() currentUser: UserEntity,
-    @Query() request: GetProblemDetailRequestDto
-  ): Promise<GetProblemDetailResponseDto> {
-    let problem: ProblemEntity;
-    if (request.id) problem = await this.problemService.findProblemById(parseInt(request.id));
-    else if (request.displayId) problem = await this.problemService.findProblemByDisplayId(parseInt(request.displayId));
-
-    if (!problem)
-      return {
-        error: GetProblemDetailResponseError.NO_SUCH_PROBLEM
-      };
-
-    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.VIEW)))
-      return {
-        error: GetProblemDetailResponseError.PERMISSION_DENIED
-      };
-
-    const resultLocale = problem.locales.includes(request.locale) ? request.locale : problem.locales[0];
-
-    const title = await this.problemService.getProblemLocalizedTitle(problem, resultLocale);
-    const contentSections = await this.problemService.getProblemLocalizedContent(problem, resultLocale);
-    const samples = await this.problemService.getProblemSamples(problem);
-    const judgeInfo = await this.problemService.getProblemJudgeInfo(problem);
-    const additionalFiles = await this.problemService.listProblemFiles(problem, ProblemFileType.AdditionalFile, true);
-
-    return {
-      meta: {
-        id: problem.id,
-        displayId: problem.displayId,
-        type: problem.type,
-        isPublic: problem.isPublic,
-        ownerId: problem.ownerId,
-        locales: problem.locales
-      },
-      permission: {
-        modify: await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.MODIFY),
-        managePermission: await this.problemService.userHasPermission(
+    if (request.permissionOfCurrentUser) {
+      result.permissionOfCurrentUser = {};
+      for (const permissionType of request.permissionOfCurrentUser) {
+        result.permissionOfCurrentUser[permissionType] = await this.problemService.userHasPermission(
           currentUser,
           problem,
-          ProblemPermissionType.MANAGE_PERMISSION
+          permissionType
+        );
+      }
+    }
+
+    if (request.permissions) {
+      const [userPermissions, groupPermissions] = await this.problemService.getProblemPermissions(problem);
+
+      result.permissions = {
+        userPermissions: await Promise.all(
+          userPermissions.map(async ([user, permissionLevel]) => ({
+            user: await this.userService.getUserMeta(user),
+            permissionLevel: permissionLevel
+          }))
         ),
-        managePublicness: await this.problemService.userHasPermission(
-          currentUser,
-          problem,
-          ProblemPermissionType.MANAGE_PUBLICNESS
-        ),
-        delete: await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.DELETE)
-      },
-      resultLocale: resultLocale,
-      title: title,
-      samples: samples,
-      contentSections: contentSections,
-      additionalFiles: additionalFiles,
-      judgeInfo: judgeInfo
-    };
+        groupPermissions: await Promise.all(
+          groupPermissions.map(async ([group, permissionLevel]) => ({
+            group: await this.groupService.getGroupMeta(group),
+            permissionLevel: permissionLevel
+          }))
+        )
+      };
+    }
+
+    return result;
   }
 
   @Post("setProblemPermissions")
@@ -334,46 +319,6 @@ export class ProblemController {
     await this.problemService.setProblemPermissions(problem, userPermissions, groupPermissions);
 
     return {};
-  }
-
-  @Get("getProblemPermissions")
-  @ApiBearerAuth()
-  @ApiOperation({
-    summary: "Get who and which groups have permission to read / write this problem."
-  })
-  async getProblemPermissions(
-    @CurrentUser() currentUser: UserEntity,
-    @Query() request: GetProblemPermissionsRequestDto
-  ): Promise<GetProblemPermissionsResponseDto> {
-    const problem = await this.problemService.findProblemById(parseInt(request.problemId));
-    if (!problem)
-      return {
-        error: GetProblemPermissionsResponseError.NO_SUCH_PROBLEM
-      };
-
-    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.VIEW)))
-      return {
-        error: GetProblemPermissionsResponseError.PERMISSION_DENIED
-      };
-
-    const [userPermissions, groupPermissions] = await this.problemService.getProblemPermissions(problem);
-    const owner = await this.userService.findUserById(problem.ownerId);
-
-    return {
-      owner: await this.userService.getUserMeta(owner),
-      userPermissions: await Promise.all(
-        userPermissions.map(async ([user, permissionLevel]) => ({
-          user: await this.userService.getUserMeta(user),
-          permissionLevel: permissionLevel
-        }))
-      ),
-      groupPermissions: await Promise.all(
-        groupPermissions.map(async ([group, permissionLevel]) => ({
-          group: await this.groupService.getGroupMeta(group),
-          permissionLevel: permissionLevel
-        }))
-      )
-    };
   }
 
   @Post("setProblemDisplayId")
@@ -499,37 +444,6 @@ export class ProblemController {
     return {};
   }
 
-  @Post("listProblemFiles")
-  @ApiBearerAuth()
-  @ApiOperation({
-    summary: "List testdata or additional files of a problem."
-  })
-  async listProblemFiles(
-    @CurrentUser() currentUser: UserEntity,
-    @Body() request: ListProblemFilesRequestDto
-  ): Promise<ListProblemFilesResponseDto> {
-    const problem = await this.problemService.findProblemById(request.problemId);
-    if (!problem)
-      return {
-        error: ListProblemFilesResponseError.NO_SUCH_PROBLEM
-      };
-
-    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.VIEW)))
-      return {
-        error: ListProblemFilesResponseError.PERMISSION_DENIED
-      };
-
-    const problemFiles = await this.problemService.listProblemFiles(problem, request.type, true);
-
-    return {
-      problemFiles: problemFiles.map(problemFile => ({
-        uuid: problemFile.uuid,
-        filename: problemFile.filename,
-        size: problemFile.size
-      }))
-    };
-  }
-
   @Post("downloadProblemFiles")
   @ApiBearerAuth()
   @ApiOperation({
@@ -565,51 +479,6 @@ export class ProblemController {
     };
   }
 
-  @Get("getProblemAllFiles")
-  @ApiBearerAuth()
-  @ApiOperation({
-    summary: "Get a problem's testdata, additional files and permission of current user by its ID or display ID."
-  })
-  async getProblemAllFiles(
-    @CurrentUser() currentUser: UserEntity,
-    @Query() request: GetProblemAllFilesRequestDto
-  ): Promise<GetProblemAllFilesResponseDto> {
-    let problem: ProblemEntity;
-    if (request.id) problem = await this.problemService.findProblemById(parseInt(request.id));
-    else if (request.displayId) problem = await this.problemService.findProblemByDisplayId(parseInt(request.displayId));
-
-    if (!problem)
-      return {
-        error: GetProblemAllFilesResponseError.NO_SUCH_PROBLEM
-      };
-
-    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.VIEW)))
-      return {
-        error: GetProblemAllFilesResponseError.PERMISSION_DENIED
-      };
-
-    const testdata = await this.problemService.listProblemFiles(problem, ProblemFileType.TestData, true);
-    const additionalFiles = await this.problemService.listProblemFiles(problem, ProblemFileType.AdditionalFile, true);
-
-    return {
-      meta: {
-        id: problem.id,
-        displayId: problem.displayId,
-        type: problem.type,
-        isPublic: problem.isPublic,
-        ownerId: problem.ownerId,
-        locales: problem.locales
-      },
-      testdata: testdata,
-      additionalFiles: additionalFiles,
-      haveWritePermission: await this.problemService.userHasPermission(
-        currentUser,
-        problem,
-        ProblemPermissionType.MODIFY
-      )
-    };
-  }
-
   @Post("renameProblemFile")
   @ApiBearerAuth()
   @ApiOperation({
@@ -636,49 +505,6 @@ export class ProblemController {
       };
 
     return {};
-  }
-
-  @Get("getProblemJudgeInfo")
-  @ApiBearerAuth()
-  @ApiOperation({
-    summary: "Get a problem's judge info and permission of current user by its ID or display ID."
-  })
-  async getProblemJudgeInfo(
-    @CurrentUser() currentUser: UserEntity,
-    @Query() request: GetProblemJudgeInfoRequestDto
-  ): Promise<GetProblemJudgeInfoResponseDto> {
-    let problem: ProblemEntity;
-    if (request.id) problem = await this.problemService.findProblemById(parseInt(request.id));
-    else if (request.displayId) problem = await this.problemService.findProblemByDisplayId(parseInt(request.displayId));
-
-    if (!problem)
-      return {
-        error: GetProblemJudgeInfoResponseError.NO_SUCH_PROBLEM
-      };
-
-    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.VIEW)))
-      return {
-        error: GetProblemJudgeInfoResponseError.PERMISSION_DENIED
-      };
-
-    const judgeInfo = await this.problemService.getProblemJudgeInfo(problem);
-
-    return {
-      meta: {
-        id: problem.id,
-        displayId: problem.displayId,
-        type: problem.type,
-        isPublic: problem.isPublic,
-        ownerId: problem.ownerId,
-        locales: problem.locales
-      },
-      judgeInfo: judgeInfo,
-      haveWritePermission: await this.problemService.userHasPermission(
-        currentUser,
-        problem,
-        ProblemPermissionType.MODIFY
-      )
-    };
   }
 
   @Post("updateProblemJudgeInfo")
