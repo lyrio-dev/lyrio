@@ -27,4 +27,8 @@ export class RedisService implements OnModuleInit {
       throw new Error(`Could not connect to Redis service: ${e}`);
     }
   }
+
+  public getClient(): Redis.Redis {
+    return this.client.duplicate();
+  }
 }

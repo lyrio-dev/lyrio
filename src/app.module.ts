@@ -16,6 +16,7 @@ import { LocalizedContentModule } from "./localized-content/localized-content.mo
 import { PermissionModule } from "./permission/permission.module";
 import { FileModule } from "./file/file.module";
 import { SubmissionModule } from "./submission/submission.module";
+import { JudgeModule } from "./judge/judge.module";
 
 @Module({
   imports: [
@@ -30,7 +31,8 @@ import { SubmissionModule } from "./submission/submission.module";
     LocalizedContentModule,
     PermissionModule,
     FileModule,
-    SubmissionModule
+    SubmissionModule,
+    JudgeModule
   ],
   controllers: [AppController],
   providers: [AppService]

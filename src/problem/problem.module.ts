@@ -15,8 +15,8 @@ import { GroupModule } from "@/group/group.module";
 import { PermissionModule } from "@/permission/permission.module";
 import { FileModule } from "@/file/file.module";
 
-import { ProblemTypeService } from "./type/problem-type.service";
-import { ProblemTypeTraditionalService } from "./type/traditional/problem-type-traditional.service";
+import { ProblemJudgeInfoService } from "./type/problem-judge-info.service";
+import { ProblemTypedJudgeInfoTraditionalService } from "./type/traditional/problem-typed-judge-info-traditional.service";
 
 @Module({
   imports: [
@@ -32,8 +32,8 @@ import { ProblemTypeTraditionalService } from "./type/traditional/problem-type-t
     PermissionModule,
     FileModule
   ],
-  providers: [ProblemService, ProblemTypeService, ProblemTypeTraditionalService],
+  providers: [ProblemService, ProblemJudgeInfoService, ProblemTypedJudgeInfoTraditionalService],
   controllers: [ProblemController],
-  exports: [ProblemService, ProblemTypeService]
+  exports: [ProblemService, ProblemJudgeInfoService]
 })
 export class ProblemModule {}

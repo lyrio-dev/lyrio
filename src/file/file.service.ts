@@ -199,14 +199,17 @@ export class FileService implements OnModuleInit {
     );
   }
 
-  async getDownloadLink(uuid: string, filename: string): Promise<string> {
+  async getDownloadLink(uuid: string, filename?: string, noExpire?: boolean): Promise<string> {
     return await this.minioClient.presignedGetObject(
       this.configService.config.services.minio.bucket,
       uuid,
-      FILE_DOWNLOAD_EXPIRE_TIME,
-      {
-        "response-content-disposition": 'attachment; filename="' + encodeRFC5987ValueChars(filename) + '"'
-      }
+      // The maximum expire time is 7 days
+      noExpire ? 24 * 60 * 60 * 7 : FILE_DOWNLOAD_EXPIRE_TIME,
+      !filename
+        ? {}
+        : {
+            "response-content-disposition": 'attachment; filename="' + encodeRFC5987ValueChars(filename) + '"'
+          }
     );
   }
 }

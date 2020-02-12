@@ -10,7 +10,7 @@ import { ProblemJudgeInfoEntity } from "./problem-judge-info.entity";
 import { ProblemSampleEntity } from "./problem-sample.entity";
 import { ProblemFileType, ProblemFileEntity } from "./problem-file.entity";
 import { ProblemStatisticsEntity } from "./problem-statistics.entity";
-import { ProblemTypeService } from "./type/problem-type.service";
+import { ProblemJudgeInfoService } from "./type/problem-judge-info.service";
 import {
   ProblemStatementDto,
   UpdateProblemStatementRequestDto,
@@ -57,7 +57,7 @@ export class ProblemService {
     private readonly problemFileRepository: Repository<ProblemFileEntity>,
     @InjectRepository(ProblemStatisticsEntity)
     private readonly problemStatisticsRepository: Repository<ProblemStatisticsEntity>,
-    private readonly problemTypeService: ProblemTypeService,
+    private readonly problemJudgeInfoService: ProblemJudgeInfoService,
     private readonly localizedContentService: LocalizedContentService,
     private readonly userPrivilegeService: UserPrivilegeService,
     private readonly userService: UserService,
@@ -163,7 +163,7 @@ export class ProblemService {
 
       const problemJudgeInfo = new ProblemJudgeInfoEntity();
       problemJudgeInfo.problemId = problem.id;
-      problemJudgeInfo.judgeInfo = this.problemTypeService.getDefaultJudgeInfo(type);
+      problemJudgeInfo.judgeInfo = this.problemJudgeInfoService.getDefaultJudgeInfo(type);
       await transactionalEntityManager.save(problemJudgeInfo);
 
       const problemSample = new ProblemSampleEntity();

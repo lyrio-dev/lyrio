@@ -1,6 +1,6 @@
 import { IsString, Length, IsObject } from "class-validator";
 
-export class ProblemSubmissionContentTraditional {
+export class SubmissionContentTraditional {
   @IsString()
   @Length(1, 20)
   language: string;
@@ -10,5 +10,5 @@ export class ProblemSubmissionContentTraditional {
   code: string;
 
   @IsObject()
-  languageOptions: object;
+  languageOptions: unknown;
 }
