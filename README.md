@@ -6,6 +6,7 @@
 [![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg?style=flat-square)](http://commitizen.github.io/cz-cli/)
 [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier)
 [![License](https://img.shields.io/github/license/syzoj/syzoj-ng?style=flat-square)](LICENSE)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fsyzoj%2Fsyzoj-ng.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fsyzoj%2Fsyzoj-ng?ref=badge_shield)
 
 The next generation SYZOJ server.
 
@@ -61,3 +62,7 @@ $ SYZOJ_NG_LOG_SQL=1 SYZOJ_NG_CONFIG_FILE=./config.json yarn start
 ```
 
 Refer to [syzoj-ng-app](https://github.com/syzoj/syzoj-ng-app) for the guide for the front-end app server.
+
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fsyzoj%2Fsyzoj-ng.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fsyzoj%2Fsyzoj-ng?ref=badge_large)
