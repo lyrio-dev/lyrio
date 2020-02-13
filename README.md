@@ -1,7 +1,11 @@
 # SYZOJ NG
 
+[![Build Status](https://img.shields.io/travis/syzoj/syzoj-ng?style=flat-square)](https://travis-ci.org/syzoj/syzoj-ng)
+[![Dependencies](https://img.shields.io/david/syzoj/syzoj-ng?style=flat-square)](https://david-dm.org/syzoj/syzoj-ng)
+[![Known Vulnerabilities](https://snyk.io/test/github/syzoj/syzoj-ng/badge.svg?targetFile=package.json&style=flat-square)](https://snyk.io/test/github/syzoj/syzoj-ng?targetFile=package.json)
 [![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg?style=flat-square)](http://commitizen.github.io/cz-cli/)
 [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier)
+[![License](https://img.shields.io/github/license/syzoj/syzoj-ng?style=flat-square)](LICENSE)
 
 The next generation SYZOJ server.
 
