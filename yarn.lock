@@ -145,10 +145,10 @@
     ts-morph "^4.0.0"
     typescript "3.4.5"
 
-"@nestjs/swagger@^4.1.8":
-  version "4.1.8"
-  resolved "https://registry.npm.taobao.org/@nestjs/swagger/download/@nestjs/swagger-4.1.8.tgz#907fe95c6b61182bb437531cc6e6f49ed46f6695"
-  integrity sha1-kH/pXGthGCu0N1Mcxub0ntRvZpU=
+"@nestjs/swagger@^4.1.15":
+  version "4.2.8"
+  resolved "https://registry.yarnpkg.com/@nestjs/swagger/-/swagger-4.2.8.tgz#e6e05e3c8adc8f4d2cac38c30c832d7f4a747bfd"
+  integrity sha512-nojny4AB8xpXjWsy8A5FQpLdl4spBzIpxl3Gz3ZkijXFSEY/ppMwx8RgYyvlh0jMm3fYmV/1Gh+nW7J+rtLQTQ==
   dependencies:
     lodash "4.17.15"
     path-to-regexp "3.2.0"
