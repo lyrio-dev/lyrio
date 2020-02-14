@@ -14,7 +14,7 @@
     "start:prod": "node dist/main"
   },
   "dependencies": {
-    "@nestjs/common": "^6.7.2",
+    "@nestjs/common": "^6.10.14",
     "@nestjs/core": "^6.7.2",
     "@nestjs/platform-express": "^6.10.4",
     "@nestjs/platform-socket.io": "^6.11.6",
