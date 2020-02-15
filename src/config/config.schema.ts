@@ -100,6 +100,10 @@ class QueryLimitConfig {
 
   @IsInt()
   @Min(0)
+  readonly submissionsTake: number;
+
+  @IsInt()
+  @Min(0)
   readonly searchUserTake: number;
 
   @IsInt()

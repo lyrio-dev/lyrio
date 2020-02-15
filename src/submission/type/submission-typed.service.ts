@@ -5,7 +5,7 @@ import { ProblemType } from "@/problem/problem.entity";
 import { SubmissionTypedServiceInterface } from "./submission-typed-service.interface";
 import { SubmissionContent } from "../submission-content.interface";
 import { SubmissionTypeTraditionalService } from "./traditional/submission-type-traditional.service";
-import { SubmissionTestcaseResult } from "../submission-result.interface";
+import { SubmissionTestcaseResult, SubmissionResult } from "../submission-result.interface";
 
 @Injectable()
 export class SubmissionTypedService {
@@ -32,5 +32,9 @@ export class SubmissionTypedService {
     submissionContent: SubmissionContent
   ) {
     return await this.typedServices[problemType].getCodeLanguageAndAnswerSizeFromSubmissionContent(submissionContent);
+  }
+
+  public async getTimeAndMemoryUsedFromSubmissionResult(problemType: ProblemType, submissionResult: SubmissionResult) {
+    return await this.typedServices[problemType].getTimeAndMemoryUsedFromSubmissionResult(submissionResult);
   }
 }

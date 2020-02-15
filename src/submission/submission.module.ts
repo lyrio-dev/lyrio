@@ -4,6 +4,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { ConfigModule } from "@/config/config.module";
 import { ProblemModule } from "@/problem/problem.module";
 import { JudgeModule } from "@/judge/judge.module";
+import { UserModule } from "@/user/user.module";
 import { SubmissionEntity } from "./submission.entity";
 import { SubmissionDetailEntity } from "./submission-detail.entity";
 import { SubmissionService } from "./submission.service";
@@ -17,7 +18,8 @@ import { SubmissionTypeTraditionalService } from "./type/traditional/submission-
     TypeOrmModule.forFeature([SubmissionDetailEntity]),
     ConfigModule,
     ProblemModule,
-    JudgeModule
+    JudgeModule,
+    UserModule
   ],
   providers: [SubmissionService, SubmissionTypedService, SubmissionTypeTraditionalService],
   controllers: [SubmissionController],

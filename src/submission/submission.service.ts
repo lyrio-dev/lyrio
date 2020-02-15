@@ -52,6 +52,100 @@ export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionPr
     });
   }
 
+  public async querySubmissions(
+    problemId: number,
+    submitterId: number,
+    codeLanguage: string,
+    status: SubmissionStatus,
+    minId: number,
+    maxId: number,
+    publicOnly: boolean,
+    takeCount: number
+  ): Promise<{ result: SubmissionEntity[]; hasSmallerId: boolean; hasLargerId: boolean }> {
+    const queryBuilder = this.submissionRepository.createQueryBuilder();
+
+    if (publicOnly) {
+      queryBuilder.andWhere("isPublic = :isPublic", {
+        isPublic: true
+      });
+    }
+
+    if (problemId) {
+      queryBuilder.andWhere("problemId = :problemId", {
+        problemId: problemId
+      });
+    }
+
+    if (submitterId) {
+      queryBuilder.andWhere("submitterId = :submitterId", {
+        submitterId: submitterId
+      });
+    }
+
+    if (codeLanguage) {
+      queryBuilder.andWhere("codeLanguage = :codeLanguage", {
+        codeLanguage: codeLanguage
+      });
+    }
+
+    if (status) {
+      queryBuilder.andWhere("status = :status", {
+        status: status
+      });
+    }
+
+    const queryBuilderWithoutPagination = queryBuilder.clone();
+
+    let reversed = false;
+    if (minId != null) {
+      queryBuilder.andWhere("id >= :minId", {
+        minId: minId
+      });
+      queryBuilder.orderBy("id", "ASC");
+      reversed = true;
+    } else if (maxId != null) {
+      queryBuilder.andWhere("id <= :maxId", {
+        maxId: maxId
+      });
+      queryBuilder.orderBy("id", "DESC");
+    } else {
+      queryBuilder.orderBy("id", "DESC");
+    }
+
+    queryBuilder.take(takeCount);
+
+    const result = await queryBuilder.getMany();
+    if (reversed) result.reverse();
+
+    if (result.length === 0)
+      return {
+        result: [],
+        hasSmallerId: false,
+        hasLargerId: false
+      };
+
+    const largestId = result[0].id,
+      smallestId = result[result.length - 1].id;
+    const [hasSmallerId, hasLargerId] = await Promise.all([
+      queryBuilderWithoutPagination
+        .clone()
+        .andWhere("id < :smallestId", { smallestId: smallestId })
+        .take(1)
+        .getCount(),
+      queryBuilderWithoutPagination
+        .clone()
+        .andWhere("id > :largestId", { largestId: largestId })
+        .take(1)
+        .getCount()
+    ]);
+
+    return {
+      result: result,
+      hasSmallerId: !!hasSmallerId,
+      hasLargerId: !!hasLargerId
+    };
+  }
+
   public async createSubmission(
     submitter: UserEntity,
     problem: ProblemEntity,
@@ -159,5 +253,29 @@ export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionPr
         await this.onSubmissionFinished(submissionId, progress);
         break;
     }
+  }
+
+  // We need problem type
+  // TODO: cache
+  public async getSubmissionsTimeAndMemoryUsed(
+    submissions: SubmissionEntity[],
+    problems: ProblemEntity[]
+  ): Promise<{ timeUsed: number; memoryUsed: number }[]> {
+    const submissionDetails = await this.submissionDetailRepository.findByIds(
+      submissions.map(submission => submission.id)
+    );
+    const submissionDetailMap: Record<number, SubmissionDetailEntity> = Object.fromEntries(
+      submissionDetails.map(submissionDetail => [submissionDetail.submissionId, submissionDetail])
+    );
+
+    const result: { timeUsed: number; memoryUsed: number }[] = new Array(submissions.length);
+    for (const i in submissions) {
+      const submission = submissions[i];
+      result[i] = await this.submissionTypedService.getTimeAndMemoryUsedFromSubmissionResult(
+        problems[i].type,
+        submissionDetailMap[submission.id].result
+      );
+    }
+    return result;
   }
 }
