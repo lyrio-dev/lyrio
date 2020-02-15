@@ -87,15 +87,7 @@ export class ProblemController {
       const titleLocale = problem.locales.includes(request.locale) ? request.locale : problem.locales[0];
       const title = await this.problemService.getProblemLocalizedTitle(problem, titleLocale);
       response.result.push({
-        meta: {
-          id: problem.id,
-          displayId: problem.displayId,
-          type: problem.type,
-          isPublic: problem.isPublic,
-          ownerId: problem.ownerId,
-          locales: problem.locales
-        },
-
+        meta: await this.problemService.getProblemMeta(problem),
         title: title,
         titleLocale: titleLocale
       });
@@ -186,14 +178,7 @@ export class ProblemController {
       };
 
     const result: GetProblemResponseDto = {
-      meta: {
-        id: problem.id,
-        displayId: problem.displayId,
-        type: problem.type,
-        isPublic: problem.isPublic,
-        ownerId: problem.ownerId,
-        locales: problem.locales
-      }
+      meta: await this.problemService.getProblemMeta(problem)
     };
 
     if (request.owner) {

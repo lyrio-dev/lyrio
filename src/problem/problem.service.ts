@@ -15,7 +15,8 @@ import {
   ProblemStatementDto,
   UpdateProblemStatementRequestDto,
   ProblemLocalizedContentDto,
-  ProblemFileDto
+  ProblemFileDto,
+  ProblemMetaDto
 } from "./dto";
 import { LocalizedContentType } from "@/localized-content/localized-content.entity";
 import { Locale } from "@/common/locale.type";
@@ -75,6 +76,17 @@ export class ProblemService {
     return this.problemRepository.findOne({
       displayId: displayId
     });
+  }
+
+  async getProblemMeta(problem: ProblemEntity): Promise<ProblemMetaDto> {
+    return {
+      id: problem.id,
+      displayId: problem.displayId,
+      type: problem.type,
+      isPublic: problem.isPublic,
+      ownerId: problem.ownerId,
+      locales: problem.locales
+    };
   }
 
   async userHasPermission(user: UserEntity, problem: ProblemEntity, type: ProblemPermissionType): Promise<boolean> {
