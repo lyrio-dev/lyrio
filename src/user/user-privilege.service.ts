@@ -21,11 +21,12 @@ export class UserPrivilegeService {
 
   async userHasPrivilege(user: UserEntity, privilegeType: UserPrivilegeType): Promise<boolean> {
     return (
-      user.isAdmin ||
-      (await this.userPrivilegeRepository.count({
-        userId: user.id,
-        privilegeType: privilegeType
-      })) != 0
+      user &&
+      (user.isAdmin ||
+        (await this.userPrivilegeRepository.count({
+          userId: user.id,
+          privilegeType: privilegeType
+        })) != 0)
     );
   }
 
