@@ -222,6 +222,7 @@ export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionPr
         progress.subtasks &&
         progress.subtasks.map(subtask => ({
           score: subtask.score,
+          fullScore: subtask.fullScore,
           testcases: subtask.testcases.map(testcase => testcase.testcaseHash)
         }))
     };

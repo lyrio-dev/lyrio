@@ -13,6 +13,7 @@ export interface SubmissionResult<TestcaseResult extends SubmissionTestcaseResul
   testcaseResult?: Record<string, TestcaseResult>;
   subtasks?: {
     score: number;
+    fullScore: number;
     testcases: string[]; // The hash of testcase (if null, it's "Skipped")
   }[];
 }

@@ -30,6 +30,7 @@ export interface SubmissionProgress<TestcaseResult extends SubmissionTestcaseRes
   testcaseResult?: Record<string, TestcaseResult>;
   subtasks?: {
     score: number;
+    fullScore: number;
     testcases: {
       // If !waiting && !running && !testcaseHash, it's "Skipped"
       waiting?: boolean;
