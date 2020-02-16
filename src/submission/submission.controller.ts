@@ -15,7 +15,10 @@ import {
   QuerySubmissionRequestDto,
   QuerySubmissionResponseDto,
   QuerySubmissionResponseError,
-  SubmissionMetaDto
+  SubmissionMetaDto,
+  GetSubmissionDetailRequestDto,
+  GetSubmissionDetailResponseDto,
+  GetSubmissionDetailResponseError
 } from "./dto";
 import { ProblemEntity } from "@/problem/problem.entity";
 
@@ -150,6 +153,55 @@ export class SubmissionController {
       submissions: submissionMetas,
       hasSmallerId: queryResult.hasSmallerId,
       hasLargerId: queryResult.hasLargerId
+    };
+  }
+
+  @ApiOperation({
+    summary: "Get the meta, content and result of a submission."
+  })
+  @ApiBearerAuth()
+  @Post("getSubmissionDetail")
+  async getSubmissionDetail(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: GetSubmissionDetailRequestDto
+  ): Promise<GetSubmissionDetailResponseDto> {
+    const submission = await this.submissionService.findSubmissionById(parseInt(request.submissionId));
+    if (!submission)
+      return {
+        error: GetSubmissionDetailResponseError.NO_SUCH_SUBMISSION
+      };
+
+    const problem = await this.problemService.findProblemById(submission.problemId);
+    if (
+      !submission.isPublic &&
+      !(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.VIEW))
+    )
+      return {
+        error: GetSubmissionDetailResponseError.PERMISSION_DENIED
+      };
+    const submitter = await this.userService.findUserById(submission.submitterId);
+    const submissionDetail = await this.submissionService.getSubmissionDetail(submission);
+
+    const titleLocale = problem.locales.includes(request.locale) ? request.locale : problem.locales[0];
+
+    return {
+      partialMeta: {
+        id: submission.id,
+        isPublic: submission.isPublic,
+        codeLanguage: submission.codeLanguage,
+        answerSize: submission.answerSize,
+        score: submission.score,
+        status: submission.status,
+        submitTime: submission.submitTime,
+        problem: await this.problemService.getProblemMeta(problem),
+        problemTitle: await this.problemService.getProblemLocalizedTitle(problem, titleLocale),
+        submitter: await this.userService.getUserMeta(submitter),
+        // These two properties are omitted, since the client could parse it from the result
+        timeUsed: null,
+        memoryUsed: null
+      },
+      content: submissionDetail.content,
+      result: submissionDetail.result
     };
   }
 }
