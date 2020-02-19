@@ -3,6 +3,7 @@ import { ProblemMetaDto } from "@/problem/dto";
 
 import { SubmissionStatus } from "../submission-status.enum";
 import { UserMetaDto } from "@/user/dto";
+import { SubmissionProgressType } from "../submission-progress.interface";
 
 export class SubmissionMetaDto {
   @ApiProperty()
@@ -34,6 +35,14 @@ export class SubmissionMetaDto {
 
   @ApiProperty()
   submitter: UserMetaDto;
+
+  // Only for non-finished and non-waiting submissions
+  @ApiProperty({
+    enum: Object.values(SubmissionProgressType)
+      .map(s => Number(s))
+      .filter(x => !isNaN(x))
+  })
+  progressMeta?: SubmissionProgressType;
 
   // Below only for some problem types
   @ApiProperty()

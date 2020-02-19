@@ -4,6 +4,8 @@ import { ApiOperation, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { CurrentUser } from "@/common/user.decorator";
 import { UserEntity } from "@/user/user.entity";
 import { SubmissionService } from "./submission.service";
+import { SubmissionProgressGateway, SubmissionProgressSubscriptionType } from "./submission-progress.gateway";
+import { SubmissionProgressService } from "./submission-progress.service";
 import { ProblemService, ProblemPermissionType } from "@/problem/problem.service";
 import { UserService } from "@/user/user.service";
 import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.service";
@@ -21,6 +23,7 @@ import {
   GetSubmissionDetailResponseError
 } from "./dto";
 import { ProblemEntity } from "@/problem/problem.entity";
+import { SubmissionStatus } from "./submission-status.enum";
 
 @ApiTags("Submission")
 @Controller("submission")
@@ -30,7 +33,9 @@ export class SubmissionController {
     private readonly problemService: ProblemService,
     private readonly userService: UserService,
     private readonly userPrivilegeService: UserPrivilegeService,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
+    private readonly submissionProgressGateway: SubmissionProgressGateway,
+    private readonly submissionProgressService: SubmissionProgressService
   ) {}
 
   @ApiOperation({
@@ -113,6 +118,7 @@ export class SubmissionController {
 
     const submissionMetas: SubmissionMetaDto[] = new Array(queryResult.result.length);
     const problems: ProblemEntity[] = new Array(queryResult.result.length);
+    const pendingSubmissionIds: number[] = [];
     for (const i in queryResult.result) {
       const submission = queryResult.result[i];
       problems[i] =
@@ -124,6 +130,11 @@ export class SubmissionController {
         filterSubmitter && submission.submitterId === filterSubmitter.id
           ? filterSubmitter
           : await this.userService.findUserById(submission.submitterId);
+
+      const progress =
+        submission.status === SubmissionStatus.Pending &&
+        (await this.submissionProgressService.getSubmissionProgress(submission.id));
+
       submissionMetas[i] = {
         id: submission.id,
         isPublic: submission.isPublic,
@@ -138,6 +149,14 @@ export class SubmissionController {
         timeUsed: null,
         memoryUsed: null
       };
+
+      if (progress) {
+        submissionMetas[i].progressMeta = progress.progressType;
+      }
+
+      if (submission.status === SubmissionStatus.Pending) {
+        pendingSubmissionIds.push(submission.id);
+      }
     }
 
     const timeAndMemoryUseds = await this.submissionService.getSubmissionsTimeAndMemoryUsed(
@@ -151,6 +170,13 @@ export class SubmissionController {
 
     return {
       submissions: submissionMetas,
+      progressSubscriptionKey:
+        pendingSubmissionIds.length === 0
+          ? null
+          : this.submissionProgressGateway.encodeSubscription({
+              type: SubmissionProgressSubscriptionType.Meta,
+              submissionIds: pendingSubmissionIds
+            }),
       hasSmallerId: queryResult.hasSmallerId,
       hasLargerId: queryResult.hasLargerId
     };
@@ -184,6 +210,8 @@ export class SubmissionController {
 
     const titleLocale = problem.locales.includes(request.locale) ? request.locale : problem.locales[0];
 
+    const progress = await this.submissionProgressService.getSubmissionProgress(submission.id);
+
     return {
       partialMeta: {
         id: submission.id,
@@ -201,7 +229,14 @@ export class SubmissionController {
         memoryUsed: null
       },
       content: submissionDetail.content,
-      result: submissionDetail.result
+      result: submissionDetail.result,
+      progress: progress,
+      progressSubscriptionKey: !progress
+        ? null
+        : this.submissionProgressGateway.encodeSubscription({
+            type: SubmissionProgressSubscriptionType.Detail,
+            submissionIds: [submission.id]
+          })
     };
   }
 }

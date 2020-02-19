@@ -22,12 +22,29 @@ import { ProblemFileType } from "@/problem/problem-file.entity";
 import { ProblemJudgeInfo } from "@/problem/type/problem-judge-info.interface";
 import { SubmissionContent } from "./submission-content.interface";
 import { SubmissionTypedService } from "./type/submission-typed.service";
+import { SubmissionResult } from "./submission-result.interface";
+import { SubmissionProgressService } from "./submission-progress.service";
 
 interface SubmissionTaskExtraInfo extends JudgeTaskExtraInfo {
   problemType: ProblemType;
   judgeInfo: ProblemJudgeInfo;
   testData: Record<string, string>; // filename -> uuid
   submissionContent: SubmissionContent;
+}
+
+// For progress reporting
+export interface SubmissionResultMeta {
+  status: SubmissionStatus;
+  score: number;
+  timeUsed: number;
+  memoryUsed: number;
+}
+
+// For progress reporting
+export interface SubmissionResultDetail {
+  status: SubmissionStatus;
+  score: number;
+  result: SubmissionResult;
 }
 
 @Injectable()
@@ -41,7 +58,8 @@ export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionPr
     private readonly submissionDetailRepository: Repository<SubmissionDetailEntity>,
     private readonly problemService: ProblemService,
     private readonly judgeQueueService: JudgeQueueService,
-    private readonly submissionTypedService: SubmissionTypedService
+    private readonly submissionTypedService: SubmissionTypedService,
+    private readonly submissionProgressService: SubmissionProgressService
   ) {
     this.judgeQueueService.registerTaskType(JudgeTaskType.Submission, this);
   }
@@ -239,21 +257,12 @@ export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionPr
   }
 
   public async onTaskProgress(submissionId: number, progress: SubmissionProgress): Promise<void> {
-    switch (progress.progressType) {
-      case SubmissionProgressType.Preparing:
-        // TODO: Report progress to user
-        break;
-      case SubmissionProgressType.Compiling:
-        // TODO: Report progress to user
-        break;
-      case SubmissionProgressType.Running:
-        // TODO: Report progress to user
-        break;
-      case SubmissionProgressType.Finished:
-        // TODO: Report progress to user
-        await this.onSubmissionFinished(submissionId, progress);
-        break;
+    // First update database, then report progress
+    if (progress.progressType === SubmissionProgressType.Finished) {
+      await this.onSubmissionFinished(submissionId, progress);
     }
+
+    await this.submissionProgressService.onSubmissionProgressReported(submissionId, progress);
   }
 
   // We need problem type
@@ -278,5 +287,33 @@ export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionPr
       );
     }
     return result;
+  }
+
+  // These functions below are for progress reporting
+
+  public async getSubmissionResultMetaById(submissionId: number): Promise<SubmissionResultMeta> {
+    const submission = await this.findSubmissionById(submissionId);
+    if (submission.status === SubmissionStatus.Pending) return null;
+    return {
+      // TODO: refactor this
+      ...(
+        await this.getSubmissionsTimeAndMemoryUsed(
+          [submission],
+          [await this.problemService.findProblemById(submission.problemId)]
+        )
+      )[0],
+      status: submission.status,
+      score: submission.score
+    };
+  }
+
+  public async getSubmissionResultDetailById(submissionId: number): Promise<SubmissionResultDetail> {
+    const submission = await this.findSubmissionById(submissionId);
+    if (submission.status === SubmissionStatus.Pending) return null;
+    return {
+      result: (await this.getSubmissionDetail(submission)).result,
+      status: submission.status,
+      score: submission.score
+    };
   }
 }

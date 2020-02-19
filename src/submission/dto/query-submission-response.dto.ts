@@ -18,4 +18,8 @@ export class QuerySubmissionResponseDto {
 
   @ApiProperty()
   hasLargerId?: boolean;
+
+  // Only for non-finished
+  @ApiProperty()
+  progressSubscriptionKey?: string;
 }

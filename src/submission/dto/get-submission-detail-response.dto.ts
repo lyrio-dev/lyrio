@@ -3,6 +3,7 @@ import { SubmissionMetaDto } from "./submission-meta.dto";
 
 import { SubmissionContent } from "../submission-content.interface";
 import { SubmissionResult } from "../submission-result.interface";
+import { SubmissionProgress } from "../submission-progress.interface";
 
 export enum GetSubmissionDetailResponseError {
   NO_SUCH_SUBMISSION = "NO_SUCH_SUBMISSION",
@@ -21,4 +22,11 @@ export class GetSubmissionDetailResponseDto {
 
   @ApiProperty()
   result?: SubmissionResult;
+
+  // Only for non-finished
+  @ApiProperty()
+  progress?: SubmissionProgress;
+
+  @ApiProperty()
+  progressSubscriptionKey?: string;
 }
