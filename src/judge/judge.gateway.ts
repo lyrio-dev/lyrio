@@ -27,7 +27,7 @@ interface SubmissionProgressMessage {
   progress: SubmissionProgress;
 }
 
-@WebSocketGateway({ path: "/api/socket/judge", transports: ["websocket"] })
+@WebSocketGateway({ namespace: "judge", path: "/api/socket", transports: ["websocket"] })
 export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   private server: Server;
