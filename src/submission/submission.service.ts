@@ -22,29 +22,14 @@ import { ProblemFileType } from "@/problem/problem-file.entity";
 import { ProblemJudgeInfo } from "@/problem/type/problem-judge-info.interface";
 import { SubmissionContent } from "./submission-content.interface";
 import { SubmissionTypedService } from "./type/submission-typed.service";
-import { SubmissionResult } from "./submission-result.interface";
 import { SubmissionProgressService } from "./submission-progress.service";
+import { SubmissionBasicMetaDto } from "./dto";
 
 interface SubmissionTaskExtraInfo extends JudgeTaskExtraInfo {
   problemType: ProblemType;
   judgeInfo: ProblemJudgeInfo;
   testData: Record<string, string>; // filename -> uuid
   submissionContent: SubmissionContent;
-}
-
-// For progress reporting
-export interface SubmissionResultMeta {
-  status: SubmissionStatus;
-  score: number;
-  timeUsed: number;
-  memoryUsed: number;
-}
-
-// For progress reporting
-export interface SubmissionResultDetail {
-  status: SubmissionStatus;
-  score: number;
-  result: SubmissionResult;
 }
 
 @Injectable()
@@ -218,6 +203,20 @@ export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionPr
     return [null, submission];
   }
 
+  public async getSubmissionBasicMeta(submission: SubmissionEntity): Promise<SubmissionBasicMetaDto> {
+    return {
+      id: submission.id,
+      isPublic: submission.isPublic,
+      codeLanguage: submission.codeLanguage,
+      answerSize: submission.answerSize,
+      score: submission.score,
+      status: submission.status,
+      submitTime: submission.submitTime,
+      timeUsed: submission.timeUsed,
+      memoryUsed: submission.memoryUsed
+    };
+  }
+
   public async getSubmissionDetail(submission: SubmissionEntity): Promise<SubmissionDetailEntity> {
     return this.submissionDetailRepository.findOne({
       submissionId: submission.id
@@ -248,6 +247,14 @@ export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionPr
     submission.status = progress.status;
     submission.score = progress.score;
 
+    const problem = await this.problemService.findProblemById(submission.problemId);
+    const timeAndMemory = await this.submissionTypedService.getTimeAndMemoryUsedFromSubmissionResult(
+      problem.type,
+      submissionDetail.result
+    );
+    submission.timeUsed = timeAndMemory.timeUsed;
+    submission.memoryUsed = timeAndMemory.memoryUsed;
+
     await this.connection.transaction(async transactionalEntityManager => {
       await transactionalEntityManager.save(submission);
       await transactionalEntityManager.save(submissionDetail);
@@ -263,57 +270,5 @@ export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionPr
     }
 
     await this.submissionProgressService.onSubmissionProgressReported(submissionId, progress);
-  }
-
-  // We need problem type
-  // TODO: cache
-  public async getSubmissionsTimeAndMemoryUsed(
-    submissions: SubmissionEntity[],
-    problems: ProblemEntity[]
-  ): Promise<{ timeUsed: number; memoryUsed: number }[]> {
-    const submissionDetails = await this.submissionDetailRepository.findByIds(
-      submissions.map(submission => submission.id)
-    );
-    const submissionDetailMap: Record<number, SubmissionDetailEntity> = Object.fromEntries(
-      submissionDetails.map(submissionDetail => [submissionDetail.submissionId, submissionDetail])
-    );
-
-    const result: { timeUsed: number; memoryUsed: number }[] = new Array(submissions.length);
-    for (const i in submissions) {
-      const submission = submissions[i];
-      result[i] = await this.submissionTypedService.getTimeAndMemoryUsedFromSubmissionResult(
-        problems[i].type,
-        submissionDetailMap[submission.id].result
-      );
-    }
-    return result;
-  }
-
-  // These functions below are for progress reporting
-
-  public async getSubmissionResultMetaById(submissionId: number): Promise<SubmissionResultMeta> {
-    const submission = await this.findSubmissionById(submissionId);
-    if (submission.status === SubmissionStatus.Pending) return null;
-    return {
-      // TODO: refactor this
-      ...(
-        await this.getSubmissionsTimeAndMemoryUsed(
-          [submission],
-          [await this.problemService.findProblemById(submission.problemId)]
-        )
-      )[0],
-      status: submission.status,
-      score: submission.score
-    };
-  }
-
-  public async getSubmissionResultDetailById(submissionId: number): Promise<SubmissionResultDetail> {
-    const submission = await this.findSubmissionById(submissionId);
-    if (submission.status === SubmissionStatus.Pending) return null;
-    return {
-      result: (await this.getSubmissionDetail(submission)).result,
-      status: submission.status,
-      score: submission.score
-    };
   }
 }

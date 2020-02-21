@@ -23,6 +23,12 @@ export class SubmissionEntity {
 
   @Column({ type: "integer", nullable: true })
   answerSize: number;
+
+  @Column({ type: "integer", nullable: true })
+  timeUsed: number;
+
+  @Column({ type: "integer", nullable: true })
+  memoryUsed: number;
   // End: Fields for "some of the problem types" only
 
   @Column({ type: "integer", nullable: true })

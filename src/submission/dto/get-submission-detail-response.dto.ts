@@ -15,7 +15,7 @@ export class GetSubmissionDetailResponseDto {
   error?: GetSubmissionDetailResponseError;
 
   @ApiProperty()
-  partialMeta?: SubmissionMetaDto;
+  meta?: SubmissionMetaDto;
 
   @ApiProperty()
   content?: SubmissionContent;

@@ -8,6 +8,13 @@ import { SubmissionProgressGateway } from "./submission-progress.gateway";
 const REDIS_KEY_SUBMISSION_PROGRESS = "submission_progress_";
 const REDIS_CHANNEL_SUBMISSION_PROGRESS = "submission_progress";
 
+// The process for after a progress received:
+// 1. If its type is "Finished", it's converted to a "result" and stored to the database,
+//    anything related to the submission will be updated, its previous progress will be removed from Redis.
+//    Otherwise (non-finished) the progress is stored to Redis.
+// 2. A message is published to other all clusters to tell all clusters about the progress.
+// 3. Once a cluster recived the Redis message of progress, it will lookup for its clients who has subscribed
+//    the submission's progress and send them the progress via WebSocket.
 @Injectable()
 export class SubmissionProgressService {
   private readonly redisSubscribe: Redis;

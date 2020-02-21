@@ -5,7 +5,8 @@ import { SubmissionStatus } from "../submission-status.enum";
 import { UserMetaDto } from "@/user/dto";
 import { SubmissionProgressType } from "../submission-progress.interface";
 
-export class SubmissionMetaDto {
+// The basic meta doesn't contains information obtained from related database tables, such as problem and submitter meta
+export class SubmissionBasicMetaDto {
   @ApiProperty()
   id: number;
 
@@ -21,12 +22,20 @@ export class SubmissionMetaDto {
   @ApiProperty()
   score: number;
 
-  @ApiProperty()
+  @ApiProperty({ enum: SubmissionStatus })
   status: SubmissionStatus;
 
   @ApiProperty()
   submitTime: Date;
 
+  @ApiProperty()
+  timeUsed: number;
+
+  @ApiProperty()
+  memoryUsed: number;
+}
+
+export class SubmissionMetaDto extends SubmissionBasicMetaDto {
   @ApiProperty()
   problem: ProblemMetaDto;
 
@@ -43,11 +52,4 @@ export class SubmissionMetaDto {
       .filter(x => !isNaN(x))
   })
   progressMeta?: SubmissionProgressType;
-
-  // Below only for some problem types
-  @ApiProperty()
-  timeUsed: number;
-
-  @ApiProperty()
-  memoryUsed: number;
 }

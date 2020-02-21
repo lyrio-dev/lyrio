@@ -131,10 +131,6 @@ export class SubmissionController {
           ? filterSubmitter
           : await this.userService.findUserById(submission.submitterId);
 
-      const progress =
-        submission.status === SubmissionStatus.Pending &&
-        (await this.submissionProgressService.getSubmissionProgress(submission.id));
-
       submissionMetas[i] = {
         id: submission.id,
         isPublic: submission.isPublic,
@@ -146,9 +142,14 @@ export class SubmissionController {
         problem: await this.problemService.getProblemMeta(problems[i]),
         problemTitle: await this.problemService.getProblemLocalizedTitle(problems[i], titleLocale),
         submitter: await this.userService.getUserMeta(submitter),
-        timeUsed: null,
-        memoryUsed: null
+        timeUsed: submission.timeUsed,
+        memoryUsed: submission.memoryUsed
       };
+
+      // For progress reporting
+      const progress =
+        submission.status === SubmissionStatus.Pending &&
+        (await this.submissionProgressService.getSubmissionProgress(submission.id));
 
       if (progress) {
         submissionMetas[i].progressMeta = progress.progressType;
@@ -157,15 +158,6 @@ export class SubmissionController {
       if (submission.status === SubmissionStatus.Pending) {
         pendingSubmissionIds.push(submission.id);
       }
-    }
-
-    const timeAndMemoryUseds = await this.submissionService.getSubmissionsTimeAndMemoryUsed(
-      queryResult.result,
-      problems
-    );
-    for (const i in submissionMetas) {
-      submissionMetas[i].timeUsed = timeAndMemoryUseds[i].timeUsed;
-      submissionMetas[i].memoryUsed = timeAndMemoryUseds[i].memoryUsed;
     }
 
     return {
@@ -213,7 +205,7 @@ export class SubmissionController {
     const progress = await this.submissionProgressService.getSubmissionProgress(submission.id);
 
     return {
-      partialMeta: {
+      meta: {
         id: submission.id,
         isPublic: submission.isPublic,
         codeLanguage: submission.codeLanguage,
@@ -224,9 +216,8 @@ export class SubmissionController {
         problem: await this.problemService.getProblemMeta(problem),
         problemTitle: await this.problemService.getProblemLocalizedTitle(problem, titleLocale),
         submitter: await this.userService.getUserMeta(submitter),
-        // These two properties are omitted, since the client could parse it from the result
-        timeUsed: null,
-        memoryUsed: null
+        timeUsed: submission.timeUsed,
+        memoryUsed: submission.memoryUsed
       },
       content: submissionDetail.content,
       result: submissionDetail.result,

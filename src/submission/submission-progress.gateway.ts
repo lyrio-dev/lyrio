@@ -6,7 +6,10 @@ import { diff } from "jsondiffpatch";
 
 import { SubmissionProgress, SubmissionProgressType } from "./submission-progress.interface";
 import { ConfigService } from "@/config/config.service";
-import { SubmissionService, SubmissionResultMeta, SubmissionResultDetail } from "./submission.service";
+import { SubmissionService } from "./submission.service";
+import { SubmissionBasicMetaDto } from "./dto";
+import { SubmissionResult } from "./submission-result.interface";
+import { SubmissionStatus } from "./submission-status.enum";
 
 export enum SubmissionProgressSubscriptionType {
   Meta,
@@ -19,14 +22,16 @@ export interface SubmissionProgressSubscription {
 }
 
 interface SubmissionProgressMessage {
-  // These properties exist if finished, each is for a specfied type
-  resultMeta?: SubmissionResultMeta;
-  resultDetail?: SubmissionResultDetail;
+  // These properties exist if finished
+  // "resultMeta" always exists while "resultDetail" only exists when the client subscribes the detail
+  resultMeta?: SubmissionBasicMetaDto;
+  resultDetail?: SubmissionResult;
 
-  // These properties exist if NOT finished, each is for a specfied type
+  // These properties exist if NOT finished
+  // "progressMeta" always exists while "progressDetail" only exists when the client subscribes the detail
   // null if the task is still waiting in queue
-  progressMeta?: SubmissionProgressType; // status and score are not needed
-  progressDetail?: SubmissionProgress; // status and score are contained
+  progressMeta?: SubmissionProgressType; // status and score are not pushed to reduce server load
+  progressDetail?: SubmissionProgress;
 }
 
 // TODO: This should be refactored if we add hack, custom judge, etc
@@ -53,9 +58,14 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
     @Inject(forwardRef(() => SubmissionService))
     private readonly submissionService: SubmissionService
   ) {
+    // Use a different key with session secret to prevent someone attempt to use the session key
+    // as subscription key
     this.secret = this.configService.config.security.sessionSecret + "SubmissionProgress";
   }
 
+  // A subscription key is send to the client to let it connect to the WebSocket gateway to subscribe some
+  // submission's progress. The authorization is done before the key is encoded, and when a client connect
+  // to the WebSocket, we don't require its user id or session key, only the key is verified.
   encodeSubscription(subscription: SubmissionProgressSubscription): string {
     return jwt.sign(subscription, this.secret);
   }
@@ -164,31 +174,32 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
     this.clientJoinedRooms.set(client.id, new Set());
     this.clientLastMessages.set(client.id, new Map());
 
-    // Join the rooms first to prevent miss the finished message
+    // Join the rooms first to prevent missing the finished message
     for (const submissionId of subscription.submissionIds) {
       this.joinRoom(client, this.getRoom(subscription.type, submissionId));
     }
 
     // Send messages for the already finished submissions
     for (const submissionId of subscription.submissionIds) {
+      const submission = await this.submissionService.findSubmissionById(submissionId);
+      if (submission.status === SubmissionStatus.Pending) continue;
+
+      // This submission has already finished
+      const basicMeta = await this.submissionService.getSubmissionBasicMeta(submission);
+      this.leaveRoom(client, this.getRoom(subscription.type, submissionId));
+
       switch (subscription.type) {
         case SubmissionProgressSubscriptionType.Meta:
-          const resultMeta = await this.submissionService.getSubmissionResultMetaById(submissionId);
-          if (resultMeta) {
-            this.sendMessage(client, submissionId, {
-              resultMeta: resultMeta
-            });
-            this.leaveRoom(client, this.getRoom(subscription.type, submissionId));
-          }
+          this.sendMessage(client, submissionId, {
+            resultMeta: basicMeta
+          });
           break;
         case SubmissionProgressSubscriptionType.Detail:
-          const resultDetail = await this.submissionService.getSubmissionResultDetailById(submissionId);
-          if (resultDetail) {
-            this.sendMessage(client, submissionId, {
-              resultDetail: resultDetail
-            });
-            this.leaveRoom(client, this.getRoom(subscription.type, submissionId));
-          }
+          const submissionDetail = await this.submissionService.getSubmissionDetail(submission);
+          this.sendMessage(client, submissionId, {
+            resultMeta: basicMeta,
+            resultDetail: submissionDetail.result
+          });
           break;
       }
     }
@@ -200,18 +211,21 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
         progressMeta: progress.progressType
       });
       this.sendMessage(this.getRoom(SubmissionProgressSubscriptionType.Detail, submissionId), submissionId, {
+        progressMeta: progress.progressType,
         progressDetail: progress
       });
     } else {
       // This is called after database updated
 
-      const resultMeta = await this.submissionService.getSubmissionResultMetaById(submissionId);
-      const resultDetail = await this.submissionService.getSubmissionResultDetailById(submissionId);
+      const submission = await this.submissionService.findSubmissionById(submissionId);
+      const basicMeta = await this.submissionService.getSubmissionBasicMeta(submission);
+      const submissionDetail = await this.submissionService.getSubmissionDetail(submission);
       this.sendMessage(this.getRoom(SubmissionProgressSubscriptionType.Meta, submissionId), submissionId, {
-        resultMeta: resultMeta
+        resultMeta: basicMeta
       });
       this.sendMessage(this.getRoom(SubmissionProgressSubscriptionType.Detail, submissionId), submissionId, {
-        resultDetail: resultDetail
+        resultMeta: basicMeta,
+        resultDetail: submissionDetail.result
       });
 
       this.clearRoom(this.getRoom(SubmissionProgressSubscriptionType.Meta, submissionId));
