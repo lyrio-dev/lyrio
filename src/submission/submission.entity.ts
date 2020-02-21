@@ -7,6 +7,12 @@ import { ProblemEntity } from "@/problem/problem.entity";
 import { SubmissionDetailEntity } from "./submission-detail.entity";
 
 @Entity("submission")
+@Index(["isPublic", "problemId", "submitterId", "status", "codeLanguage"])
+@Index(["isPublic", "problemId", "status", "codeLanguage"])
+@Index(["isPublic", "problemId", "codeLanguage", "submitterId"])
+@Index(["isPublic", "submitterId", "status", "codeLanguage"])
+@Index(["isPublic", "codeLanguage", "submitterId"])
+@Index(["isPublic", "status", "codeLanguage"])
 export class SubmissionEntity {
   @PrimaryGeneratedColumn()
   id: number;

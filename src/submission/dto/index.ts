@@ -8,3 +8,6 @@ export * from "./query-submission-response.dto";
 
 export * from "./get-submission-detail-request.dto";
 export * from "./get-submission-detail-response.dto";
+
+export * from "./query-submission-statistics-request.dto";
+export * from "./query-submission-statistics-response.dto";

@@ -104,6 +104,10 @@ class QueryLimitConfig {
 
   @IsInt()
   @Min(0)
+  readonly submissionStatisticsTake: number;
+
+  @IsInt()
+  @Min(0)
   readonly searchUserTake: number;
 
   @IsInt()

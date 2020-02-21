@@ -1,6 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
-import { Repository, Connection } from "typeorm";
+import { Repository, Connection, In } from "typeorm";
 import { ValidationError } from "class-validator";
 
 import { SubmissionEntity } from "./submission.entity";
@@ -24,6 +24,7 @@ import { SubmissionContent } from "./submission-content.interface";
 import { SubmissionTypedService } from "./type/submission-typed.service";
 import { SubmissionProgressService } from "./submission-progress.service";
 import { SubmissionBasicMetaDto } from "./dto";
+import { SubmissionStatisticsService } from "./submission-statistics.service";
 
 interface SubmissionTaskExtraInfo extends JudgeTaskExtraInfo {
   problemType: ProblemType;
@@ -44,7 +45,8 @@ export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionPr
     private readonly problemService: ProblemService,
     private readonly judgeQueueService: JudgeQueueService,
     private readonly submissionTypedService: SubmissionTypedService,
-    private readonly submissionProgressService: SubmissionProgressService
+    private readonly submissionProgressService: SubmissionProgressService,
+    private readonly submissionStatisticsService: SubmissionStatisticsService
   ) {
     this.judgeQueueService.registerTaskType(JudgeTaskType.Submission, this);
   }
@@ -53,6 +55,15 @@ export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionPr
     return await this.submissionRepository.findOne({
       id: submissionId
     });
+  }
+
+  public async findSubmissionByExistIds(submissionIds: number[]): Promise<SubmissionEntity[]> {
+    if (submissionIds.length === 0) return [];
+    const records = await this.submissionRepository.find({
+      id: In(submissionIds)
+    });
+    const idOrder = Object.fromEntries(Object.entries(submissionIds).map(([i, id]) => [id, Number(i)]));
+    return records.sort((a, b) => idOrder[a.id] - idOrder[b.id]);
   }
 
   public async querySubmissions(
@@ -223,12 +234,18 @@ export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionPr
     });
   }
 
+  private async onSubmissionUpdated(oldSubmission: SubmissionEntity, submission: SubmissionEntity): Promise<void> {
+    await this.submissionStatisticsService.onSubmissionUpdated(oldSubmission, submission);
+  }
+
   private async onSubmissionFinished(submissionId: number, progress: SubmissionProgress): Promise<void> {
     const submission = await this.findSubmissionById(submissionId);
     if (!submission) {
       Logger.warn(`Invalid submission Id ${submissionId} of task progress, ignoring`);
       return;
     }
+
+    const oldSubmission = Object.assign({}, submission);
 
     const submissionDetail = await this.getSubmissionDetail(submission);
     submissionDetail.result = {
@@ -261,6 +278,8 @@ export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionPr
     });
 
     Logger.log(`Submission ${submissionId} finished with status ${submission.status}`);
+
+    await this.onSubmissionUpdated(oldSubmission, submission);
   }
 
   public async onTaskProgress(submissionId: number, progress: SubmissionProgress): Promise<void> {

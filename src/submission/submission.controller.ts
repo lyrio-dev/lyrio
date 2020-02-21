@@ -20,10 +20,14 @@ import {
   SubmissionMetaDto,
   GetSubmissionDetailRequestDto,
   GetSubmissionDetailResponseDto,
-  GetSubmissionDetailResponseError
+  GetSubmissionDetailResponseError,
+  QuerySubmissionStatisticsRequestDto,
+  QuerySubmissionStatisticsResponseDto,
+  QuerySubmissionStatisticsResponseError
 } from "./dto";
 import { ProblemEntity } from "@/problem/problem.entity";
 import { SubmissionStatus } from "./submission-status.enum";
+import { SubmissionStatisticsService } from "./submission-statistics.service";
 
 @ApiTags("Submission")
 @Controller("submission")
@@ -35,7 +39,8 @@ export class SubmissionController {
     private readonly userPrivilegeService: UserPrivilegeService,
     private readonly configService: ConfigService,
     private readonly submissionProgressGateway: SubmissionProgressGateway,
-    private readonly submissionProgressService: SubmissionProgressService
+    private readonly submissionProgressService: SubmissionProgressService,
+    private readonly submissionStatisticsService: SubmissionStatisticsService
   ) {}
 
   @ApiOperation({
@@ -228,6 +233,62 @@ export class SubmissionController {
             type: SubmissionProgressSubscriptionType.Detail,
             submissionIds: [submission.id]
           })
+    };
+  }
+
+  @ApiOperation({
+    summary: "Query a problem's submission statistics, i.e. the ranklist of each user's best submissions"
+  })
+  @ApiBearerAuth()
+  @Post("querySubmissionStatistics")
+  async querySubmissionStatistics(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: QuerySubmissionStatisticsRequestDto
+  ): Promise<QuerySubmissionStatisticsResponseDto> {
+    if (request.takeCount > this.configService.config.queryLimit.submissionStatisticsTake)
+      return {
+        error: QuerySubmissionStatisticsResponseError.TAKE_TOO_MANY
+      };
+
+    const problem = await this.problemService.findProblemById(request.problemId);
+    if (!problem)
+      return {
+        error: QuerySubmissionStatisticsResponseError.NO_SUCH_PROBLEM
+      };
+
+    const [submissions, count] = await this.submissionStatisticsService.querySubmissionStatisticsAndCount(
+      problem,
+      request.statisticsType,
+      request.skipCount,
+      request.takeCount
+    );
+
+    const submissionMetas: SubmissionMetaDto[] = new Array(submissions.length);
+    const titleLocale = problem.locales.includes(request.locale) ? request.locale : problem.locales[0];
+    const problemTitle = await this.problemService.getProblemLocalizedTitle(problem, titleLocale);
+    for (const i in submissions) {
+      const submission = submissions[i];
+      const submitter = await this.userService.findUserById(submission.submitterId);
+
+      submissionMetas[i] = {
+        id: submission.id,
+        isPublic: submission.isPublic,
+        codeLanguage: submission.codeLanguage,
+        answerSize: submission.answerSize,
+        score: submission.score,
+        status: submission.status,
+        submitTime: submission.submitTime,
+        problem: await this.problemService.getProblemMeta(problem),
+        problemTitle: problemTitle,
+        submitter: await this.userService.getUserMeta(submitter),
+        timeUsed: submission.timeUsed,
+        memoryUsed: submission.memoryUsed
+      };
+    }
+
+    return {
+      submissions: submissionMetas,
+      count: count
     };
   }
 }

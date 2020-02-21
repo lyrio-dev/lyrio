@@ -14,6 +14,7 @@ import { SubmissionTypedService } from "./type/submission-typed.service";
 import { SubmissionTypeTraditionalService } from "./type/traditional/submission-type-traditional.service";
 import { SubmissionProgressService } from "./submission-progress.service";
 import { SubmissionProgressGateway } from "./submission-progress.gateway";
+import { SubmissionStatisticsService } from "./submission-statistics.service";
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { SubmissionProgressGateway } from "./submission-progress.gateway";
     SubmissionService,
     SubmissionProgressService,
     SubmissionProgressGateway,
+    SubmissionStatisticsService,
     SubmissionTypedService,
     SubmissionTypeTraditionalService
   ],
