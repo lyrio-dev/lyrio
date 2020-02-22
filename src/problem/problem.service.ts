@@ -69,6 +69,14 @@ export class ProblemService {
     return this.problemRepository.findOne(id);
   }
 
+  public async findProblemsByExistingIds(problemIds: number[]): Promise<ProblemEntity[]> {
+    if (problemIds.length === 0) return [];
+    const uniqueIds = Array.from(new Set(problemIds));
+    const records = await this.problemRepository.findByIds(uniqueIds);
+    const map = Object.fromEntries(records.map(record => [record.id, record]));
+    return problemIds.map(problemId => map[problemId]);
+  }
+
   async findProblemByDisplayId(displayId: number): Promise<ProblemEntity> {
     return this.problemRepository.findOne({
       displayId: displayId
@@ -271,12 +279,10 @@ export class ProblemService {
     await this.problemJudgeInfoRepository.save(problemJudgeInfo);
   }
 
-  // Get a problem's title of a locale. If no title for this locale returns any one.
   async getProblemLocalizedTitle(problem: ProblemEntity, locale: Locale): Promise<string> {
     return await this.localizedContentService.get(problem.id, LocalizedContentType.PROBLEM_TITLE, locale);
   }
 
-  // Get a problem's content of a locale. If no content for this locale returns any one.
   async getProblemLocalizedContent(problem: ProblemEntity, locale: Locale): Promise<ProblemContentSection[]> {
     const data = await this.localizedContentService.get(problem.id, LocalizedContentType.PROBLEM_CONTENT, locale);
     if (data != null) return JSON.parse(data);

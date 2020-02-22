@@ -1,6 +1,6 @@
 import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
-import { Repository, Connection, EntityManager } from "typeorm";
+import { Repository, Connection, EntityManager, In } from "typeorm";
 import * as Minio from "minio";
 import * as UUID from "uuid/v4";
 import * as crypto from "crypto";
@@ -187,16 +187,12 @@ export class FileService implements OnModuleInit {
   }
 
   async getFileSizes(uuids: string[]): Promise<number[]> {
-    return Promise.all(
-      uuids.map(
-        async uuid =>
-          (
-            await this.fileRepository.findOne({
-              uuid: uuid
-            })
-          ).size
-      )
-    );
+    const uniqueUuids = Array.from(new Set(uuids));
+    const files = await this.fileRepository.find({
+      uuid: In(uniqueUuids)
+    });
+    const map = Object.fromEntries(files.map(file => [file.uuid, file]));
+    return uuids.map(uuid => map[uuid].size);
   }
 
   async getDownloadLink(uuid: string, filename?: string, noExpire?: boolean): Promise<string> {

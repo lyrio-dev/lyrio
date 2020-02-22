@@ -36,6 +36,14 @@ export class GroupService {
     return await this.groupRepository.findOne(id);
   }
 
+  public async findGroupsByExistingIds(groupIds: number[]): Promise<GroupEntity[]> {
+    if (groupIds.length === 0) return [];
+    const uniqueIds = Array.from(new Set(groupIds));
+    const records = await this.groupRepository.findByIds(uniqueIds);
+    const map = Object.fromEntries(records.map(record => [record.id, record]));
+    return groupIds.map(groupId => map[groupId]);
+  }
+
   async findGroupMembership(userId: number, groupId: number): Promise<GroupMembershipEntity> {
     return await this.groupMembershipRepository.findOne({
       userId: userId,

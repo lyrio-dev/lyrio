@@ -122,19 +122,16 @@ export class SubmissionController {
     );
 
     const submissionMetas: SubmissionMetaDto[] = new Array(queryResult.result.length);
-    const problems: ProblemEntity[] = new Array(queryResult.result.length);
+    const problems = await this.problemService.findProblemsByExistingIds(
+      queryResult.result.map(submission => submission.problemId)
+    );
+    const submitters = await this.userService.findUsersByExistingIds(
+      queryResult.result.map(submission => submission.submitterId)
+    );
     const pendingSubmissionIds: number[] = [];
     for (const i in queryResult.result) {
       const submission = queryResult.result[i];
-      problems[i] =
-        filterProblem && submission.problemId === filterProblem.id
-          ? filterProblem
-          : await this.problemService.findProblemById(submission.problemId);
       const titleLocale = problems[i].locales.includes(request.locale) ? request.locale : problems[i].locales[0];
-      const submitter =
-        filterSubmitter && submission.submitterId === filterSubmitter.id
-          ? filterSubmitter
-          : await this.userService.findUserById(submission.submitterId);
 
       submissionMetas[i] = {
         id: submission.id,
@@ -146,7 +143,7 @@ export class SubmissionController {
         submitTime: submission.submitTime,
         problem: await this.problemService.getProblemMeta(problems[i]),
         problemTitle: await this.problemService.getProblemLocalizedTitle(problems[i], titleLocale),
-        submitter: await this.userService.getUserMeta(submitter),
+        submitter: await this.userService.getUserMeta(submitters[i]),
         timeUsed: submission.timeUsed,
         memoryUsed: submission.memoryUsed
       };
@@ -267,9 +264,11 @@ export class SubmissionController {
     const submissionMetas: SubmissionMetaDto[] = new Array(submissions.length);
     const titleLocale = problem.locales.includes(request.locale) ? request.locale : problem.locales[0];
     const problemTitle = await this.problemService.getProblemLocalizedTitle(problem, titleLocale);
+    const submitters = await this.userService.findUsersByExistingIds(
+      submissions.map(submission => submission.submitterId)
+    );
     for (const i in submissions) {
       const submission = submissions[i];
-      const submitter = await this.userService.findUserById(submission.submitterId);
 
       submissionMetas[i] = {
         id: submission.id,
@@ -281,7 +280,7 @@ export class SubmissionController {
         submitTime: submission.submitTime,
         problem: await this.problemService.getProblemMeta(problem),
         problemTitle: problemTitle,
-        submitter: await this.userService.getUserMeta(submitter),
+        submitter: await this.userService.getUserMeta(submitters[i]),
         timeUsed: submission.timeUsed,
         memoryUsed: submission.memoryUsed
       };

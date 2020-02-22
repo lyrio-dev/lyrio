@@ -59,13 +59,12 @@ export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionPr
     });
   }
 
-  public async findSubmissionByExistIds(submissionIds: number[]): Promise<SubmissionEntity[]> {
+  public async findSubmissionsByExistingIds(submissionIds: number[]): Promise<SubmissionEntity[]> {
     if (submissionIds.length === 0) return [];
-    const records = await this.submissionRepository.find({
-      id: In(submissionIds)
-    });
-    const idOrder = Object.fromEntries(Object.entries(submissionIds).map(([i, id]) => [id, Number(i)]));
-    return records.sort((a, b) => idOrder[a.id] - idOrder[b.id]);
+    const uniqueIds = Array.from(new Set(submissionIds));
+    const records = await this.submissionRepository.findByIds(uniqueIds);
+    const map = Object.fromEntries(records.map(record => [record.id, record]));
+    return submissionIds.map(submissionId => map[submissionId]);
   }
 
   public async querySubmissions(

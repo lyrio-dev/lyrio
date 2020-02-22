@@ -118,7 +118,7 @@ export class SubmissionStatisticsService {
     }
 
     const resultIds = tuples.filter((_, i) => i >= skipCount && i < skipCount + takeCount).map(([id]) => id);
-    return [await this.submissionService.findSubmissionByExistIds(resultIds), tuples.length];
+    return [await this.submissionService.findSubmissionsByExistingIds(resultIds), tuples.length];
   }
 
   // This function is called after a submission's updated, to determine which caches of statistics should be purged

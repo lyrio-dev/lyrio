@@ -277,28 +277,34 @@ export class ProblemController {
         error: SetProblemPermissionsResponseError.PERMISSION_DENIED
       };
 
+    const users = await this.userService.findUsersByExistingIds(
+      request.userPermissions.map(userPermission => userPermission.userId)
+    );
     const userPermissions: [UserEntity, ProblemPermissionLevel][] = [];
-    for (const { userId, permissionLevel } of request.userPermissions) {
-      const user = await this.userService.findUserById(userId);
-      if (!user)
+    for (const i in request.userPermissions) {
+      const { userId, permissionLevel } = request.userPermissions[i];
+      if (!users[i])
         return {
           error: SetProblemPermissionsResponseError.NO_SUCH_USER,
           errorObjectId: userId
         };
 
-      userPermissions.push([user, permissionLevel]);
+      userPermissions.push([users[i], permissionLevel]);
     }
 
+    const groups = await this.groupService.findGroupsByExistingIds(
+      request.groupPermissions.map(groupPermission => groupPermission.groupId)
+    );
     const groupPermissions: [GroupEntity, ProblemPermissionLevel][] = [];
-    for (const { groupId, permissionLevel } of request.groupPermissions) {
-      const group = await this.groupService.findGroupById(groupId);
-      if (!group)
+    for (const i in request.groupPermissions) {
+      const { groupId, permissionLevel } = request.groupPermissions[i];
+      if (!groups[i])
         return {
           error: SetProblemPermissionsResponseError.NO_SUCH_GROUP,
           errorObjectId: groupId
         };
 
-      groupPermissions.push([group, permissionLevel]);
+      groupPermissions.push([groups[i], permissionLevel]);
     }
 
     await this.problemService.setProblemPermissions(problem, userPermissions, groupPermissions);
