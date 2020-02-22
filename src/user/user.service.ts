@@ -6,6 +6,8 @@ import { UserEntity } from "./user.entity";
 import { AuthService } from "@/auth/auth.service";
 import { UpdateUserProfileResponseError, UserMetaDto } from "./dto";
 import { escapeLike } from "@/database/database.utils";
+import { SubmissionEntity } from "@/submission/submission.entity";
+import { SubmissionStatus } from "@/submission/submission-status.enum";
 
 @Injectable()
 export class UserService {
@@ -106,5 +108,34 @@ export class UserService {
       },
       take: maxTakeCount
     });
+  }
+
+  async updateUserSubmissionCount(userId: number, incSubmissionCount: number): Promise<void> {
+    if (incSubmissionCount !== 0) {
+      await this.userRepository.increment({ id: userId }, "submissionCount", incSubmissionCount);
+    }
+  }
+
+  async updateUserAcceptedCount(userId: number): Promise<void> {
+    await this.userRepository
+      .createQueryBuilder()
+      .update({
+        acceptedProblemCount: () =>
+          "(" +
+          this.connection
+            .createQueryBuilder()
+            .select("COUNT(DISTINCT submission.problemId)")
+            .from(SubmissionEntity, "submission")
+            .where("submission.submitterId = :userId")
+            .andWhere("submission.status = :status")
+            .getQuery() +
+          ")"
+      })
+      .where("id = :userId")
+      .setParameters({
+        userId: userId,
+        status: SubmissionStatus.Accepted
+      })
+      .execute();
   }
 }

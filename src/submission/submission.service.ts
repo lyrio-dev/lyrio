@@ -25,6 +25,7 @@ import { SubmissionTypedService } from "./type/submission-typed.service";
 import { SubmissionProgressService } from "./submission-progress.service";
 import { SubmissionBasicMetaDto } from "./dto";
 import { SubmissionStatisticsService } from "./submission-statistics.service";
+import { UserService } from "@/user/user.service";
 
 interface SubmissionTaskExtraInfo extends JudgeTaskExtraInfo {
   problemType: ProblemType;
@@ -43,6 +44,7 @@ export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionPr
     @InjectRepository(SubmissionDetailEntity)
     private readonly submissionDetailRepository: Repository<SubmissionDetailEntity>,
     private readonly problemService: ProblemService,
+    private readonly userService: UserService,
     private readonly judgeQueueService: JudgeQueueService,
     private readonly submissionTypedService: SubmissionTypedService,
     private readonly submissionProgressService: SubmissionProgressService,
@@ -194,6 +196,7 @@ export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionPr
     });
 
     await this.problemService.updateProblemStatistics(problem.id, 1, 0);
+    await this.userService.updateUserSubmissionCount(submitter.id, 1);
 
     try {
       const judgeInfo = await this.problemService.getProblemJudgeInfo(problem);
@@ -243,6 +246,10 @@ export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionPr
       await this.problemService.updateProblemStatistics(submission.problemId, 0, 1);
     } else if (oldAccepted && !newAccepted) {
       await this.problemService.updateProblemStatistics(submission.problemId, 0, -1);
+    }
+
+    if (oldAccepted != newAccepted) {
+      await this.userService.updateUserAcceptedCount(submission.submitterId);
     }
   }
 

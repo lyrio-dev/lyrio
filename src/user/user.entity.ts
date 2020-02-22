@@ -21,6 +21,12 @@ export class UserEntity {
   @Column({ type: "boolean" })
   isAdmin: boolean;
 
+  @Column({ type: "integer" })
+  acceptedProblemCount: number;
+
+  @Column({ type: "integer" })
+  submissionCount: number;
+
   @OneToOne(
     type => UserAuthEntity,
     userAuth => userAuth.user
