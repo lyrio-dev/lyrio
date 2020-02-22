@@ -207,7 +207,8 @@ export class SubmissionController {
 
     const titleLocale = problem.locales.includes(request.locale) ? request.locale : problem.locales[0];
 
-    const progress = await this.submissionProgressService.getSubmissionProgress(submission.id);
+    const pending = submission.status === SubmissionStatus.Pending;
+    const progress = !pending ? null : await this.submissionProgressService.getSubmissionProgress(submission.id);
 
     return {
       meta: {
@@ -227,7 +228,7 @@ export class SubmissionController {
       content: submissionDetail.content,
       result: submissionDetail.result,
       progress: progress,
-      progressSubscriptionKey: !progress
+      progressSubscriptionKey: !pending
         ? null
         : this.submissionProgressGateway.encodeSubscription({
             type: SubmissionProgressSubscriptionType.Detail,
