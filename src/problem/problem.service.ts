@@ -9,7 +9,6 @@ import { ProblemEntity, ProblemType } from "./problem.entity";
 import { ProblemJudgeInfoEntity } from "./problem-judge-info.entity";
 import { ProblemSampleEntity } from "./problem-sample.entity";
 import { ProblemFileType, ProblemFileEntity } from "./problem-file.entity";
-import { ProblemStatisticsEntity } from "./problem-statistics.entity";
 import { ProblemJudgeInfoService } from "./type/problem-judge-info.service";
 import {
   ProblemStatementDto,
@@ -56,8 +55,6 @@ export class ProblemService {
     private readonly problemSampleRepository: Repository<ProblemSampleEntity>,
     @InjectRepository(ProblemFileEntity)
     private readonly problemFileRepository: Repository<ProblemFileEntity>,
-    @InjectRepository(ProblemStatisticsEntity)
-    private readonly problemStatisticsRepository: Repository<ProblemStatisticsEntity>,
     private readonly problemJudgeInfoService: ProblemJudgeInfoService,
     private readonly localizedContentService: LocalizedContentService,
     private readonly userPrivilegeService: UserPrivilegeService,
@@ -78,8 +75,8 @@ export class ProblemService {
     });
   }
 
-  async getProblemMeta(problem: ProblemEntity): Promise<ProblemMetaDto> {
-    return {
+  async getProblemMeta(problem: ProblemEntity, includeStatistics?: boolean): Promise<ProblemMetaDto> {
+    const meta: ProblemMetaDto = {
       id: problem.id,
       displayId: problem.displayId,
       type: problem.type,
@@ -87,6 +84,13 @@ export class ProblemService {
       ownerId: problem.ownerId,
       locales: problem.locales
     };
+
+    if (includeStatistics) {
+      meta.acceptedSubmissionCount = problem.acceptedSubmissionCount;
+      meta.submissionCount = problem.submissionCount;
+    }
+
+    return meta;
   }
 
   async userHasPermission(user: UserEntity, problem: ProblemEntity, type: ProblemPermissionType): Promise<boolean> {
@@ -182,12 +186,6 @@ export class ProblemService {
       problemSample.problemId = problem.id;
       problemSample.data = statement.samples;
       await transactionalEntityManager.save(problemSample);
-
-      const problemStatistics = new ProblemStatisticsEntity();
-      problemStatistics.problemId = problem.id;
-      problemStatistics.submissionCount = 0;
-      problemStatistics.acceptedSubmissionCount = 0;
-      await transactionalEntityManager.save(problemStatistics);
 
       for (const localizedContent of statement.localizedContents) {
         await this.localizedContentService.createOrUpdate(
@@ -473,25 +471,16 @@ export class ProblemService {
   }
 
   async updateProblemStatistics(
-    problem: ProblemEntity,
+    problemId: number,
     incSubmissionCount: number,
-    incAcceptedSubmissionCount: number,
-    transactionalEntityManager: EntityManager
+    incAcceptedSubmissionCount: number
   ): Promise<void> {
-    if (incSubmissionCount !== 0)
-      await transactionalEntityManager.increment(
-        ProblemStatisticsEntity,
-        { problemId: problem.id },
-        "submissionCount",
-        incSubmissionCount
-      );
+    if (incSubmissionCount !== 0) {
+      await this.problemRepository.increment({ id: problemId }, "submissionCount", incSubmissionCount);
+    }
 
-    if (incAcceptedSubmissionCount !== 0)
-      await transactionalEntityManager.increment(
-        ProblemStatisticsEntity,
-        { problemId: problem.id },
-        "acceptedSubmissionCount",
-        incAcceptedSubmissionCount
-      );
+    if (incAcceptedSubmissionCount !== 0) {
+      await this.problemRepository.increment({ id: problemId }, "acceptedSubmissionCount", incAcceptedSubmissionCount);
+    }
   }
 }

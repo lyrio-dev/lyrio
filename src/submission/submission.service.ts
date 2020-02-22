@@ -190,10 +190,10 @@ export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionPr
       submissionDetail.result = null;
       await transactionalEntityManager.save(submissionDetail);
 
-      await this.problemService.updateProblemStatistics(problem, 1, 0, transactionalEntityManager);
-
       return submission;
     });
+
+    await this.problemService.updateProblemStatistics(problem.id, 1, 0);
 
     try {
       const judgeInfo = await this.problemService.getProblemJudgeInfo(problem);
@@ -236,6 +236,14 @@ export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionPr
 
   private async onSubmissionUpdated(oldSubmission: SubmissionEntity, submission: SubmissionEntity): Promise<void> {
     await this.submissionStatisticsService.onSubmissionUpdated(oldSubmission, submission);
+
+    const oldAccepted = oldSubmission.status === SubmissionStatus.Accepted;
+    const newAccepted = submission.status === SubmissionStatus.Accepted;
+    if (!oldAccepted && newAccepted) {
+      await this.problemService.updateProblemStatistics(submission.problemId, 0, 1);
+    } else if (oldAccepted && !newAccepted) {
+      await this.problemService.updateProblemStatistics(submission.problemId, 0, -1);
+    }
   }
 
   private async onSubmissionFinished(submissionId: number, progress: SubmissionProgress): Promise<void> {

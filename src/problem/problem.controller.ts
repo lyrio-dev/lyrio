@@ -87,7 +87,7 @@ export class ProblemController {
       const titleLocale = problem.locales.includes(request.locale) ? request.locale : problem.locales[0];
       const title = await this.problemService.getProblemLocalizedTitle(problem, titleLocale);
       response.result.push({
-        meta: await this.problemService.getProblemMeta(problem),
+        meta: await this.problemService.getProblemMeta(problem, true),
         title: title,
         titleLocale: titleLocale
       });
@@ -178,7 +178,7 @@ export class ProblemController {
       };
 
     const result: GetProblemResponseDto = {
-      meta: await this.problemService.getProblemMeta(problem)
+      meta: await this.problemService.getProblemMeta(problem, request.statistics)
     };
 
     if (request.owner) {

@@ -7,7 +7,6 @@ import { ProblemController } from "./problem.controller";
 import { ProblemService } from "./problem.service";
 import { ProblemSampleEntity } from "./problem-sample.entity";
 import { ProblemFileEntity } from "./problem-file.entity";
-import { ProblemStatisticsEntity } from "./problem-statistics.entity";
 import { ConfigModule } from "@/config/config.module";
 import { LocalizedContentModule } from "@/localized-content/localized-content.module";
 import { UserModule } from "@/user/user.module";
@@ -24,7 +23,6 @@ import { ProblemTypedJudgeInfoTraditionalService } from "./type/traditional/prob
     TypeOrmModule.forFeature([ProblemJudgeInfoEntity]),
     TypeOrmModule.forFeature([ProblemSampleEntity]),
     TypeOrmModule.forFeature([ProblemFileEntity]),
-    TypeOrmModule.forFeature([ProblemStatisticsEntity]),
     ConfigModule,
     LocalizedContentModule,
     UserModule,

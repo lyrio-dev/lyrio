@@ -21,4 +21,10 @@ export class ProblemMetaDto {
 
   @ApiProperty({ enum: Locale, isArray: true })
   locales: Locale[];
+
+  @ApiProperty()
+  submissionCount?: number;
+
+  @ApiProperty()
+  acceptedSubmissionCount?: number;
 }

@@ -44,6 +44,12 @@ export class ProblemEntity {
   @Column({ type: "json" })
   locales: Locale[];
 
+  @Column({ type: "integer" })
+  submissionCount: number;
+
+  @Column({ type: "integer" })
+  acceptedSubmissionCount: number;
+
   @OneToOne(
     type => ProblemSampleEntity,
     problemSample => problemSample.problem
