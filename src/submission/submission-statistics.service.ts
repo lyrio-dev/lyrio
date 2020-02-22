@@ -44,7 +44,7 @@ const submissionStatisticsFields: Record<SubmissionStatisticsType, SubmissionSta
 // The data in redis is [submissionId, fieldValue]
 // Each time a submission is updated, if it's in the ranklist, or it should be inserted to the ranklist
 // the cache will be purged
-const REDIS_KEY_SUBMISSION_STATISTICS = "SUBMISSION_STATISTICS_";
+const REDIS_KEY_SUBMISSION_STATISTICS = "submissionStatistics";
 
 // Only top 100 users' submissions will be in the statistics
 const SUBMISSION_STATISTICS_TOP_COUNT = 100;
@@ -61,6 +61,10 @@ export class SubmissionStatisticsService {
     private readonly redisService: RedisService
   ) {
     this.redis = this.redisService.getClient();
+  }
+
+  private getRedisKey(problemId: number, statisticsType: SubmissionStatisticsType) {
+    return REDIS_KEY_SUBMISSION_STATISTICS + "_" + problemId + "_" + statisticsType;
   }
 
   // tuples(submissionId, submitterId, fieldValue)
@@ -81,7 +85,7 @@ export class SubmissionStatisticsService {
   ): Promise<[SubmissionEntity[], number]> {
     const { field, sort } = submissionStatisticsFields[statisticsType];
 
-    const key = REDIS_KEY_SUBMISSION_STATISTICS + problem.id + "_" + statisticsType;
+    const key = this.getRedisKey(problem.id, statisticsType);
     let tuples = await this.getIdAndValuesFromRedis(key);
 
     if (!tuples) {
@@ -126,7 +130,7 @@ export class SubmissionStatisticsService {
     if (oldSubmission.status !== SubmissionStatus.Accepted && submission.status !== SubmissionStatus.Accepted) return;
     for (const statisticsType of Object.values(SubmissionStatisticsType)) {
       const { field, sort } = submissionStatisticsFields[statisticsType];
-      const key = REDIS_KEY_SUBMISSION_STATISTICS + submission.problemId + "_" + statisticsType;
+      const key = this.getRedisKey(submission.problemId, statisticsType);
       const tuples = await this.getIdAndValuesFromRedis(key);
 
       if (!tuples || tuples.length === 0) continue;

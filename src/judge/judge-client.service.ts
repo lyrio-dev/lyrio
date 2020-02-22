@@ -15,8 +15,8 @@ function generateKey(): string {
   return crypto.randomBytes(JUDGE_CLIENT_KEY_BYTE_LENGTH).toString("base64");
 }
 
-const REDIS_KEY_JUDGE_CLIENT_SESSION_ID = "JudgeClient_SessionId_";
-const REDIS_KEY_JUDGE_CLIENT_SYSTEM_INFO = "JudgeClient_SystemInfo_";
+const REDIS_KEY_JUDGE_CLIENT_SESSION_ID = "judgeClientSessionId_";
+const REDIS_KEY_JUDGE_CLIENT_SYSTEM_INFO = "judgeClientSystemInfo_";
 
 @Injectable()
 export class JudgeClientService {

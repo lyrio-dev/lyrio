@@ -5,8 +5,8 @@ import { SubmissionProgress, SubmissionProgressType } from "./submission-progres
 import { RedisService } from "@/redis/redis.service";
 import { SubmissionProgressGateway } from "./submission-progress.gateway";
 
-const REDIS_KEY_SUBMISSION_PROGRESS = "submission_progress_";
-const REDIS_CHANNEL_SUBMISSION_PROGRESS = "submission_progress";
+const REDIS_KEY_SUBMISSION_PROGRESS = "submissionProgress_";
+const REDIS_CHANNEL_SUBMISSION_PROGRESS = "submissionProgress";
 
 // The process for after a progress received:
 // 1. If its type is "Finished", it's converted to a "result" and stored to the database,
