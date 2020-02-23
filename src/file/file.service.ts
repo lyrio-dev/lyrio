@@ -187,6 +187,7 @@ export class FileService implements OnModuleInit {
   }
 
   async getFileSizes(uuids: string[]): Promise<number[]> {
+    if (uuids.length === 0) return [];
     const uniqueUuids = Array.from(new Set(uuids));
     const files = await this.fileRepository.find({
       uuid: In(uniqueUuids)
