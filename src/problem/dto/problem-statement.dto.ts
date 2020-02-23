@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsString, Length, ValidateNested, IsEnum, ArrayNotEmpty, IsArray, ArrayMaxSize } from "class-validator";
+import { IsString, Length, ValidateNested, IsEnum, ArrayNotEmpty, IsArray, ArrayMaxSize, IsInt } from "class-validator";
 
 import { Locale } from "@/common/locale.type";
 import { If } from "@/common/validators";
@@ -42,4 +42,10 @@ export class ProblemStatementDto {
   @ValidateNested({ each: true })
   @IsArray()
   readonly samples: ProblemSampleDataMemberDto[];
+
+  @ApiProperty({ type: [Number] })
+  @IsInt({ each: true })
+  @IsArray()
+  @ArrayMaxSize(20)
+  readonly problemTagIds: number[];
 }

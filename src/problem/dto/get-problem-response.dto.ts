@@ -8,6 +8,7 @@ import { ProblemLocalizedContentDto } from "./problem-statement.dto";
 import { ProblemPermissionType, ProblemPermissionLevel } from "@/problem/problem.service";
 import { UserMetaDto } from "@/user/dto";
 import { GroupMetaDto } from "@/group/dto";
+import { LocalizedProblemTagDto } from "./localized-problem-tag.dto";
 
 export enum GetProblemResponseError {
   PERMISSION_DENIED = "PERMISSION_DENIED",
@@ -66,6 +67,9 @@ export class GetProblemResponseDto {
 
   @ApiProperty({ type: ProblemLocalizedContentDto, isArray: true })
   localizedContentsOfAllLocales?: ProblemLocalizedContentDto[];
+
+  @ApiProperty({ type: [LocalizedProblemTagDto] })
+  tagsOfLocale?: LocalizedProblemTagDto[];
 
   @ApiProperty({ type: ProblemSampleDataMemberDto, isArray: true })
   samples?: ProblemSampleDataMemberDto[];

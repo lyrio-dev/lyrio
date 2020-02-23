@@ -64,4 +64,10 @@ export class UpdateProblemStatementRequestDto {
   @IsArray()
   @IsOptional()
   readonly samples?: ProblemSampleDataMemberDto[];
+
+  @ApiProperty({ type: [Number] })
+  @IsInt({ each: true })
+  @IsArray()
+  @ArrayMaxSize(20)
+  readonly problemTagIds: number[];
 }

@@ -9,13 +9,16 @@ import { ProblemEntity, ProblemType } from "./problem.entity";
 import { ProblemJudgeInfoEntity } from "./problem-judge-info.entity";
 import { ProblemSampleEntity } from "./problem-sample.entity";
 import { ProblemFileType, ProblemFileEntity } from "./problem-file.entity";
+import { ProblemTagEntity } from "./problem-tag.entity";
+import { ProblemTagMapEntity } from "./problem-tag-map.entity";
 import { ProblemJudgeInfoService } from "./type/problem-judge-info.service";
 import {
   ProblemStatementDto,
   UpdateProblemStatementRequestDto,
   ProblemLocalizedContentDto,
   ProblemFileDto,
-  ProblemMetaDto
+  ProblemMetaDto,
+  LocalizedProblemTagDto
 } from "./dto";
 import { LocalizedContentType } from "@/localized-content/localized-content.entity";
 import { Locale } from "@/common/locale.type";
@@ -28,6 +31,7 @@ import { UserService } from "@/user/user.service";
 import { GroupService } from "@/group/group.service";
 import { FileService } from "@/file/file.service";
 import { ConfigService } from "@/config/config.service";
+import { escapeLike } from "@/database/database.utils";
 
 export enum ProblemPermissionType {
   VIEW = "VIEW",
@@ -55,6 +59,10 @@ export class ProblemService {
     private readonly problemSampleRepository: Repository<ProblemSampleEntity>,
     @InjectRepository(ProblemFileEntity)
     private readonly problemFileRepository: Repository<ProblemFileEntity>,
+    @InjectRepository(ProblemTagEntity)
+    private readonly problemTagRepository: Repository<ProblemTagEntity>,
+    @InjectRepository(ProblemTagMapEntity)
+    private readonly problemTagMapRepository: Repository<ProblemTagMapEntity>,
     private readonly problemJudgeInfoService: ProblemJudgeInfoService,
     private readonly localizedContentService: LocalizedContentService,
     private readonly userPrivilegeService: UserPrivilegeService,
@@ -196,7 +204,12 @@ export class ProblemService {
       .getManyAndCount();
   }
 
-  async createProblem(owner: UserEntity, type: ProblemType, statement: ProblemStatementDto): Promise<ProblemEntity> {
+  async createProblem(
+    owner: UserEntity,
+    type: ProblemType,
+    statement: ProblemStatementDto,
+    tags: ProblemTagEntity[]
+  ): Promise<ProblemEntity> {
     let problem: ProblemEntity;
     await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
       problem = new ProblemEntity();
@@ -233,12 +246,18 @@ export class ProblemService {
           transactionalEntityManager
         );
       }
+
+      await this.setProblemTags(problem, tags, transactionalEntityManager);
     });
 
     return problem;
   }
 
-  async updateProblemStatement(problem: ProblemEntity, request: UpdateProblemStatementRequestDto): Promise<boolean> {
+  async updateProblemStatement(
+    problem: ProblemEntity,
+    request: UpdateProblemStatementRequestDto,
+    tags: ProblemTagEntity[]
+  ): Promise<boolean> {
     await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
       if (request.samples != null) {
         const problemSample = await transactionalEntityManager.findOne(ProblemSampleEntity, {
@@ -285,6 +304,8 @@ export class ProblemService {
             JSON.stringify(localizedContent.contentSections)
           );
       }
+
+      await this.setProblemTags(problem, tags, transactionalEntityManager);
 
       await transactionalEntityManager.save(problem);
     });
@@ -510,5 +531,132 @@ export class ProblemService {
     if (incAcceptedSubmissionCount !== 0) {
       await this.problemRepository.increment({ id: problemId }, "acceptedSubmissionCount", incAcceptedSubmissionCount);
     }
+  }
+
+  async findProblemTagById(id: number): Promise<ProblemTagEntity> {
+    return this.problemTagRepository.findOne(id);
+  }
+
+  async findProblemTagsByExistingIds(problemTagIds: number[]): Promise<ProblemTagEntity[]> {
+    if (problemTagIds.length === 0) return [];
+    const uniqueIds = Array.from(new Set(problemTagIds));
+    const records = await this.problemTagRepository.findByIds(uniqueIds);
+    const map = Object.fromEntries(records.map(record => [record.id, record]));
+    return problemTagIds.map(problemId => map[problemId]);
+  }
+
+  async getAllProblemTags(): Promise<ProblemTagEntity[]> {
+    return await this.problemTagRepository.find();
+  }
+
+  async createProblemTag(localizedNames: [Locale, string][], color: string): Promise<ProblemTagEntity> {
+    return await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
+      const problemTag = new ProblemTagEntity();
+      problemTag.color = color;
+      problemTag.locales = localizedNames.map(([locale, name]) => locale);
+      await transactionalEntityManager.save(problemTag);
+
+      for (const [locale, name] of localizedNames) {
+        await this.localizedContentService.createOrUpdate(
+          problemTag.id,
+          LocalizedContentType.PROBLEM_TAG_NAME,
+          locale,
+          name,
+          transactionalEntityManager
+        );
+      }
+
+      return problemTag;
+    });
+  }
+
+  async updateProblemTag(
+    problemTag: ProblemTagEntity,
+    localizedNames: [Locale, string][],
+    color: string
+  ): Promise<void> {
+    await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
+      problemTag.color = color;
+      problemTag.locales = localizedNames.map(([locale, name]) => locale);
+      await transactionalEntityManager.save(problemTag);
+
+      await this.localizedContentService.delete(
+        problemTag.id,
+        LocalizedContentType.PROBLEM_TAG_NAME,
+        null,
+        transactionalEntityManager
+      );
+      for (const [locale, name] of localizedNames) {
+        await this.localizedContentService.createOrUpdate(
+          problemTag.id,
+          LocalizedContentType.PROBLEM_TAG_NAME,
+          locale,
+          name,
+          transactionalEntityManager
+        );
+      }
+    });
+  }
+
+  async deleteProblemTag(problemTag: ProblemTagEntity): Promise<void> {
+    await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
+      await transactionalEntityManager.delete(ProblemTagEntity, {
+        id: problemTag.id
+      });
+
+      await this.localizedContentService.delete(
+        problemTag.id,
+        LocalizedContentType.PROBLEM_TAG_NAME,
+        null,
+        transactionalEntityManager
+      );
+    });
+  }
+
+  async getProblemTagLocalizedName(problemTag: ProblemTagEntity, locale: Locale): Promise<string> {
+    return await this.localizedContentService.get(problemTag.id, LocalizedContentType.PROBLEM_TAG_NAME, locale);
+  }
+
+  /**
+   * Get the tag dto with localized name of requested locale, if not available, the name of default locale is used.
+   */
+  async getProblemTagLocalized(problemTag: ProblemTagEntity, locale: Locale): Promise<LocalizedProblemTagDto> {
+    const nameLocale = problemTag.locales.includes(locale) ? locale : problemTag.locales[0];
+    const name = await this.getProblemTagLocalizedName(problemTag, nameLocale);
+    return {
+      id: problemTag.id,
+      color: problemTag.color,
+      name: name,
+      nameLocale: nameLocale
+    };
+  }
+
+  async getProblemTagAllLocalizedNames(problemTag: ProblemTagEntity): Promise<Partial<Record<Locale, string>>> {
+    return await this.localizedContentService.getOfAllLocales(problemTag.id, LocalizedContentType.PROBLEM_TAG_NAME);
+  }
+
+  async setProblemTags(
+    problem: ProblemEntity,
+    problemTags: ProblemTagEntity[],
+    transactionalEntityManager: EntityManager
+  ): Promise<void> {
+    await transactionalEntityManager.delete(ProblemTagMapEntity, {
+      problemId: problem.id
+    });
+    if (problemTags.length === 0) return;
+    await transactionalEntityManager
+      .createQueryBuilder()
+      .insert()
+      .into(ProblemTagMapEntity)
+      .values(problemTags.map(problemTag => ({ problemId: problem.id, problemTagId: problemTag.id })))
+      .execute();
+  }
+
+  async getProblemTagsByProblem(problem: ProblemEntity): Promise<ProblemTagEntity[]> {
+    const problemTagMaps = await this.problemTagMapRepository.find({
+      problemId: problem.id
+    });
+
+    return await this.findProblemTagsByExistingIds(problemTagMaps.map(problemTagMap => problemTagMap.problemTagId));
   }
 }

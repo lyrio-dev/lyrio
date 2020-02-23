@@ -30,6 +30,11 @@ export class GetProblemRequestDto {
   readonly localizedContentsOfAllLocales?: boolean;
 
   @ApiProperty({ required: false })
+  @IsEnum(Locale)
+  @IsOptional()
+  readonly tagsOfLocale?: Locale;
+
+  @ApiProperty({ required: false })
   @IsBoolean()
   @IsOptional()
   readonly samples?: boolean;

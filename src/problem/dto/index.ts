@@ -3,6 +3,8 @@ export * from "./problem-content-section.dto";
 export * from "./problem-sample-data-member.dto";
 export * from "./problem-statement.dto";
 export * from "./problem-file.dto";
+export * from "./problem-tag-localized-name.dto";
+export * from "./localized-problem-tag.dto";
 
 export * from "./query-problem-set-request.dto";
 export * from "./query-problem-set-response.dto";
@@ -39,3 +41,18 @@ export * from "./rename-problem-file-response.dto";
 
 export * from "./update-problem-judge-info-request.dto";
 export * from "./update-problem-judge-info-response.dto";
+
+export * from "./create-problem-tag-request.dto";
+export * from "./create-problem-tag-response.dto";
+
+export * from "./update-problem-tag-request.dto";
+export * from "./update-problem-tag-response.dto";
+
+export * from "./delete-problem-tag-request.dto";
+export * from "./delete-problem-tag-response.dto";
+
+export * from "./get-problem-tag-detail-request.dto";
+export * from "./get-problem-tag-detail-response.dto";
+
+export * from "./get-all-problem-tags-request.dto";
+export * from "./get-all-problem-tags-response.dto";

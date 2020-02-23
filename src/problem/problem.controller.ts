@@ -47,9 +47,25 @@ import {
   RenameProblemFileResponseError,
   UpdateProblemJudgeInfoRequestDto,
   UpdateProblemJudgeInfoResponseDto,
-  UpdateProblemJudgeInfoResponseError
+  UpdateProblemJudgeInfoResponseError,
+  CreateProblemTagRequestDto,
+  CreateProblemTagResponseDto,
+  CreateProblemTagResponseError,
+  UpdateProblemTagRequestDto,
+  UpdateProblemTagResponseDto,
+  UpdateProblemTagResponseError,
+  DeleteProblemTagRequestDto,
+  DeleteProblemTagResponseDto,
+  DeleteProblemTagResponseError,
+  GetAllProblemTagsRequestDto,
+  GetAllProblemTagsResponseDto,
+  GetProblemTagDetailRequestDto,
+  GetProblemTagDetailResponseDto,
+  GetProblemTagDetailResponseError
 } from "./dto";
 import { GroupEntity } from "@/group/group.entity";
+import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.service";
+import { Locale } from "@/common/locale.type";
 
 @ApiTags("Problem")
 @Controller("problem")
@@ -58,6 +74,7 @@ export class ProblemController {
     private readonly configService: ConfigService,
     private readonly problemService: ProblemService,
     private readonly userService: UserService,
+    private readonly userPrivilegeService: UserPrivilegeService,
     private readonly groupService: GroupService,
     private readonly fileService: FileService
   ) {}
@@ -91,10 +108,14 @@ export class ProblemController {
     for (const problem of problems) {
       const titleLocale = problem.locales.includes(request.locale) ? request.locale : problem.locales[0];
       const title = await this.problemService.getProblemLocalizedTitle(problem, titleLocale);
+      const problemTags = await this.problemService.getProblemTagsByProblem(problem);
       response.result.push({
         meta: await this.problemService.getProblemMeta(problem, true),
         title: title,
-        titleLocale: titleLocale
+        tags: await Promise.all(
+          problemTags.map(problemTag => this.problemService.getProblemTagLocalized(problemTag, request.locale))
+        ),
+        resultLocale: titleLocale
       });
     }
 
@@ -115,7 +136,13 @@ export class ProblemController {
         error: CreateProblemResponseError.PERMISSION_DENIED
       };
 
-    const problem = await this.problemService.createProblem(currentUser, request.type, request.statement);
+    const problemTags = await this.problemService.findProblemTagsByExistingIds(request.statement.problemTagIds);
+    if (problemTags.some(problemTag => problemTag == null))
+      return {
+        error: CreateProblemResponseError.NO_SUCH_PROBLEM_TAG
+      };
+
+    const problem = await this.problemService.createProblem(currentUser, request.type, request.statement, problemTags);
     if (!problem)
       return {
         error: CreateProblemResponseError.FAILED
@@ -146,7 +173,13 @@ export class ProblemController {
         error: UpdateProblemStatementResponseError.PERMISSION_DENIED
       };
 
-    const success = await this.problemService.updateProblemStatement(problem, request);
+    const problemTags = await this.problemService.findProblemTagsByExistingIds(request.problemTagIds);
+    if (problemTags.some(problemTag => problemTag == null))
+      return {
+        error: UpdateProblemStatementResponseError.NO_SUCH_PROBLEM_TAG
+      };
+
+    const success = await this.problemService.updateProblemStatement(problem, request, problemTags);
 
     if (!success)
       return {
@@ -205,6 +238,13 @@ export class ProblemController {
 
     if (request.localizedContentsOfAllLocales) {
       result.localizedContentsOfAllLocales = await this.problemService.getProblemAllLocalizedContents(problem);
+    }
+
+    if (request.tagsOfLocale) {
+      const problemTags = await this.problemService.getProblemTagsByProblem(problem);
+      result.tagsOfLocale = await Promise.all(
+        problemTags.map(problemTag => this.problemService.getProblemTagLocalized(problemTag, request.tagsOfLocale))
+      );
     }
 
     if (request.samples) {
@@ -523,6 +563,124 @@ export class ProblemController {
       };
 
     await this.problemService.updateProblemJudgeInfo(problem, request.judgeInfo);
+
+    return {};
+  }
+
+  @Post("getAllProblemTags")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Get all problem tags with the name of given locale."
+  })
+  async getAllProblemTags(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: GetAllProblemTagsRequestDto
+  ): Promise<GetAllProblemTagsResponseDto> {
+    const problemTags = await this.problemService.getAllProblemTags();
+    return {
+      tags: await Promise.all(
+        problemTags.map(problemTag => this.problemService.getProblemTagLocalized(problemTag, request.locale))
+      )
+    };
+  }
+
+  @Post("createProblemTag")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Create a new problem tag."
+  })
+  async createProblemTag(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: CreateProblemTagRequestDto
+  ): Promise<CreateProblemTagResponseDto> {
+    if (!(await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_PROBLEM)))
+      return {
+        error: CreateProblemTagResponseError.PERMISSION_DENIED
+      };
+
+    const problemTag = await this.problemService.createProblemTag(
+      request.localizedNames.map(({ locale, name }) => [locale, name]),
+      request.color
+    );
+
+    return {
+      id: problemTag.id
+    };
+  }
+
+  @Post("getProblemTagDetail")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Get the meta and all localized names of a problem tag."
+  })
+  async getProblemTagDetail(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: GetProblemTagDetailRequestDto
+  ): Promise<GetProblemTagDetailResponseDto> {
+    const problemTag = await this.problemService.findProblemTagById(request.id);
+    if (!problemTag)
+      return {
+        error: GetProblemTagDetailResponseError.NO_SUCH_PROBLEM_TAG
+      };
+
+    const localizedNames = await this.problemService.getProblemTagAllLocalizedNames(problemTag);
+    return {
+      id: problemTag.id,
+      color: problemTag.color,
+      localizedNames: Object.entries(localizedNames).map(([locale, name]) => ({ locale: locale as Locale, name: name }))
+    };
+  }
+
+  @Post("updateProblemTag")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Update a problem tag's localized names and color."
+  })
+  async updateProblemTag(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: UpdateProblemTagRequestDto
+  ): Promise<UpdateProblemTagResponseDto> {
+    if (!(await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_PROBLEM)))
+      return {
+        error: UpdateProblemTagResponseError.PERMISSION_DENIED
+      };
+
+    const problemTag = await this.problemService.findProblemTagById(request.id);
+    if (!problemTag)
+      return {
+        error: UpdateProblemTagResponseError.NO_SUCH_PROBLEM_TAG
+      };
+
+    await this.problemService.updateProblemTag(
+      problemTag,
+      request.localizedNames.map(({ locale, name }) => [locale, name]),
+      request.color
+    );
+
+    return {};
+  }
+
+  @Post("deleteProblemTag")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Delete a problem tag and remove the tag from all problems."
+  })
+  async deleteProblemTag(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: DeleteProblemTagRequestDto
+  ): Promise<DeleteProblemTagResponseDto> {
+    if (!(await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_PROBLEM)))
+      return {
+        error: DeleteProblemTagResponseError.PERMISSION_DENIED
+      };
+
+    const problemTag = await this.problemService.findProblemTagById(request.id);
+    if (!problemTag)
+      return {
+        error: DeleteProblemTagResponseError.NO_SUCH_PROBLEM_TAG
+      };
+
+    await this.problemService.deleteProblemTag(problemTag);
 
     return {};
   }
