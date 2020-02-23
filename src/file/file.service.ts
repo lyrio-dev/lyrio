@@ -1,17 +1,16 @@
-import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
+import { Injectable, OnModuleInit, Logger } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
-import { Repository, Connection, EntityManager, In } from "typeorm";
-import * as Minio from "minio";
-import * as UUID from "uuid/v4";
-import * as crypto from "crypto";
+import { Repository, Connection, EntityManager, In, LessThan } from "typeorm";
+import Minio = require("minio");
+import UUID = require("uuid/v4");
+import crypto = require("crypto");
+import { Stream } from "stream";
 
 import { ConfigService } from "@/config/config.service";
-
 import { FileEntity } from "./file.entity";
 import { FileUploadEntity } from "./file-upload.entity";
 import { FileDeleteEntity } from "./file-delete.entity";
 import FileCompressionType from "./file-compression-type.enum";
-import { Stream } from "stream";
 
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent
 function encodeRFC5987ValueChars(str: string) {
@@ -32,8 +31,6 @@ const FILE_UPLOAD_EXPIRE_TIME = 60 * 10;
 // 1 hour downlaod expire time
 const FILE_DOWNLOAD_EXPIRE_TIME = 1 * 60 * 60;
 
-// TODO: Setup delayed tasks to clear expired file_upload records
-// TODO: Setup delayed tasks to delete files
 // TODO: Add upload file size limit
 @Injectable()
 export class FileService implements OnModuleInit {
@@ -208,5 +205,54 @@ export class FileService implements OnModuleInit {
             "response-content-disposition": 'attachment; filename="' + encodeRFC5987ValueChars(filename) + '"'
           }
     );
+  }
+
+  async runScheduledTasks(): Promise<void> {
+    const SQL_TAKE_LIMIT = 100;
+
+    // Deleted expired file upload records
+    // Keep them for another one time of FILE_UPLOAD_EXPIRE_TIME to avoid errors
+    const latestExpiredTime = new Date(Date.now() - FILE_UPLOAD_EXPIRE_TIME * 1000);
+    while (1) {
+      const fileUploads = await this.fileUploadRepository.find({
+        where: {
+          expireTime: LessThan(latestExpiredTime)
+        },
+        take: SQL_TAKE_LIMIT
+      });
+      if (fileUploads.length === 0) break;
+
+      try {
+        await this.minioClient.removeObjects(
+          this.configService.config.services.minio.bucket,
+          fileUploads.map(fileUpload => fileUpload.uuid)
+        );
+      } catch (e) {
+        Logger.error(`Error deleting expired uploaded files: ${e}`);
+        break;
+      }
+
+      await this.fileUploadRepository.delete(fileUploads.map(fileUpload => fileUpload.id));
+    }
+
+    // Delete marked deleted files from file storage
+    while (1) {
+      const fileDeletes = await this.fileDeleteRepository.find({
+        take: SQL_TAKE_LIMIT
+      });
+      if (fileDeletes.length === 0) break;
+
+      try {
+        await this.minioClient.removeObjects(
+          this.configService.config.services.minio.bucket,
+          fileDeletes.map(fileDelete => fileDelete.uuid)
+        );
+      } catch (e) {
+        Logger.error(`Error deleting marked deleted files: ${e}`);
+        break;
+      }
+
+      await this.fileDeleteRepository.delete(fileDeletes.map(fileDelete => fileDelete.id));
+    }
   }
 }

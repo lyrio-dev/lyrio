@@ -216,6 +216,11 @@
   resolved "https://registry.yarnpkg.com/@types/bcrypt/-/bcrypt-3.0.0.tgz#851489a9065a067cb7f3c9cbe4ce9bed8bba0876"
   integrity sha512-nohgNyv+1ViVcubKBh0+XiNJ3dO8nYu///9aJ4cgSqv70gBL+94SNy/iC2NLzKPT2Zt/QavrOkBVbZRLZmw6NQ==
 
+"@types/bluebird@*":
+  version "3.5.29"
+  resolved "https://registry.yarnpkg.com/@types/bluebird/-/bluebird-3.5.29.tgz#7cd933c902c4fc83046517a1bef973886d00bdb6"
+  integrity sha512-kmVtnxTuUuhCET669irqQmPAez4KFnFVKvpleVRyfC3g+SHD1hIkFZcWLim9BVcwUBLO59o8VZE4yGCmTif8Yw==
+
 "@types/color-name@^1.1.1":
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/@types/color-name/-/color-name-1.1.1.tgz#1c1261bbeaa10a8055bbc5d8ab84b7b2afc846a0"
@@ -282,6 +287,13 @@
   version "12.12.14"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-12.12.14.tgz#1c1d6e3c75dba466e0326948d56e8bd72a1903d2"
   integrity sha512-u/SJDyXwuihpwjXy7hOOghagLEV1KdAST6syfnOk6QZAMzZuWZqXy5aYYZbh8Jdpd4escVFP0MvftHNDb9pruA==
+
+"@types/redlock@^4.0.1":
+  version "4.0.1"
+  resolved "https://registry.yarnpkg.com/@types/redlock/-/redlock-4.0.1.tgz#cfa620968f2ebe795f3abeef8e9128f071eeef85"
+  integrity sha512-YrPEPHOgLlWtsg/Ocv/gthGDQpx3HXFPhBvCNuBKBKUoMBzvCjCTC95dmJ0WLZgO+fgTxGQFyk6ZO/+/zG5mRg==
+  dependencies:
+    "@types/bluebird" "*"
 
 "@types/serialize-javascript@^1.5.0":
   version "1.5.0"
@@ -856,7 +868,7 @@ block-stream2@^2.0.0:
   dependencies:
     readable-stream "^3.4.0"
 
-bluebird@^3.5.5:
+bluebird@^3.3.3, bluebird@^3.5.5:
   version "3.7.2"
   resolved "https://registry.yarnpkg.com/bluebird/-/bluebird-3.7.2.tgz#9f229c15be272454ffa973ace0dbee79a1b0c36f"
   integrity sha512-XpNj6GDQzdfW+r2Wnn7xiSAd7TM3jzkxGXBGTtWKuSXv1xUV+azxAm8jdWZN06QTQk+2N2XB9jRDkvbmQmcRtg==
@@ -4551,6 +4563,13 @@ redis@~2.8.0:
     double-ended-queue "^2.1.0-0"
     redis-commands "^1.2.0"
     redis-parser "^2.6.0"
+
+redlock@^4.1.0:
+  version "4.1.0"
+  resolved "https://registry.yarnpkg.com/redlock/-/redlock-4.1.0.tgz#2c8d6a348d1b8a10af61574fa3664eced003babc"
+  integrity sha512-6EdtGpk5aoZZJtclZGHAd77OJmBtMekD0t8fWUbBsm53pqHwLP+EqAEn3+a6lG+VZzClwjkLbePxpNaP1deGXw==
+  dependencies:
+    bluebird "^3.3.3"
 
 reflect-metadata@^0.1.13:
   version "0.1.13"
