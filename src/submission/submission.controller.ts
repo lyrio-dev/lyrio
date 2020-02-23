@@ -108,6 +108,12 @@ export class SubmissionController {
         };
     }
 
+    const hasManageProblemPrivilege = await this.userPrivilegeService.userHasPrivilege(
+      currentUser,
+      UserPrivilegeType.MANAGE_PROBLEM
+    );
+    const isProblemOwned = filterProblem && currentUser && filterProblem.ownerId === currentUser.id;
+    const isSubmissionsOwned = filterSubmitter && currentUser && filterSubmitter.id === currentUser.id;
     const queryResult = await this.submissionService.querySubmissions(
       filterProblem ? filterProblem.id : null,
       filterSubmitter ? filterSubmitter.id : null,
@@ -115,7 +121,7 @@ export class SubmissionController {
       request.status,
       request.minId,
       request.maxId,
-      !(await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_PROBLEM)),
+      !(hasManageProblemPrivilege || isProblemOwned || isSubmissionsOwned),
       request.takeCount > this.configService.config.queryLimit.submissionsTake
         ? this.configService.config.queryLimit.submissionsTake
         : request.takeCount
