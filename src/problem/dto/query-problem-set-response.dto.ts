@@ -32,4 +32,7 @@ export class QueryProblemSetResponseDto {
 
   @ApiProperty()
   count?: number;
+
+  @ApiProperty()
+  createProblemPermission?: boolean;
 }

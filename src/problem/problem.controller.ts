@@ -68,7 +68,7 @@ export class ProblemController {
     summary: "Query problems in problem set"
   })
   async queryProblemSet(
-    @CurrentUser() CurrentUser: UserEntity,
+    @CurrentUser() currentUser: UserEntity,
     @Body() request: QueryProblemSetRequestDto
   ): Promise<QueryProblemSetResponseDto> {
     if (request.takeCount > this.configService.config.queryLimit.problemSetProblemsTake)
@@ -80,7 +80,8 @@ export class ProblemController {
 
     const response: QueryProblemSetResponseDto = {
       count: count,
-      result: []
+      result: [],
+      createProblemPermission: await this.problemService.userHasCreateProblemPermission(currentUser)
     };
 
     for (const problem of problems) {
@@ -105,8 +106,7 @@ export class ProblemController {
     @CurrentUser() currentUser: UserEntity,
     @Body() request: CreateProblemRequestDto
   ): Promise<CreateProblemResponseDto> {
-    // TODO: Add permission for create problem
-    if (false)
+    if (!await this.problemService.userHasCreateProblemPermission(currentUser))
       return {
         error: CreateProblemResponseError.PERMISSION_DENIED
       };

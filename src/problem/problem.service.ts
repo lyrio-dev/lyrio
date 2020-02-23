@@ -162,6 +162,12 @@ export class ProblemService {
     }
   }
 
+  async userHasCreateProblemPermission(user: UserEntity): Promise<boolean> {
+    if (!user) return false;
+    if (this.configService.config.preference.allowEveryoneCreateProblem) return true;
+    return await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM);
+  }
+
   async queryProblemsAndCount(skipCount: number, takeCount: number): Promise<[ProblemEntity[], number]> {
     let findOptions: FindManyOptions<ProblemEntity> = {
       order: {

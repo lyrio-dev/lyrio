@@ -87,6 +87,9 @@ class PreferenceConfig {
   readonly allowUserChangeUsername: boolean;
 
   @IsBoolean()
+  readonly allowEveryoneCreateProblem: boolean;
+
+  @IsBoolean()
   readonly allowOwnerManageProblemPermission: boolean;
 
   @IsBoolean()

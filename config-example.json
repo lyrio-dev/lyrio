@@ -33,6 +33,7 @@
     },
     "preference": {
         "allowUserChangeUsername": true,
+        "allowEveryoneCreateProblem": true,
         "allowOwnerManageProblemPermission": false,
         "allowOwnerDeleteProblem": true
     },
