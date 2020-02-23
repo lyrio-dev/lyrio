@@ -76,7 +76,11 @@ export class ProblemController {
         error: QueryProblemSetErrorDto.TAKE_TOO_MANY
       };
 
-    const [problems, count] = await this.problemService.queryProblemsAndCount(request.skipCount, request.takeCount);
+    const [problems, count] = await this.problemService.queryProblemsAndCount(
+      currentUser,
+      request.skipCount,
+      request.takeCount
+    );
 
     const response: QueryProblemSetResponseDto = {
       count: count,
@@ -106,7 +110,7 @@ export class ProblemController {
     @CurrentUser() currentUser: UserEntity,
     @Body() request: CreateProblemRequestDto
   ): Promise<CreateProblemResponseDto> {
-    if (!await this.problemService.userHasCreateProblemPermission(currentUser))
+    if (!(await this.problemService.userHasCreateProblemPermission(currentUser)))
       return {
         error: CreateProblemResponseError.PERMISSION_DENIED
       };

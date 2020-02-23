@@ -168,16 +168,32 @@ export class ProblemService {
     return await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM);
   }
 
-  async queryProblemsAndCount(skipCount: number, takeCount: number): Promise<[ProblemEntity[], number]> {
-    let findOptions: FindManyOptions<ProblemEntity> = {
-      order: {
-        displayId: "ASC"
-      },
-      skip: skipCount,
-      take: takeCount
-    };
-    findOptions.where = { isPublic: true };
-    return await this.problemRepository.findAndCount(findOptions);
+  /**
+   * Query problem set with pagination.
+   *
+   * If the user has manage problem privilege, show all problems.
+   * If the user has no manage problem privilege, show only public and the user owned problems.
+   *
+   * Sort: problems with display ID first (by displayId asc), then without display ID (by id asc).
+   */
+  async queryProblemsAndCount(
+    user: UserEntity,
+    skipCount: number,
+    takeCount: number
+  ): Promise<[ProblemEntity[], number]> {
+    const queryBuilder = this.problemRepository.createQueryBuilder().select();
+    if (!(await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM))) {
+      queryBuilder.where("isPublic = 1");
+      if (user) queryBuilder.orWhere("ownerId = :ownerId", { ownerId: user.id });
+    }
+    queryBuilder
+      .orderBy("displayId IS NOT NULL", "DESC")
+      .addOrderBy("displayId", "ASC")
+      .addOrderBy("id", "ASC");
+    return await queryBuilder
+      .skip(skipCount)
+      .take(takeCount)
+      .getManyAndCount();
   }
 
   async createProblem(owner: UserEntity, type: ProblemType, statement: ProblemStatementDto): Promise<ProblemEntity> {
