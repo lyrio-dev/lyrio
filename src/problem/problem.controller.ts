@@ -102,7 +102,11 @@ export class ProblemController {
     const response: QueryProblemSetResponseDto = {
       count: count,
       result: [],
-      createProblemPermission: await this.problemService.userHasCreateProblemPermission(currentUser)
+      permissionCreateProblem: await this.problemService.userHasCreateProblemPermission(currentUser),
+      permissionManageTags: await this.userPrivilegeService.userHasPrivilege(
+        currentUser,
+        UserPrivilegeType.MANAGE_PROBLEM
+      )
     };
 
     for (const problem of problems) {
