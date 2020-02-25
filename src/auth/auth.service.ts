@@ -40,6 +40,7 @@ export class AuthService {
         user.email = email;
         user.bio = "";
         user.isAdmin = false;
+        user.submissionCount = user.acceptedProblemCount = 0;
         await transactionalEntityManager.save(user);
 
         const userAuth = new UserAuthEntity();
