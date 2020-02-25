@@ -56,3 +56,6 @@ export * from "./get-problem-tag-detail-response.dto";
 
 export * from "./get-all-problem-tags-request.dto";
 export * from "./get-all-problem-tags-response.dto";
+
+export * from "./get-all-problem-tags-of-all-locales-request.dto";
+export * from "./get-all-problem-tags-of-all-locales-response.dto";

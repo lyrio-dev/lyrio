@@ -61,7 +61,10 @@ import {
   GetAllProblemTagsResponseDto,
   GetProblemTagDetailRequestDto,
   GetProblemTagDetailResponseDto,
-  GetProblemTagDetailResponseError
+  GetProblemTagDetailResponseError,
+  GetAllProblemTagsOfAllLocalesRequestDto,
+  GetAllProblemTagsOfAllLocalesResponseDto,
+  GetAllProblemTagsOfAllLocalesResponseError
 } from "./dto";
 import { GroupEntity } from "@/group/group.entity";
 import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.service";
@@ -687,5 +690,38 @@ export class ProblemController {
     await this.problemService.deleteProblemTag(problemTag);
 
     return {};
+  }
+
+  @Post("getAllProblemTagsOfAllLocales")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Get the meta and all localized names of all problem tags."
+  })
+  async getAllProblemTagsOfAllLocales(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: GetAllProblemTagsOfAllLocalesRequestDto
+  ): Promise<GetAllProblemTagsOfAllLocalesResponseDto> {
+    if (!(await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_PROBLEM)))
+      return {
+        error: GetAllProblemTagsOfAllLocalesResponseError.PERMISSION_DENIED
+      };
+
+    const problemTags = await this.problemService.getAllProblemTags();
+
+    return {
+      tags: await Promise.all(
+        problemTags.map(async problemTag => {
+          const localizedNames = await this.problemService.getProblemTagAllLocalizedNames(problemTag);
+          return {
+            id: problemTag.id,
+            color: problemTag.color,
+            localizedNames: Object.entries(localizedNames).map(([locale, name]) => ({
+              locale: locale as Locale,
+              name: name
+            }))
+          };
+        })
+      )
+    };
   }
 }
