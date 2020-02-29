@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { InjectConnection, InjectRepository } from "@nestjs/typeorm";
-import { Connection, Repository, FindConditions, FindManyOptions, EntityManager } from "typeorm";
+import { Connection, Repository, FindConditions, FindManyOptions, EntityManager, Brackets } from "typeorm";
 
 import { UserEntity } from "@/user/user.entity";
 import { GroupEntity } from "@/group/group.entity";
@@ -186,22 +186,58 @@ export class ProblemService {
    */
   async queryProblemsAndCount(
     user: UserEntity,
+    hasPrivilege: boolean,
+    tagIds: number[],
+    ownerId: number,
+    nonpublic: boolean,
     skipCount: number,
     takeCount: number
   ): Promise<[ProblemEntity[], number]> {
-    const queryBuilder = this.problemRepository.createQueryBuilder().select();
-    if (!(await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM))) {
-      queryBuilder.where("isPublic = 1");
-      if (user) queryBuilder.orWhere("ownerId = :ownerId", { ownerId: user.id });
+    const queryBuilder = this.problemRepository.createQueryBuilder("problem").select("problem.id", "id");
+    if (tagIds && tagIds.length > 0) {
+      queryBuilder
+        .innerJoin(ProblemTagMapEntity, "map", "problem.id = map.problemId")
+        .andWhere("map.problemTagId IN (:...tagIds)", { tagIds: tagIds })
+        .groupBy("problem.id");
+      if (tagIds.length > 1) queryBuilder.having("COUNT(DISTINCT map.problemTagId) = :count", { count: tagIds.length });
     }
+
+    if (!hasPrivilege && !(user && ownerId === user.id)) {
+      if (user)
+        queryBuilder.andWhere(
+          new Brackets(brackets =>
+            brackets.where("problem.isPublic = 1").orWhere("problem.ownerId = :ownerId", { ownerId: user.id })
+          )
+        );
+      else queryBuilder.andWhere("problem.isPublic = 1");
+    } else if (nonpublic) {
+      queryBuilder.andWhere("problem.isPublic = 0");
+    }
+    if (ownerId) {
+      queryBuilder.andWhere("problem.ownerId = :ownerId", { ownerId: ownerId });
+    }
+
+    // QueryBuilder.getManyAndCount() has bug with GROUP BY
+    const count = Number(
+      (
+        await this.connection
+          .createQueryBuilder()
+          .select("COUNT(*)", "count")
+          .from(`(${queryBuilder.getQuery()})`, "temp")
+          .setParameters(queryBuilder.expressionMap.parameters)
+          .getRawOne()
+      )["count"]
+    );
+
     queryBuilder
-      .orderBy("displayId IS NOT NULL", "DESC")
-      .addOrderBy("displayId", "ASC")
-      .addOrderBy("id", "ASC");
-    return await queryBuilder
+      .orderBy("problem.displayId IS NOT NULL", "DESC")
+      .addOrderBy("problem.displayId", "ASC")
+      .addOrderBy("problem.id", "ASC");
+    const result = await queryBuilder
       .skip(skipCount)
       .take(takeCount)
-      .getManyAndCount();
+      .getRawMany();
+    return [await this.findProblemsByExistingIds(result.map(row => row["id"])), count];
   }
 
   async createProblem(

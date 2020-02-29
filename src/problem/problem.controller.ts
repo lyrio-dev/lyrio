@@ -96,8 +96,28 @@ export class ProblemController {
         error: QueryProblemSetErrorDto.TAKE_TOO_MANY
       };
 
+    const hasPrivilege = await this.userPrivilegeService.userHasPrivilege(
+      currentUser,
+      UserPrivilegeType.MANAGE_PROBLEM
+    );
+
+    // A non-privileged user could query problems owned by ieself, even use the "nonpublic" filter
+    // This will NOT be reported as true in "permissions"
+    if ((request.ownerId || request.nonpublic) && !hasPrivilege && (!currentUser || currentUser.id !== request.ownerId))
+      return {
+        error: QueryProblemSetErrorDto.PERMISSION_DENIED
+      };
+
+    const filterTags = !request.tagIds
+      ? null
+      : (await this.problemService.findProblemTagsByExistingIds(request.tagIds)).filter(tag => tag);
+    const filterOwner = !request.ownerId ? null : await this.userService.findUserById(request.ownerId);
     const [problems, count] = await this.problemService.queryProblemsAndCount(
       currentUser,
+      hasPrivilege,
+      filterTags ? filterTags.map(tag => tag.id) : [],
+      filterOwner ? filterOwner.id : null,
+      request.nonpublic,
       request.skipCount,
       request.takeCount
     );
@@ -105,12 +125,19 @@ export class ProblemController {
     const response: QueryProblemSetResponseDto = {
       count: count,
       result: [],
-      permissionCreateProblem: await this.problemService.userHasCreateProblemPermission(currentUser),
-      permissionManageTags: await this.userPrivilegeService.userHasPrivilege(
-        currentUser,
-        UserPrivilegeType.MANAGE_PROBLEM
-      )
+      permissions: {
+        createProblem: await this.problemService.userHasCreateProblemPermission(currentUser),
+        manageTags: hasPrivilege,
+        filterByOwner: hasPrivilege,
+        filterNonpublic: hasPrivilege
+      }
     };
+
+    if (filterTags && filterTags.length)
+      response.filterTags = await Promise.all(
+        filterTags.map(problemTag => this.problemService.getProblemTagLocalized(problemTag, request.locale))
+      );
+    if (filterOwner) response.filterOwner = await this.userService.getUserMeta(filterOwner);
 
     for (const problem of problems) {
       const titleLocale = problem.locales.includes(request.locale) ? request.locale : problem.locales[0];

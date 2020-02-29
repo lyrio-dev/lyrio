@@ -2,8 +2,10 @@ import { ApiProperty } from "@nestjs/swagger";
 import { ProblemMetaDto } from "./problem-meta.dto";
 import { Locale } from "@/common/locale.type";
 import { LocalizedProblemTagDto } from "./localized-problem-tag.dto";
+import { UserMetaDto } from "@/user/dto";
 
 export enum QueryProblemSetErrorDto {
+  PERMISSION_DENIED = "PERMISSION_DENIED",
   TAKE_TOO_MANY = "TAKE_TOO_MANY"
 }
 
@@ -21,6 +23,20 @@ export class QueryProblemSetResponseItemDto {
   resultLocale: Locale;
 }
 
+export class QueryProblemSetResponsePermissionDto {
+  @ApiProperty()
+  createProblem?: boolean;
+
+  @ApiProperty()
+  manageTags?: boolean;
+
+  @ApiProperty()
+  filterByOwner?: boolean;
+
+  @ApiProperty()
+  filterNonpublic?: boolean;
+}
+
 export class QueryProblemSetResponseDto {
   @ApiProperty({ enum: QueryProblemSetErrorDto })
   error?: QueryProblemSetErrorDto;
@@ -31,9 +47,13 @@ export class QueryProblemSetResponseDto {
   @ApiProperty()
   count?: number;
 
-  @ApiProperty()
-  permissionCreateProblem?: boolean;
+  // To display the search filters
+  @ApiProperty({ type: [LocalizedProblemTagDto] })
+  filterTags?: LocalizedProblemTagDto[];
 
   @ApiProperty()
-  permissionManageTags?: boolean;
+  filterOwner?: UserMetaDto;
+
+  @ApiProperty()
+  permissions?: QueryProblemSetResponsePermissionDto;
 }
