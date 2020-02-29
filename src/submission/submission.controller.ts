@@ -296,6 +296,7 @@ export class SubmissionController {
 
     return {
       submissions: submissionMetas,
+      scores: await this.submissionStatisticsService.querySubmissionScoreStatistics(problem),
       count: count
     };
   }

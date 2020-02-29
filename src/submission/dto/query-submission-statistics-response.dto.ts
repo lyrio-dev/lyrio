@@ -15,4 +15,7 @@ export class QuerySubmissionStatisticsResponseDto {
 
   @ApiProperty()
   count?: number;
+
+  @ApiProperty({ type: [Number], minLength: 101, maxLength: 101 })
+  scores?: number[];
 }

@@ -9,6 +9,8 @@ import { SubmissionEntity } from "./submission.entity";
 import { SubmissionStatus } from "./submission-status.enum";
 import { SubmissionService } from "./submission.service";
 
+// Along with submission statistics, this file also provide the submission score statistics
+
 export enum SubmissionStatisticsType {
   Fastest = "Fastest",
   MinMemory = "MinMemory",
@@ -46,6 +48,8 @@ const submissionStatisticsFields: Record<SubmissionStatisticsType, SubmissionSta
 // the cache will be purged
 const REDIS_KEY_SUBMISSION_STATISTICS = "submissionStatistics";
 
+const REDIS_KEY_SUBMISSION_SCORE_STATISTICS = "submissionScoreStatistics";
+
 // Only top 100 users' submissions will be in the statistics
 const SUBMISSION_STATISTICS_TOP_COUNT = 100;
 
@@ -63,18 +67,20 @@ export class SubmissionStatisticsService {
     this.redis = this.redisService.getClient();
   }
 
-  private getRedisKey(problemId: number, statisticsType: SubmissionStatisticsType) {
+  // tuples(submissionId, submitterId, fieldValue)
+  private getRedisKeySubmissionStatistics(problemId: number, statisticsType: SubmissionStatisticsType) {
     return REDIS_KEY_SUBMISSION_STATISTICS + "_" + problemId + "_" + statisticsType;
   }
 
-  // tuples(submissionId, submitterId, fieldValue)
-  private async getIdAndValuesFromRedis(key: string): Promise<[number, number, number][]> {
+  private getRedisKeySubmissionScoreStatistics(problemId: number) {
+    return REDIS_KEY_SUBMISSION_SCORE_STATISTICS + "_" + problemId;
+  }
+
+  private async parseFromRedis<T>(key: string): Promise<T> {
     const str = await this.redis.get(key);
-    let tuples: [number, number, number][];
     try {
-      tuples = JSON.parse(str);
+      return JSON.parse(str);
     } catch (e) {}
-    return tuples;
   }
 
   public async querySubmissionStatisticsAndCount(
@@ -85,8 +91,8 @@ export class SubmissionStatisticsService {
   ): Promise<[SubmissionEntity[], number]> {
     const { field, sort } = submissionStatisticsFields[statisticsType];
 
-    const key = this.getRedisKey(problem.id, statisticsType);
-    let tuples = await this.getIdAndValuesFromRedis(key);
+    const key = this.getRedisKeySubmissionStatistics(problem.id, statisticsType);
+    let tuples = await this.parseFromRedis<[number, number, number][]>(key);
 
     if (!tuples) {
       const aggregateFunction = sort === "ASC" ? "MIN" : "MAX";
@@ -129,13 +135,48 @@ export class SubmissionStatisticsService {
     return [await this.submissionService.findSubmissionsByExistingIds(resultIds), tuples.length];
   }
 
-  // This function is called after a submission's updated, to determine which caches of statistics should be purged
+  /**
+   * Return how many submissions with each score (0 ~ 100) are there.
+   */
+  public async querySubmissionScoreStatistics(problem: ProblemEntity): Promise<number[]> {
+    const key = this.getRedisKeySubmissionScoreStatistics(problem.id);
+    const cachedResult = await this.parseFromRedis<number[]>(key);
+    if (cachedResult) return cachedResult;
+
+    const queryResult: { score: string; count: string }[] = await this.connection
+      .createQueryBuilder()
+      .select("submission.score", "score")
+      .addSelect("COUNT(*)", "count")
+      .from(SubmissionEntity, "submission")
+      .where("submission.problemId = :problemId", { problemId: problem.id })
+      .andWhere("submission.score IS NOT NULL")
+      .groupBy("submission.score")
+      .getRawMany();
+    const result = new Array(101).fill(0);
+    for (const item of queryResult) result[item.score] = Number(item.count);
+
+    await this.redis.set(key, JSON.stringify(result));
+
+    return result;
+  }
+
+  /**
+   * This function is called after a submission's updated, to determine which caches of statistics should be purged.
+   *
+   * A newly-added submission won't call this function.
+   */
   public async onSubmissionUpdated(oldSubmission: SubmissionEntity, submission: SubmissionEntity): Promise<void> {
+    // Submission score statistics
+    if (oldSubmission.score !== submission.score) {
+      await this.redis.del(this.getRedisKeySubmissionScoreStatistics(submission.problemId));
+    }
+
+    // Submission statistics
     if (oldSubmission.status !== SubmissionStatus.Accepted && submission.status !== SubmissionStatus.Accepted) return;
     for (const statisticsType of Object.values(SubmissionStatisticsType)) {
       const { field, sort } = submissionStatisticsFields[statisticsType];
-      const key = this.getRedisKey(submission.problemId, statisticsType);
-      const tuples = await this.getIdAndValuesFromRedis(key);
+      const key = this.getRedisKeySubmissionStatistics(submission.problemId, statisticsType);
+      const tuples = await this.parseFromRedis<[number, number, number][]>(key);
 
       if (!tuples || tuples.length === 0) continue;
 
