@@ -112,7 +112,11 @@ export class SubmissionStatisticsService {
         .innerJoin(
           SubmissionEntity,
           "submission",
-          `submission.submitterId = statistics.submitterId AND submission.${field} = statistics.fieldValue`
+          `submission.submitterId = statistics.submitterId AND submission.${field} = statistics.fieldValue AND submission.problemId = :problemId AND submission.status = :status`,
+          {
+            problemId: problem.id,
+            status: SubmissionStatus.Accepted
+          }
         )
         .groupBy("submission.submitterId")
         .orderBy("fieldValue", sort)

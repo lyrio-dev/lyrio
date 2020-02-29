@@ -254,7 +254,9 @@ export class SubmissionController {
         error: QuerySubmissionStatisticsResponseError.TAKE_TOO_MANY
       };
 
-    const problem = await this.problemService.findProblemById(request.problemId);
+    let problem: ProblemEntity;
+    if (request.problemId) problem = await this.problemService.findProblemById(request.problemId);
+    if (request.problemDisplayId) problem = await this.problemService.findProblemByDisplayId(request.problemDisplayId);
     if (!problem)
       return {
         error: QuerySubmissionStatisticsResponseError.NO_SUCH_PROBLEM

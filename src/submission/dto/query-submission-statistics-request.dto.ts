@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsInt, Min, IsEnum } from "class-validator";
+import { IsInt, Min, IsEnum, IsOptional } from "class-validator";
 
 import { Locale } from "@/common/locale.type";
 import { SubmissionStatisticsType } from "../submission-statistics.service";
@@ -11,7 +11,13 @@ export class QuerySubmissionStatisticsRequestDto {
 
   @ApiProperty()
   @IsInt()
-  problemId: number;
+  @IsOptional()
+  problemId?: number;
+
+  @ApiProperty()
+  @IsInt()
+  @IsOptional()
+  problemDisplayId?: number;
 
   @ApiProperty()
   @IsEnum(SubmissionStatisticsType)
