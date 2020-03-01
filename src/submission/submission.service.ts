@@ -26,10 +26,12 @@ import { SubmissionProgressService } from "./submission-progress.service";
 import { SubmissionBasicMetaDto } from "./dto";
 import { SubmissionStatisticsService } from "./submission-statistics.service";
 import { UserService } from "@/user/user.service";
+import { ProblemSampleData } from "@/problem/problem-sample-data.interface";
 
 interface SubmissionTaskExtraInfo extends JudgeTaskExtraInfo {
   problemType: ProblemType;
   judgeInfo: ProblemJudgeInfo;
+  samples?: ProblemSampleData;
   testData: Record<string, string>; // filename -> uuid
   submissionContent: SubmissionContent;
 }
@@ -205,6 +207,7 @@ export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionPr
         new JudgeTask<SubmissionTaskExtraInfo>(submission.id, JudgeTaskType.Submission, JudgeTaskPriority.High, {
           problemType: problem.type,
           judgeInfo: judgeInfo,
+          samples: judgeInfo && judgeInfo["runSamples"] ? await this.problemService.getProblemSamples(problem) : null,
           testData: Object.fromEntries(testData.map(problemFile => [problemFile.filename, problemFile.uuid])),
           submissionContent: content
         })
@@ -266,6 +269,7 @@ export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionPr
       systemMessage: progress.systemMessage,
       compile: progress.compile,
       testcaseResult: progress.testcaseResult,
+      samples: progress.samples && progress.samples.map(sample => sample.testcaseHash),
       subtasks:
         progress.subtasks &&
         progress.subtasks.map(subtask => ({

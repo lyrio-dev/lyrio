@@ -9,6 +9,13 @@ export enum SubmissionProgressType {
   Finished
 }
 
+interface TestcaseProgressReference {
+  // If !waiting && !running && !testcaseHash, it's "Skipped"
+  waiting?: boolean;
+  running?: boolean;
+  testcaseHash?: string;
+}
+
 export interface SubmissionProgress<TestcaseResult extends SubmissionTestcaseResult = SubmissionTestcaseResult>
   extends JudgeTaskProgress {
   progressType: SubmissionProgressType;
@@ -25,17 +32,14 @@ export interface SubmissionProgress<TestcaseResult extends SubmissionTestcaseRes
   systemMessage?: string;
 
   // testcaseHash = hash(IF, OF, TL, ML) for traditional
+  //                hash(ID, OD, TL, ML) for samples
   // ->
   // result
   testcaseResult?: Record<string, TestcaseResult>;
+  samples?: TestcaseProgressReference[];
   subtasks?: {
     score: number;
     fullScore: number;
-    testcases: {
-      // If !waiting && !running && !testcaseHash, it's "Skipped"
-      waiting?: boolean;
-      running?: boolean;
-      testcaseHash?: string;
-    }[];
+    testcases: TestcaseProgressReference[];
   }[];
 }

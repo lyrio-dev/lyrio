@@ -8,9 +8,11 @@ export interface SubmissionResult<TestcaseResult extends SubmissionTestcaseResul
   // For SystemError and ConfigurationError
   systemMessage?: string;
   // testcaseHash = hash(IF, OF, TL, ML) for traditional
+  //                hash(ID, OD, TL, ML) for samples
   // ->
   // result
   testcaseResult?: Record<string, TestcaseResult>;
+  samples?: string[]; // The hash of testcase (if null, it's "Skipped")
   subtasks?: {
     score: number;
     fullScore: number;

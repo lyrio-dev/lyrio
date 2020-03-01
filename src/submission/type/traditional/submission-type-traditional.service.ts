@@ -34,12 +34,22 @@ export class SubmissionTypeTraditionalService
       memoryUsed: 0
     };
 
-    if (submissionResult && Array.isArray(submissionResult.subtasks)) {
-      for (const subtask of submissionResult.subtasks) {
-        for (const testcaseUuid of subtask.testcases) {
+    if (submissionResult) {
+      if (Array.isArray(submissionResult.samples)) {
+        for (const testcaseUuid of submissionResult.samples) {
           if (!testcaseUuid) continue;
           result.timeUsed += submissionResult.testcaseResult[testcaseUuid].time;
           result.memoryUsed = Math.max(result.memoryUsed, submissionResult.testcaseResult[testcaseUuid].memory);
+        }
+      }
+
+      if (Array.isArray(submissionResult.subtasks)) {
+        for (const subtask of submissionResult.subtasks) {
+          for (const testcaseUuid of subtask.testcases) {
+            if (!testcaseUuid) continue;
+            result.timeUsed += submissionResult.testcaseResult[testcaseUuid].time;
+            result.memoryUsed = Math.max(result.memoryUsed, submissionResult.testcaseResult[testcaseUuid].memory);
+          }
         }
       }
     }

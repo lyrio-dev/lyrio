@@ -1,4 +1,4 @@
-import { IsString, Length, IsObject } from "class-validator";
+import { IsString, Length, IsObject, IsBoolean, IsOptional } from "class-validator";
 
 export class SubmissionContentTraditional {
   @IsString()
@@ -11,4 +11,8 @@ export class SubmissionContentTraditional {
 
   @IsObject()
   languageOptions: unknown;
+
+  @IsBoolean()
+  @IsOptional()
+  skipSamples?: boolean;
 }
