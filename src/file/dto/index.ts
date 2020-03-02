@@ -1,2 +1,1 @@
-export * from "./finish-upload-request.dto";
-export * from "./finish-upload-response.dto";
+export * from "./file-upload-info-dto";

@@ -476,14 +476,26 @@ export class ProblemController {
         error: AddProblemFileResponseError.PERMISSION_DENIED
       };
 
-    if (!(await this.problemService.addProblemFile(problem, request.sha256, request.type, request.filename))) {
-      const [uuid, uploadUrl] = await this.fileService.createUploadUrl(request.sha256);
+    const hasPrivilege = await this.userPrivilegeService.userHasPrivilege(
+      currentUser,
+      UserPrivilegeType.MANAGE_PROBLEM
+    );
+    const result = await this.problemService.addProblemFile(
+      problem,
+      request.type,
+      request.uuid,
+      request.size,
+      request.filename,
+      hasPrivilege
+    );
+    if (typeof result === "string")
       return {
-        error: AddProblemFileResponseError.UPLOAD_REQUIRED,
-        uploadUrl: uploadUrl,
-        uploadUuid: uuid
+        error: result as AddProblemFileResponseError
       };
-    }
+    else if (result)
+      return {
+        uploadInfo: result
+      };
 
     return {};
   }

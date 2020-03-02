@@ -15,6 +15,7 @@ import { UserModule } from "@/user/user.module";
 import { GroupModule } from "@/group/group.module";
 import { PermissionModule } from "@/permission/permission.module";
 import { FileModule } from "@/file/file.module";
+import { RedisModule } from "@/redis/redis.module";
 
 import { ProblemJudgeInfoService } from "./type/problem-judge-info.service";
 import { ProblemTypedJudgeInfoTraditionalService } from "./type/traditional/problem-typed-judge-info-traditional.service";
@@ -32,7 +33,8 @@ import { ProblemTypedJudgeInfoTraditionalService } from "./type/traditional/prob
     UserModule,
     GroupModule,
     PermissionModule,
-    FileModule
+    FileModule,
+    RedisModule
   ],
   providers: [ProblemService, ProblemJudgeInfoService, ProblemTypedJudgeInfoTraditionalService],
   controllers: [ProblemController],

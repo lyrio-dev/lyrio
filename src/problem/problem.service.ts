@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { InjectConnection, InjectRepository } from "@nestjs/typeorm";
-import { Connection, Repository, FindConditions, FindManyOptions, EntityManager, Brackets } from "typeorm";
+import { Connection, Repository, FindConditions, FindManyOptions, EntityManager, Brackets, In } from "typeorm";
 
 import { UserEntity } from "@/user/user.entity";
 import { GroupEntity } from "@/group/group.entity";
@@ -31,7 +31,8 @@ import { UserService } from "@/user/user.service";
 import { GroupService } from "@/group/group.service";
 import { FileService } from "@/file/file.service";
 import { ConfigService } from "@/config/config.service";
-import { escapeLike } from "@/database/database.utils";
+import { FileUploadInfoDto } from "@/file/dto";
+import { RedisService } from "@/redis/redis.service";
 
 export enum ProblemPermissionType {
   VIEW = "VIEW",
@@ -70,7 +71,8 @@ export class ProblemService {
     private readonly groupService: GroupService,
     private readonly permissionService: PermissionService,
     private readonly fileService: FileService,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
+    private readonly redisService: RedisService
   ) {}
 
   async findProblemById(id: number): Promise<ProblemEntity> {
@@ -461,54 +463,136 @@ export class ProblemService {
     await this.problemRepository.save(problem);
   }
 
-  async addProblemFile(
+  private async checkAddProblemFileLimit(
     problem: ProblemEntity,
-    sha256: string,
     type: ProblemFileType,
+    size: number,
     filename: string
-  ): Promise<boolean> {
-    return await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
-      const uuid = await this.fileService.tryReferenceFile(sha256, transactionalEntityManager);
-      if (!uuid) {
-        return false;
-      }
+  ): Promise<"TOO_MANY_FILES" | "TOTAL_SIZE_TOO_LARGE"> {
+    const currentFiles = await this.problemFileRepository.find({ problemId: problem.id, type: type });
+    const fileSizes = await this.fileService.getFileSizes(currentFiles.map(file => file.uuid));
 
-      let problemFile = await this.problemFileRepository.findOne({
-        problemId: problem.id,
-        type: type,
-        filename: filename
-      });
-      if (problemFile) {
-        // Rereference old file
-        await this.fileService.dereferenceFile(problemFile.uuid, transactionalEntityManager);
-      } else {
-        problemFile = new ProblemFileEntity();
-        problemFile.problemId = problem.id;
-        problemFile.type = type;
-        problemFile.filename = filename;
-      }
+    let oldFileCount = 0,
+      oldFileSizeSum = 0;
+    for (const i in currentFiles) {
+      const file = currentFiles[i];
+      if (file.filename === filename) continue;
 
-      problemFile.uuid = uuid;
-      await transactionalEntityManager.save(ProblemFileEntity, problemFile);
+      oldFileCount++;
+      oldFileSizeSum += fileSizes[i];
+    }
 
-      return true;
-    });
+    // Get the corresponding limits from config
+    const [filesLimit, sizeLimit] = {
+      [ProblemFileType.TestData]: [
+        this.configService.config.resourceLimit.problemTestdataFiles,
+        this.configService.config.resourceLimit.problemTestdataSize
+      ],
+      [ProblemFileType.AdditionalFile]: [
+        this.configService.config.resourceLimit.problemAdditionalFileFiles,
+        this.configService.config.resourceLimit.problemAdditionalFileSize
+      ]
+    }[type];
+
+    if (oldFileCount + 1 > filesLimit) return "TOO_MANY_FILES";
+    if (oldFileSizeSum + size > sizeLimit) return "TOTAL_SIZE_TOO_LARGE";
+
+    return null;
   }
 
-  async removeProblemFiles(problem: ProblemEntity, type: ProblemFileType, filenames: string[]): Promise<void> {
-    await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
-      for (const filename of filenames) {
-        const problemFile = await transactionalEntityManager.findOne(ProblemFileEntity, {
+  // Manage problem file actions should be locked to make sure the limit check works.
+  async lockManageProblemFile<T>(
+    problem: ProblemEntity,
+    type: ProblemFileType,
+    callback: () => Promise<T>
+  ): Promise<T> {
+    return this.redisService.lock(`ManageProblemFile_${type}_${problem.id}`, callback);
+  }
+
+  /**
+   * If the user have not uploaded the file, the @param uuid should be null.
+   * It will @return [UUID, upload request info] if success and error message if limit exceeded.
+   * @error "TOO_MANY_FILES" | "TOTAL_SIZE_TOO_LARGE"
+   *
+   * If the user have uploaded the file, the @param uuid should be the uploaded file UUID.
+   * It will @return null if success and error message if failed.
+   * @error "INVALID_OPERATION" | "NOT_UPLOADED"
+   */
+  async addProblemFile(
+    problem: ProblemEntity,
+    type: ProblemFileType,
+    uuid: string,
+    size: number,
+    filename: string,
+    noLimit: boolean
+  ): Promise<FileUploadInfoDto | "TOO_MANY_FILES" | "TOTAL_SIZE_TOO_LARGE" | "INVALID_OPERATION" | "NOT_UPLOADED"> {
+    return await this.lockManageProblemFile(problem, type, async () => {
+      // Check limit
+      if (!noLimit) {
+        const error = await this.checkAddProblemFileLimit(problem, type, size, filename);
+        if (error) {
+          // If the user have uploaded the file, delete it
+          if (uuid) this.fileService.deleteUnfinishedUploadedFile(uuid);
+          return error;
+        }
+      }
+
+      // If not uploaded, return the upload request info
+      if (!uuid) {
+        return await this.fileService.signUploadRequest(size, size);
+      }
+
+      let deleteOldFileActually: () => void = null;
+      const ret = await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
+        const error = await this.fileService.finishUpload(uuid, transactionalEntityManager);
+        if (error) return error;
+
+        const oldProblemFile = await transactionalEntityManager.findOne(ProblemFileEntity, {
           problemId: problem.id,
           type: type,
           filename: filename
         });
+        if (oldProblemFile)
+          deleteOldFileActually = await this.fileService.deleteFile(oldProblemFile.uuid, transactionalEntityManager);
 
-        if (!problemFile) continue;
+        const problemFile = new ProblemFileEntity();
+        problemFile.problemId = problem.id;
+        problemFile.type = type;
+        problemFile.filename = filename;
+        problemFile.uuid = uuid;
 
-        await transactionalEntityManager.remove(ProblemFileEntity, problemFile);
-        await this.fileService.dereferenceFile(problemFile.uuid, transactionalEntityManager);
-      }
+        await transactionalEntityManager.save(ProblemFileEntity, problemFile);
+
+        return null;
+      });
+      if (deleteOldFileActually) deleteOldFileActually();
+
+      return ret;
+    });
+  }
+
+  async removeProblemFiles(problem: ProblemEntity, type: ProblemFileType, filenames: string[]): Promise<void> {
+    return await this.lockManageProblemFile(problem, type, async () => {
+      let deleteFilesActually: () => void = null;
+      await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
+        const problemFiles = await transactionalEntityManager.find(ProblemFileEntity, {
+          problemId: problem.id,
+          type: type,
+          filename: In(filenames)
+        });
+
+        await transactionalEntityManager.delete(ProblemFileEntity, {
+          problemId: problem.id,
+          type: type,
+          filename: In(filenames)
+        });
+
+        deleteFilesActually = await this.fileService.deleteFile(
+          problemFiles.map(problemFile => problemFile.uuid),
+          transactionalEntityManager
+        );
+      });
+      if (deleteFilesActually) deleteFilesActually();
     });
   }
 
@@ -539,20 +623,22 @@ export class ProblemService {
     filename: string,
     newFilename: string
   ): Promise<boolean> {
-    const problemFile = await this.problemFileRepository.findOne({
-      problemId: problem.id,
-      type: type,
-      filename: filename
+    return await this.lockManageProblemFile(problem, type, async () => {
+      const problemFile = await this.problemFileRepository.findOne({
+        problemId: problem.id,
+        type: type,
+        filename: filename
+      });
+
+      if (!problemFile) return false;
+
+      // Since filename is a PRIMARY key, use .save() will create another record
+      await this.problemFileRepository.update(problemFile, {
+        filename: newFilename
+      });
+
+      return true;
     });
-
-    if (!problemFile) return false;
-
-    // Since filename is a PRIMARY key, use .save() will create another record
-    await this.problemFileRepository.update(problemFile, {
-      filename: newFilename
-    });
-
-    return true;
   }
 
   async updateProblemStatistics(

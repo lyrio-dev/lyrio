@@ -77,6 +77,9 @@ class SecurityConfig {
   @IsString()
   readonly sessionSecret: string;
 
+  @IsString()
+  readonly maintainceKey: string;
+
   @ValidateNested()
   @Type(() => CrossOriginConfig)
   readonly crossOrigin: CrossOriginConfig;
@@ -94,6 +97,24 @@ class PreferenceConfig {
 
   @IsBoolean()
   readonly allowOwnerDeleteProblem: boolean;
+}
+
+class ResourceLimitConfig {
+  @IsInt()
+  @Min(0)
+  readonly problemTestdataFiles: number;
+
+  @IsInt()
+  @Min(0)
+  readonly problemTestdataSize: number;
+
+  @IsInt()
+  @Min(0)
+  readonly problemAdditionalFileFiles: number;
+
+  @IsInt()
+  @Min(0)
+  readonly problemAdditionalFileSize: number;
 }
 
 class QueryLimitConfig {
@@ -134,6 +155,10 @@ export class AppConfig {
   @ValidateNested()
   @Type(() => PreferenceConfig)
   readonly preference: PreferenceConfig;
+
+  @ValidateNested()
+  @Type(() => ResourceLimitConfig)
+  readonly resourceLimit: ResourceLimitConfig;
 
   @ValidateNested()
   @Type(() => QueryLimitConfig)

@@ -29,13 +29,20 @@
                 "http://syzoj-ng-app.test"
             ]
         },
-        "sessionSecret": "don't leak this"
+        "sessionSecret": "don't leak this",
+        "maintainceKey": "also don't leak this"
     },
     "preference": {
         "allowUserChangeUsername": true,
         "allowEveryoneCreateProblem": true,
         "allowOwnerManageProblemPermission": false,
         "allowOwnerDeleteProblem": true
+    },
+    "resourceLimit": {
+        "problemTestdataFiles": 40,
+        "problemTestdataSize": 134217728,
+        "problemAdditionalFileFiles": 40,
+        "problemAdditionalFileSize": 134217728
     },
     "queryLimit": {
         "problemSetProblemsTake": 100,
