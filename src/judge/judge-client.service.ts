@@ -85,7 +85,6 @@ export class JudgeClientService {
 
   public async disconnectJudgeClient(judgeClient: JudgeClientEntity): Promise<void> {
     await this.redis.del(REDIS_KEY_JUDGE_CLIENT_SESSION_ID + judgeClient.id);
-    await this.redis.del(REDIS_KEY_JUDGE_CLIENT_SYSTEM_INFO + judgeClient.id);
   }
 
   public async checkJudgeClientSession(judgeClient: JudgeClientEntity, sessionId: string): Promise<boolean> {

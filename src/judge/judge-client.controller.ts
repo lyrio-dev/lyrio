@@ -112,7 +112,8 @@ export class JudgeClientController {
           async judgeClient =>
             await this.judgeClientService.getJudgeClientInfo(judgeClient, currentUser && currentUser.isAdmin)
         )
-      )
+      ),
+      hasManagePermission: currentUser && currentUser.isAdmin
     };
   }
 }

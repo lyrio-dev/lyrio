@@ -16,7 +16,7 @@ export interface JudgeClientSystemInfo {
     flags: string;
 
     // e.g. { L1d: 32768, L1i: 32768, L2: 262144, L3: 6291456 }
-    cache: Record<string, string>;
+    cache: Record<string, number>;
   };
 
   memory: {
