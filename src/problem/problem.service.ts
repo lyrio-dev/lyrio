@@ -256,6 +256,8 @@ export class ProblemService {
       problem.isPublic = false;
       problem.ownerId = owner.id;
       problem.locales = statement.localizedContents.map(localizedContent => localizedContent.locale);
+      problem.submissionCount = 0;
+      problem.acceptedSubmissionCount = 0;
       await transactionalEntityManager.save(problem);
 
       const problemJudgeInfo = new ProblemJudgeInfoEntity();
