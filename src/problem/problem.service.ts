@@ -76,7 +76,7 @@ export class ProblemService {
   ) {}
 
   async findProblemById(id: number): Promise<ProblemEntity> {
-    return this.problemRepository.findOne(id);
+    return await this.problemRepository.findOne(id);
   }
 
   public async findProblemsByExistingIds(problemIds: number[]): Promise<ProblemEntity[]> {
@@ -88,7 +88,7 @@ export class ProblemService {
   }
 
   async findProblemByDisplayId(displayId: number): Promise<ProblemEntity> {
-    return this.problemRepository.findOne({
+    return await this.problemRepository.findOne({
       displayId: displayId
     });
   }
