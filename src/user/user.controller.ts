@@ -39,14 +39,18 @@ export class UserController {
   @ApiOperation({
     summary: "Search users with a substring of the username"
   })
-  async searchUser(@Query() request: SearchUserRequestDto): Promise<SearchUserResponseDto> {
+  async searchUser(
+    @CurrentUser() currentUser: UserEntity,
+    @Query() request: SearchUserRequestDto
+  ): Promise<SearchUserResponseDto> {
     const users = await this.userService.searchUser(
       request.query,
       request.wildcard,
       this.configService.config.queryLimit.searchUserTake
     );
+
     return {
-      userMetas: await Promise.all(users.map(user => this.userService.getUserMeta(user)))
+      userMetas: await Promise.all(users.map(async user => await this.userService.getUserMeta(user, currentUser)))
     };
   }
 
@@ -55,7 +59,10 @@ export class UserController {
   @ApiOperation({
     summary: "Get a user's metadata with its ID or username."
   })
-  async getUserMeta(@Query() request: GetUserMetaRequestDto): Promise<GetUserMetaResponseDto> {
+  async getUserMeta(
+    @CurrentUser() currentUser: UserEntity,
+    @Query() request: GetUserMetaRequestDto
+  ): Promise<GetUserMetaResponseDto> {
     let user: UserEntity;
     if (request.userId) {
       user = await this.userService.findUserById(parseInt(request.userId));
@@ -66,7 +73,7 @@ export class UserController {
     if (!user) return {};
 
     const result: GetUserMetaResponseDto = {
-      userMeta: await this.userService.getUserMeta(user)
+      userMeta: await this.userService.getUserMeta(user, currentUser)
     };
 
     if (request.getPrivileges) {
@@ -150,8 +157,9 @@ export class UserController {
         user,
         request.username,
         request.email,
-        request.bio,
-        request.password
+        request.publicEmail,
+        request.password,
+        request
       )
     };
   }
@@ -173,7 +181,7 @@ export class UserController {
     const [users, count] = await this.userService.getUserList(request.sortBy, request.skipCount, request.takeCount);
 
     return {
-      userMetas: await Promise.all(users.map(user => this.userService.getUserMeta(user))),
+      userMetas: await Promise.all(users.map(user => this.userService.getUserMeta(user, currentUser))),
       count: count
     };
   }

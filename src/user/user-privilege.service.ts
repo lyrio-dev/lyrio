@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Inject, forwardRef } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
 import { Repository, Connection, In } from "typeorm";
 
@@ -16,6 +16,7 @@ export class UserPrivilegeService {
     private readonly connection: Connection,
     @InjectRepository(UserPrivilegeEntity)
     private readonly userPrivilegeRepository: Repository<UserPrivilegeEntity>,
+    @Inject(forwardRef(() => UserService))
     private readonly userService: UserService
   ) {}
 

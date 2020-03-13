@@ -149,7 +149,7 @@ export class SubmissionController {
         submitTime: submission.submitTime,
         problem: await this.problemService.getProblemMeta(problems[i]),
         problemTitle: await this.problemService.getProblemLocalizedTitle(problems[i], titleLocale),
-        submitter: await this.userService.getUserMeta(submitters[i]),
+        submitter: await this.userService.getUserMeta(submitters[i], currentUser),
         timeUsed: submission.timeUsed,
         memoryUsed: submission.memoryUsed
       };
@@ -224,7 +224,7 @@ export class SubmissionController {
         submitTime: submission.submitTime,
         problem: await this.problemService.getProblemMeta(problem),
         problemTitle: await this.problemService.getProblemLocalizedTitle(problem, titleLocale),
-        submitter: await this.userService.getUserMeta(submitter),
+        submitter: await this.userService.getUserMeta(submitter, currentUser),
         timeUsed: submission.timeUsed,
         memoryUsed: submission.memoryUsed
       },
@@ -288,7 +288,7 @@ export class SubmissionController {
         submitTime: submission.submitTime,
         problem: await this.problemService.getProblemMeta(problem),
         problemTitle: problemTitle,
-        submitter: await this.userService.getUserMeta(submitters[i]),
+        submitter: await this.userService.getUserMeta(submitters[i], currentUser),
         timeUsed: submission.timeUsed,
         memoryUsed: submission.memoryUsed
       };

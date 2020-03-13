@@ -1,6 +1,7 @@
 import { Injectable, forwardRef, Inject } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
 import { Repository, Connection, Like } from "typeorm";
+import crypto = require("crypto");
 
 import { UserEntity } from "./user.entity";
 import { AuthService } from "@/auth/auth.service";
@@ -8,6 +9,7 @@ import { UpdateUserProfileResponseError, UserMetaDto } from "./dto";
 import { escapeLike } from "@/database/database.utils";
 import { SubmissionEntity } from "@/submission/submission.entity";
 import { SubmissionStatus } from "@/submission/submission-status.enum";
+import { UserPrivilegeService, UserPrivilegeType } from "./user-privilege.service";
 
 @Injectable()
 export class UserService {
@@ -17,7 +19,9 @@ export class UserService {
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
     @Inject(forwardRef(() => AuthService))
-    private readonly authService: AuthService
+    private readonly authService: AuthService,
+    @Inject(forwardRef(() => UserPrivilegeService))
+    private readonly userPrivilegeService: UserPrivilegeService
   ) {}
 
   async findUserById(id: number): Promise<UserEntity> {
@@ -38,16 +42,33 @@ export class UserService {
     });
   }
 
-  async getUserMeta(user: UserEntity): Promise<UserMetaDto> {
+  /**
+   * If the current user is admin or have manage user pervilege, the email will be returned
+   * even if the user set public email to false.
+   */
+  async getUserMeta(user: UserEntity, currentUser: UserEntity): Promise<UserMetaDto> {
+    const hash = crypto.createHash("md5");
+    hash.update(user.email.trim().toLowerCase());
     return {
       id: user.id,
       username: user.username,
-      email: user.email,
+      email:
+        user.publicEmail ||
+        (currentUser &&
+          (currentUser.id === user.id ||
+            (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER))))
+          ? user.email
+          : null,
+      gravatarEmailHash: hash.digest("hex"),
       bio: user.bio,
+      sexIsFamale: user.sexIsFamale,
+      organization: user.organization,
+      location: user.location,
       isAdmin: user.isAdmin,
       acceptedProblemCount: user.acceptedProblemCount,
       submissionCount: user.submissionCount,
-      rating: user.rating
+      rating: user.rating,
+      registrationTime: user.registrationTime
     };
   }
 
@@ -71,12 +92,22 @@ export class UserService {
     );
   }
 
+  /**
+   * The username, email and password won't be updated if null.
+   * The information (bio, sex, org, location) will be always updated.
+   */
   async updateUserProfile(
     user: UserEntity,
-    username?: string,
-    email?: string,
-    bio?: string,
-    password?: string
+    username: string,
+    email: string,
+    publicEmail: boolean,
+    password: string,
+    information: {
+      bio: string;
+      sexIsFamale: boolean;
+      organization: string;
+      location: string;
+    }
   ): Promise<UpdateUserProfileResponseError> {
     const changingUsername = username != null;
     const changingEmail = email != null;
@@ -84,7 +115,12 @@ export class UserService {
     try {
       if (changingUsername) user.username = username;
       if (changingEmail) user.email = email;
-      if (bio != null) user.bio = bio;
+
+      user.publicEmail = publicEmail;
+      user.bio = information.bio;
+      user.sexIsFamale = information.sexIsFamale;
+      user.organization = information.organization;
+      user.location = information.location;
 
       if (password == null) await this.userRepository.save(user);
       else

@@ -137,7 +137,8 @@ export class ProblemController {
       response.filterTags = await Promise.all(
         filterTags.map(problemTag => this.problemService.getProblemTagLocalized(problemTag, request.locale))
       );
-    if (filterOwner) response.filterOwner = await this.userService.getUserMeta(filterOwner);
+
+    if (filterOwner) response.filterOwner = await this.userService.getUserMeta(filterOwner, currentUser);
 
     for (const problem of problems) {
       const titleLocale = problem.locales.includes(request.locale) ? request.locale : problem.locales[0];
@@ -254,7 +255,7 @@ export class ProblemController {
 
     if (request.owner) {
       const owner = await this.userService.findUserById(problem.ownerId);
-      result.owner = await this.userService.getUserMeta(owner);
+      result.owner = await this.userService.getUserMeta(owner, currentUser);
     }
 
     if (request.localizedContentsOfLocale != null) {
@@ -318,7 +319,7 @@ export class ProblemController {
       result.permissions = {
         userPermissions: await Promise.all(
           userPermissions.map(async ([user, permissionLevel]) => ({
-            user: await this.userService.getUserMeta(user),
+            user: await this.userService.getUserMeta(user, currentUser),
             permissionLevel: permissionLevel
           }))
         ),

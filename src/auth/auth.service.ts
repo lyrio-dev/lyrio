@@ -38,10 +38,12 @@ export class AuthService {
         user = new UserEntity();
         user.username = username;
         user.email = email;
-        user.bio = "";
+        user.publicEmail = true;
+        user.bio = user.organization = user.location = "";
         user.isAdmin = false;
         user.submissionCount = user.acceptedProblemCount = 0;
         user.rating = 0;
+        user.registrationTime = new Date();
         await transactionalEntityManager.save(user);
 
         const userAuth = new UserAuthEntity();

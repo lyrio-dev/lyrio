@@ -36,7 +36,7 @@ export class AuthController {
   async getSelfMeta(@CurrentUser() currentUser: UserEntity): Promise<GetSelfMetaResponseDto> {
     const result: GetSelfMetaResponseDto = new GetSelfMetaResponseDto();
     if (currentUser) {
-      result.userMeta = await this.userService.getUserMeta(currentUser);
+      result.userMeta = await this.userService.getUserMeta(currentUser, currentUser);
     } else {
       result.userMeta = null;
     }
@@ -64,7 +64,7 @@ export class AuthController {
       };
 
     return {
-      userMeta: await this.userService.getUserMeta(user),
+      userMeta: await this.userService.getUserMeta(user, user),
       token: jwt.sign(user.id.toString(), this.configService.config.security.sessionSecret)
     };
   }
@@ -119,7 +119,7 @@ export class AuthController {
       };
 
     return {
-      userMeta: await this.userService.getUserMeta(user),
+      userMeta: await this.userService.getUserMeta(user, user),
       token: jwt.sign(user.id.toString(), this.configService.config.security.sessionSecret)
     };
   }

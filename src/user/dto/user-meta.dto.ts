@@ -10,8 +10,23 @@ export class UserMetaDto {
   @ApiProperty()
   email: string;
 
+  /**
+   * The email may not be visible to everyone, so encode its hash (for gravatar url) separately.
+   */
+  @ApiProperty()
+  gravatarEmailHash: string;
+
   @ApiProperty()
   bio: string;
+
+  @ApiProperty()
+  sexIsFamale: boolean;
+
+  @ApiProperty()
+  organization: string;
+
+  @ApiProperty()
+  location: string;
 
   @ApiProperty()
   isAdmin: boolean;
@@ -24,4 +39,7 @@ export class UserMetaDto {
 
   @ApiProperty()
   rating: number;
+
+  @ApiProperty()
+  registrationTime: Date;
 }
