@@ -15,7 +15,10 @@ import {
   UpdateUserProfileResponseDto,
   UpdateUserProfileResponseError,
   SearchUserRequestDto,
-  SearchUserResponseDto
+  SearchUserResponseDto,
+  GetUserListRequestDto,
+  GetUserListResponseDto,
+  GetUserListResponseError
 } from "./dto";
 import { UserPrivilegeType } from "./user-privilege.entity";
 import { AuthService } from "@/auth/auth.service";
@@ -150,6 +153,28 @@ export class UserController {
         request.bio,
         request.password
       )
+    };
+  }
+
+  @Post("getUserList")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Get a user list sorted by rating or accepted problems count."
+  })
+  async getUserList(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: GetUserListRequestDto
+  ): Promise<GetUserListResponseDto> {
+    if (request.takeCount > this.configService.config.queryLimit.userListUsersTake)
+      return {
+        error: GetUserListResponseError.TAKE_TOO_MANY
+      };
+
+    const [users, count] = await this.userService.getUserList(request.sortBy, request.skipCount, request.takeCount);
+
+    return {
+      userMetas: await Promise.all(users.map(user => this.userService.getUserMeta(user))),
+      count: count
     };
   }
 }

@@ -27,6 +27,9 @@ export class UserEntity {
   @Column({ type: "integer" })
   submissionCount: number;
 
+  @Column({ type: "integer" })
+  rating: number;
+
   @OneToOne(
     type => UserAuthEntity,
     userAuth => userAuth.user

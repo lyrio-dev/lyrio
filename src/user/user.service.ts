@@ -44,7 +44,10 @@ export class UserService {
       username: user.username,
       email: user.email,
       bio: user.bio,
-      isAdmin: user.isAdmin
+      isAdmin: user.isAdmin,
+      acceptedProblemCount: user.acceptedProblemCount,
+      submissionCount: user.submissionCount,
+      rating: user.rating
     };
   }
 
@@ -115,6 +118,20 @@ export class UserService {
         username: "ASC"
       },
       take: maxTakeCount
+    });
+  }
+
+  async getUserList(
+    sortBy: "acceptedProblemCount" | "rating",
+    skipCount: number,
+    takeCount: number
+  ): Promise<[UserEntity[], number]> {
+    return await this.userRepository.findAndCount({
+      order: {
+        [sortBy]: "DESC"
+      },
+      skip: skipCount,
+      take: takeCount
     });
   }
 
