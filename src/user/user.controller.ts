@@ -18,11 +18,15 @@ import {
   SearchUserResponseDto,
   GetUserListRequestDto,
   GetUserListResponseDto,
-  GetUserListResponseError
+  GetUserListResponseError,
+  GetUserDetailRequestDto,
+  GetUserDetailResponseDto,
+  GetUserDetailResponseError
 } from "./dto";
 import { UserPrivilegeType } from "./user-privilege.entity";
 import { AuthService } from "@/auth/auth.service";
 import { ConfigService } from "@/config/config.service";
+import { SubmissionService } from "@/submission/submission.service";
 
 @ApiTags("User")
 @Controller("user")
@@ -31,7 +35,9 @@ export class UserController {
     private readonly userService: UserService,
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
-    private readonly userPrivilegeService: UserPrivilegeService
+    private readonly userPrivilegeService: UserPrivilegeService,
+    @Inject(forwardRef(() => SubmissionService))
+    private readonly submissionService: SubmissionService
   ) {}
 
   @Get("searchUser")
@@ -184,6 +190,50 @@ export class UserController {
     return {
       userMetas: await Promise.all(users.map(user => this.userService.getUserMeta(user, currentUser))),
       count: count
+    };
+  }
+
+  @Post("getUserDetail")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Get a user's meta and related data for user profile page."
+  })
+  async getUserDetail(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: GetUserDetailRequestDto
+  ): Promise<GetUserDetailResponseDto> {
+    const user = await this.userService.findUserById(request.userId);
+    if (!user)
+      return {
+        error: GetUserDetailResponseError.NO_SUCH_USER
+      };
+
+    const userInformation = await this.userService.findUserInformationByUserId(user.id);
+
+    const days = 53 * 7 + 6;
+    const submissionCountPerDay = await this.submissionService.getUserRecentlySubmissionCountPerDay(
+      user,
+      days,
+      request.timezoneOffset,
+      request.now
+    );
+
+    return {
+      meta: await this.userService.getUserMeta(user, currentUser),
+      information: {
+        sexIsFamale: userInformation.sexIsFamale,
+        organization: userInformation.organization,
+        location: userInformation.location,
+        url: userInformation.url,
+        telegram: userInformation.telegram,
+        qq: userInformation.qq,
+        github: userInformation.github
+      },
+      submissionCountPerDay: submissionCountPerDay,
+      hasPrivilege:
+        currentUser &&
+        (currentUser.id === user.id ||
+          (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER)))
     };
   }
 }

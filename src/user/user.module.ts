@@ -9,6 +9,7 @@ import { UserService } from "./user.service";
 import { UserPrivilegeService } from "./user-privilege.service";
 import { UserController } from "./user.controller";
 import { AuthModule } from "@/auth/auth.module";
+import { SubmissionModule } from "@/submission/submission.module";
 
 @Module({
   imports: [
@@ -16,7 +17,8 @@ import { AuthModule } from "@/auth/auth.module";
     TypeOrmModule.forFeature([UserPrivilegeEntity]),
     TypeOrmModule.forFeature([UserInformationEntity]),
     forwardRef(() => ConfigModule),
-    forwardRef(() => AuthModule)
+    forwardRef(() => AuthModule),
+    forwardRef(() => SubmissionModule)
   ],
   providers: [UserService, UserPrivilegeService],
   controllers: [UserController],

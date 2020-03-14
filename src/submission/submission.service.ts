@@ -1,7 +1,8 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, Ip } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
-import { Repository, Connection, In } from "typeorm";
+import { Repository, Connection } from "typeorm";
 import { ValidationError } from "class-validator";
+import moment = require("moment");
 
 import { SubmissionEntity } from "./submission.entity";
 import { SubmissionDetailEntity } from "./submission-detail.entity";
@@ -237,6 +238,40 @@ export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionPr
     return this.submissionDetailRepository.findOne({
       submissionId: submission.id
     });
+  }
+
+  public async getUserRecentlySubmissionCountPerDay(
+    user: UserEntity,
+    days: number,
+    timezoneOffset: number,
+    now: string
+  ): Promise<number[]> {
+    const startDate = moment(now)
+      .add(timezoneOffset, "hour")
+      .startOf("day")
+      .subtract(days - 1, "day");
+    const queryResult: { submitDate: Date; count: string }[] = await this.submissionRepository
+      .createQueryBuilder()
+      .select("DATE(DATE_ADD(submitTime, INTERVAL :timezoneOffset HOUR))", "submitDate")
+      .addSelect("COUNT(*)", "count")
+      .where("submitterId = :submitterId", { submitterId: user.id })
+      .andWhere("submitTime >= :startDate", { startDate: startDate.toDate() })
+      .groupBy("submitDate")
+      .setParameter("timezoneOffset", timezoneOffset)
+      .getRawMany();
+
+    const map = new Map(queryResult.map(row => [row.submitDate.valueOf(), Number(row.count)]));
+
+    const result = new Array(days);
+    for (let i = 0; i < days; i++) {
+      const date = startDate
+        .clone()
+        .add(i, "day")
+        .toDate();
+      result[i] = map.get(date.valueOf()) || 0;
+    }
+
+    return result;
   }
 
   private async onSubmissionUpdated(oldSubmission: SubmissionEntity, submission: SubmissionEntity): Promise<void> {
