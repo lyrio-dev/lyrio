@@ -4,6 +4,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { ConfigModule } from "@/config/config.module";
 import { UserEntity } from "./user.entity";
 import { UserPrivilegeEntity } from "./user-privilege.entity";
+import { UserInformationEntity } from "./user-information.entity";
 import { UserService } from "./user.service";
 import { UserPrivilegeService } from "./user-privilege.service";
 import { UserController } from "./user.controller";
@@ -13,6 +14,7 @@ import { AuthModule } from "@/auth/auth.module";
   imports: [
     TypeOrmModule.forFeature([UserEntity]),
     TypeOrmModule.forFeature([UserPrivilegeEntity]),
+    TypeOrmModule.forFeature([UserInformationEntity]),
     forwardRef(() => ConfigModule),
     forwardRef(() => AuthModule)
   ],

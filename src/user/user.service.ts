@@ -10,6 +10,8 @@ import { escapeLike } from "@/database/database.utils";
 import { SubmissionEntity } from "@/submission/submission.entity";
 import { SubmissionStatus } from "@/submission/submission-status.enum";
 import { UserPrivilegeService, UserPrivilegeType } from "./user-privilege.service";
+import { UserInformationDto } from "./dto/user-information.dto";
+import { UserInformationEntity } from "./user-information.entity";
 
 @Injectable()
 export class UserService {
@@ -18,6 +20,8 @@ export class UserService {
     private readonly connection: Connection,
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
+    @InjectRepository(UserInformationEntity)
+    private readonly userInformationRepository: Repository<UserInformationEntity>,
     @Inject(forwardRef(() => AuthService))
     private readonly authService: AuthService,
     @Inject(forwardRef(() => UserPrivilegeService))
@@ -25,7 +29,15 @@ export class UserService {
   ) {}
 
   async findUserById(id: number): Promise<UserEntity> {
-    return await this.userRepository.findOne(id);
+    return await this.userRepository.findOne({
+      id: id
+    });
+  }
+
+  async findUserInformationByUserId(id: number): Promise<UserInformationDto> {
+    return await this.userInformationRepository.findOne({
+      userId: id
+    });
   }
 
   public async findUsersByExistingIds(userIds: number[]): Promise<UserEntity[]> {
@@ -61,9 +73,6 @@ export class UserService {
           : null,
       gravatarEmailHash: hash.digest("hex"),
       bio: user.bio,
-      sexIsFamale: user.sexIsFamale,
-      organization: user.organization,
-      location: user.location,
       isAdmin: user.isAdmin,
       acceptedProblemCount: user.acceptedProblemCount,
       submissionCount: user.submissionCount,
@@ -101,13 +110,9 @@ export class UserService {
     username: string,
     email: string,
     publicEmail: boolean,
+    bio: string,
     password: string,
-    information: {
-      bio: string;
-      sexIsFamale: boolean;
-      organization: string;
-      location: string;
-    }
+    information: UserInformationDto
   ): Promise<UpdateUserProfileResponseError> {
     const changingUsername = username != null;
     const changingEmail = email != null;
@@ -117,17 +122,28 @@ export class UserService {
       if (changingEmail) user.email = email;
 
       user.publicEmail = publicEmail;
-      user.bio = information.bio;
-      user.sexIsFamale = information.sexIsFamale;
-      user.organization = information.organization;
-      user.location = information.location;
+      user.bio = bio;
 
-      if (password == null) await this.userRepository.save(user);
-      else
-        await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
-          await this.authService.changePassword(await this.authService.findUserAuthByUserId(user.id), password);
-          await transactionalEntityManager.save(user);
-        });
+      const userInformation = await this.findUserInformationByUserId(user.id);
+      userInformation.sexIsFamale = information.sexIsFamale;
+      userInformation.organization = information.organization;
+      userInformation.location = information.location;
+      userInformation.url = information.url;
+      userInformation.telegram = information.telegram;
+      userInformation.qq = information.qq;
+      userInformation.github = information.github;
+
+      await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
+        if (password != null) {
+          await this.authService.changePassword(
+            await this.authService.findUserAuthByUserId(user.id),
+            password,
+            transactionalEntityManager
+          );
+        }
+        await transactionalEntityManager.save(userInformation);
+        await transactionalEntityManager.save(user);
+      });
     } catch (e) {
       if (changingUsername && !(await this.checkUsernameAvailability(username)))
         return UpdateUserProfileResponseError.DUPLICATE_USERNAME;

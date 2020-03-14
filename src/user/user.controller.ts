@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query } from "@nestjs/common";
+import { Controller, Get, Post, Body, Query, Inject, forwardRef } from "@nestjs/common";
 import { ApiOperation, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import { CurrentUser } from "@/common/user.decorator";
@@ -158,8 +158,9 @@ export class UserController {
         request.username,
         request.email,
         request.publicEmail,
+        request.bio,
         request.password,
-        request
+        request.information
       )
     };
   }

@@ -18,15 +18,6 @@ export class UserEntity {
   @Column({ type: "varchar", length: 160 })
   bio: string;
 
-  @Column({ type: "boolean", nullable: true })
-  sexIsFamale: boolean;
-
-  @Column({ type: "varchar", length: 80 })
-  organization: string;
-
-  @Column({ type: "varchar", length: 80 })
-  location: string;
-
   @Column({ type: "boolean" })
   isAdmin: boolean;
 

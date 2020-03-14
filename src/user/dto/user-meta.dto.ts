@@ -20,15 +20,6 @@ export class UserMetaDto {
   bio: string;
 
   @ApiProperty()
-  sexIsFamale: boolean;
-
-  @ApiProperty()
-  organization: string;
-
-  @ApiProperty()
-  location: string;
-
-  @ApiProperty()
   isAdmin: boolean;
 
   @ApiProperty()

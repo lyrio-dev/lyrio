@@ -7,6 +7,7 @@ import * as bcrypt from "bcrypt";
 import { UserEntity } from "@/user/user.entity";
 import { UserAuthEntity } from "./user-auth.entity";
 import { UserService } from "@/user/user.service";
+import { UserInformationEntity } from "@/user/user-information.entity";
 
 @Injectable()
 export class AuthService {
@@ -39,7 +40,7 @@ export class AuthService {
         user.username = username;
         user.email = email;
         user.publicEmail = true;
-        user.bio = user.organization = user.location = "";
+        user.bio = "";
         user.isAdmin = false;
         user.submissionCount = user.acceptedProblemCount = 0;
         user.rating = 0;
@@ -50,6 +51,16 @@ export class AuthService {
         userAuth.userId = user.id;
         userAuth.password = await this.hashPassword(password);
         await transactionalEntityManager.save(userAuth);
+
+        const userInformation = new UserInformationEntity();
+        userInformation.sexIsFamale = null;
+        userInformation.organization = "";
+        userInformation.location = "";
+        userInformation.url = "";
+        userInformation.telegram = "";
+        userInformation.qq = "";
+        userInformation.github = "";
+        await transactionalEntityManager.save(userInformation);
       });
 
       return [null, user];

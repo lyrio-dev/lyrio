@@ -1,6 +1,9 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsInt, IsEmail, Length, IsString, IsOptional, IsBoolean } from "class-validator";
+import { IsInt, IsEmail, Length, IsString, IsOptional, IsBoolean, ValidateNested } from "class-validator";
+import { Type } from "class-transformer";
+
 import { IsUsername } from "@/common/validators";
+import { UserInformationDto } from "./user-information.dto";
 
 export class UpdateUserProfileRequestDto {
   @ApiProperty()
@@ -26,21 +29,10 @@ export class UpdateUserProfileRequestDto {
   @Length(0, 160)
   readonly bio: string;
 
-  // null means change the value to null, meaning "unknown" or "other", not meaning not changing
   @ApiProperty()
-  @IsBoolean()
-  @IsOptional()
-  sexIsFamale: boolean;
-
-  @ApiProperty()
-  @IsString()
-  @Length(0, 80)
-  organization: string;
-
-  @ApiProperty()
-  @IsString()
-  @Length(0, 80)
-  location: string;
+  @Type(() => UserInformationDto)
+  @ValidateNested()
+  readonly information: UserInformationDto;
 
   @ApiProperty()
   @Length(6, 32)
