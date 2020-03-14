@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Module, forwardRef } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { GroupService } from "./group.service";
@@ -12,8 +12,8 @@ import { ConfigModule } from "@/config/config.module";
   imports: [
     TypeOrmModule.forFeature([GroupEntity]),
     TypeOrmModule.forFeature([GroupMembershipEntity]),
-    UserModule,
-    ConfigModule
+    forwardRef(() => UserModule),
+    forwardRef(() => ConfigModule)
   ],
   providers: [GroupService],
   controllers: [GroupController],

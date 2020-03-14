@@ -1,4 +1,4 @@
-import { Module, NestModule, MiddlewareConsumer, RequestMethod } from "@nestjs/common";
+import { Module, forwardRef, NestModule, MiddlewareConsumer, RequestMethod } from "@nestjs/common";
 
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
@@ -20,19 +20,19 @@ import { JudgeModule } from "./judge/judge.module";
 
 @Module({
   imports: [
-    ConfigModule,
-    DatabaseModule,
-    RedisModule,
-    UserModule,
-    AuthModule,
-    CorsModule,
-    GroupModule,
-    ProblemModule,
-    LocalizedContentModule,
-    PermissionModule,
-    FileModule,
-    SubmissionModule,
-    JudgeModule
+    forwardRef(() => ConfigModule),
+    forwardRef(() => DatabaseModule),
+    forwardRef(() => RedisModule),
+    forwardRef(() => UserModule),
+    forwardRef(() => AuthModule),
+    forwardRef(() => CorsModule),
+    forwardRef(() => GroupModule),
+    forwardRef(() => ProblemModule),
+    forwardRef(() => LocalizedContentModule),
+    forwardRef(() => PermissionModule),
+    forwardRef(() => FileModule),
+    forwardRef(() => SubmissionModule),
+    forwardRef(() => JudgeModule)
   ],
   controllers: [AppController],
   providers: [AppService]

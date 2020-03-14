@@ -1,10 +1,10 @@
-import { Module } from "@nestjs/common";
+import { Module, forwardRef } from "@nestjs/common";
 
 import { CorsController } from "./cors.controller";
 import { ConfigModule } from "@/config/config.module";
 
 @Module({
-  imports: [ConfigModule],
+  imports: [forwardRef(() => ConfigModule)],
   controllers: [CorsController]
 })
 export class CorsModule {}

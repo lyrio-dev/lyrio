@@ -13,7 +13,7 @@ import { AuthModule } from "@/auth/auth.module";
   imports: [
     TypeOrmModule.forFeature([UserEntity]),
     TypeOrmModule.forFeature([UserPrivilegeEntity]),
-    ConfigModule,
+    forwardRef(() => ConfigModule),
     forwardRef(() => AuthModule)
   ],
   providers: [UserService, UserPrivilegeService],

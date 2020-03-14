@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Module, forwardRef } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { ConfigModule } from "@/config/config.module";
@@ -20,11 +20,11 @@ import { SubmissionStatisticsService } from "./submission-statistics.service";
   imports: [
     TypeOrmModule.forFeature([SubmissionEntity]),
     TypeOrmModule.forFeature([SubmissionDetailEntity]),
-    ConfigModule,
-    RedisModule,
-    ProblemModule,
-    JudgeModule,
-    UserModule
+    forwardRef(() => ConfigModule),
+    forwardRef(() => RedisModule),
+    forwardRef(() => ProblemModule),
+    forwardRef(() => JudgeModule),
+    forwardRef(() => UserModule)
   ],
   providers: [
     SubmissionService,

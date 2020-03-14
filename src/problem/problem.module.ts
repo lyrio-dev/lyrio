@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Module, forwardRef } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { ProblemEntity } from "./problem.entity";
@@ -28,13 +28,13 @@ import { ProblemTypedJudgeInfoTraditionalService } from "./type/traditional/prob
     TypeOrmModule.forFeature([ProblemFileEntity]),
     TypeOrmModule.forFeature([ProblemTagEntity]),
     TypeOrmModule.forFeature([ProblemTagMapEntity]),
-    ConfigModule,
-    LocalizedContentModule,
-    UserModule,
-    GroupModule,
-    PermissionModule,
-    FileModule,
-    RedisModule
+    forwardRef(() => ConfigModule),
+    forwardRef(() => LocalizedContentModule),
+    forwardRef(() => UserModule),
+    forwardRef(() => GroupModule),
+    forwardRef(() => PermissionModule),
+    forwardRef(() => FileModule),
+    forwardRef(() => RedisModule)
   ],
   providers: [ProblemService, ProblemJudgeInfoService, ProblemTypedJudgeInfoTraditionalService],
   controllers: [ProblemController],

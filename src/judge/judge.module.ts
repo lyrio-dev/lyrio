@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Module, forwardRef } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { RedisModule } from "@/redis/redis.module";
@@ -10,7 +10,7 @@ import { JudgeClientService } from "./judge-client.service";
 import { JudgeClientEntity } from "./judge-client.entity";
 
 @Module({
-  imports: [RedisModule, FileModule, TypeOrmModule.forFeature([JudgeClientEntity])],
+  imports: [forwardRef(() => RedisModule), forwardRef(() => FileModule), TypeOrmModule.forFeature([JudgeClientEntity])],
   controllers: [JudgeClientController],
   providers: [JudgeGateway, JudgeClientService, JudgeQueueService],
   exports: [JudgeQueueService]

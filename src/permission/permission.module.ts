@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Module, forwardRef } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { PermissionService } from "./permission.service";
@@ -10,7 +10,7 @@ import { GroupModule } from "@/group/group.module";
   imports: [
     TypeOrmModule.forFeature([PermissionForUserEntity]),
     TypeOrmModule.forFeature([PermissionForGroupEntity]),
-    GroupModule
+    forwardRef(() => GroupModule)
   ],
   providers: [PermissionService],
   exports: [PermissionService]
