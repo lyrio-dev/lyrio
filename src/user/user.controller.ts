@@ -214,7 +214,7 @@ export class UserController {
     const submissionCountPerDay = await this.submissionService.getUserRecentlySubmissionCountPerDay(
       user,
       days,
-      request.timezoneOffset,
+      request.timezone,
       request.now
     );
 

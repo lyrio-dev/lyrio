@@ -2,7 +2,7 @@ import { Injectable, Logger, Ip } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
 import { Repository, Connection } from "typeorm";
 import { ValidationError } from "class-validator";
-import moment = require("moment");
+import moment = require("moment-timezone");
 
 import { SubmissionEntity } from "./submission.entity";
 import { SubmissionDetailEntity } from "./submission-detail.entity";
@@ -243,33 +243,48 @@ export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionPr
   public async getUserRecentlySubmissionCountPerDay(
     user: UserEntity,
     days: number,
-    timezoneOffset: number,
+    timezone: string,
     now: string
   ): Promise<number[]> {
+    if (!moment.tz.zone(timezone)) timezone = "UTC";
+
     const startDate = moment(now)
-      .add(timezoneOffset, "hour")
+      .tz(timezone)
       .startOf("day")
       .subtract(days - 1, "day");
+
     const queryResult: { submitDate: Date; count: string }[] = await this.submissionRepository
       .createQueryBuilder()
-      .select("DATE(DATE_ADD(submitTime, INTERVAL :timezoneOffset HOUR))", "submitDate")
+      .select('DATE(CONVERT_TZ(submitTime, "UTC", :timezone))', "submitDate")
       .addSelect("COUNT(*)", "count")
       .where("submitterId = :submitterId", { submitterId: user.id })
-      .andWhere("submitTime >= :startDate", { startDate: startDate.toDate() })
+      .andWhere('submitTime >= DATE_SUB(CONVERT_TZ(:now, "UTC", :timezone), INTERVAL :offsetDays DAY)', {
+        now: now,
+        offsetDays: days - 1
+      })
       .groupBy("submitDate")
-      .setParameter("timezoneOffset", timezoneOffset)
+      .setParameter("timezone", timezone)
       .getRawMany();
 
-    const map = new Map(queryResult.map(row => [row.submitDate.valueOf(), Number(row.count)]));
+    // The database doesn't support timezone
+    if (queryResult.length === 1 && queryResult[0].submitDate === null) return new Array(days).fill(0);
 
-    const result = new Array(days);
-    for (let i = 0; i < days; i++) {
-      const date = startDate
-        .clone()
-        .add(i, "day")
-        .toDate();
-      result[i] = map.get(date.valueOf()) || 0;
-    }
+    const map = new Map(
+      queryResult.map(row => [
+        moment.tz(row.submitDate.toISOString().substr(0, 10), timezone).valueOf(),
+        Number(row.count)
+      ])
+    );
+
+    const result = [...new Array(days).keys()].map(
+      i =>
+        map.get(
+          startDate
+            .clone()
+            .add(i, "day")
+            .valueOf()
+        ) || 0
+    );
 
     return result;
   }
