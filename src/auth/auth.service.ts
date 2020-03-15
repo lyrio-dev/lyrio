@@ -53,6 +53,7 @@ export class AuthService {
         await transactionalEntityManager.save(userAuth);
 
         const userInformation = new UserInformationEntity();
+        userInformation.userId = user.id;
         userInformation.sexIsFamale = null;
         userInformation.organization = "";
         userInformation.location = "";
