@@ -14,13 +14,13 @@
     "start:prod": "node dist/main"
   },
   "dependencies": {
-    "@nestjs/common": "^6.7.2",
-    "@nestjs/core": "^6.7.2",
-    "@nestjs/platform-express": "^6.10.4",
-    "@nestjs/platform-socket.io": "^6.11.6",
-    "@nestjs/swagger": "^4.1.8",
-    "@nestjs/typeorm": "^6.2.0",
-    "@nestjs/websockets": "^6.11.6",
+    "@nestjs/common": "^7.0.2",
+    "@nestjs/core": "^7.0.2",
+    "@nestjs/platform-express": "^7.0.2",
+    "@nestjs/platform-socket.io": "^7.0.2",
+    "@nestjs/swagger": "^4.4.0",
+    "@nestjs/typeorm": "^7.0.0",
+    "@nestjs/websockets": "^7.0.2",
     "@types/bcrypt": "^3.0.0",
     "@types/fs-extra": "^8.1.0",
     "@types/ioredis": "^4.14.9",
@@ -58,8 +58,8 @@
     "xdomain": "^0.8.2"
   },
   "devDependencies": {
-    "@nestjs/cli": "^6.9.0",
-    "@nestjs/schematics": "^6.7.0",
+    "@nestjs/cli": "^7.0.0",
+    "@nestjs/schematics": "^7.0.0",
     "@types/node": "^12.7.5",
     "cz-conventional-changelog": "3.1.0",
     "prettier": "^1.18.2",
