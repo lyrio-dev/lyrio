@@ -1,6 +1,6 @@
 import { Injectable, forwardRef, Inject } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
-import { Repository, Connection, Like } from "typeorm";
+import { Repository, Connection, Like, MoreThan } from "typeorm";
 import crypto = require("crypto");
 
 import { UserEntity } from "./user.entity";
@@ -214,5 +214,14 @@ export class UserService {
         status: SubmissionStatus.Accepted
       })
       .execute();
+  }
+
+  async getUserRank(user: UserEntity): Promise<number> {
+    return (
+      1 +
+      (await this.userRepository.count({
+        rating: MoreThan(user.rating)
+      }))
+    );
   }
 }

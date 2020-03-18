@@ -30,5 +30,8 @@ export class GetUserDetailResponseDto {
   submissionCountPerDay?: number[];
 
   @ApiProperty()
+  rank?: number;
+
+  @ApiProperty()
   hasPrivilege?: boolean;
 }

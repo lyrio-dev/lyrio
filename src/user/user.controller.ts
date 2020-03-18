@@ -230,6 +230,7 @@ export class UserController {
         github: userInformation.github
       },
       submissionCountPerDay: submissionCountPerDay,
+      rank: await this.userService.getUserRank(user),
       hasPrivilege:
         currentUser &&
         (currentUser.id === user.id ||
