@@ -21,7 +21,10 @@ import {
   GetUserListResponseError,
   GetUserDetailRequestDto,
   GetUserDetailResponseDto,
-  GetUserDetailResponseError
+  GetUserDetailResponseError,
+  GetUserProfileRequestDto,
+  GetUserProfileResponseDto,
+  GetUserProfileResponseError
 } from "./dto";
 import { UserPrivilegeType } from "./user-privilege.entity";
 import { AuthService } from "@/auth/auth.service";
@@ -235,6 +238,51 @@ export class UserController {
         currentUser &&
         (currentUser.id === user.id ||
           (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER)))
+    };
+  }
+
+  @Post("getUserProfile")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Get a user's meta and information for user profile edit page."
+  })
+  async getUserProfile(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: GetUserProfileRequestDto
+  ): Promise<GetUserProfileResponseDto> {
+    if (!currentUser)
+      return {
+        error: GetUserProfileResponseError.PERMISSION_DENIED
+      };
+
+    const user = await this.userService.findUserById(request.userId);
+    if (!user)
+      return {
+        error: GetUserProfileResponseError.NO_SUCH_USER
+      };
+
+    if (
+      currentUser.id !== user.id &&
+      !(await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER))
+    )
+      return {
+        error: GetUserProfileResponseError.PERMISSION_DENIED
+      };
+
+    const userInformation = await this.userService.findUserInformationByUserId(user.id);
+
+    return {
+      meta: await this.userService.getUserMeta(user, currentUser),
+      publicEmail: user.publicEmail,
+      information: {
+        sexIsFamale: userInformation.sexIsFamale,
+        organization: userInformation.organization,
+        location: userInformation.location,
+        url: userInformation.url,
+        telegram: userInformation.telegram,
+        qq: userInformation.qq,
+        github: userInformation.github
+      }
     };
   }
 }
