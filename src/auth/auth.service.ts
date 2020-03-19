@@ -54,7 +54,6 @@ export class AuthService {
 
         const userInformation = new UserInformationEntity();
         userInformation.userId = user.id;
-        userInformation.sexIsFamale = null;
         userInformation.organization = "";
         userInformation.location = "";
         userInformation.url = "";

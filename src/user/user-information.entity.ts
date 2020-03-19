@@ -11,9 +11,6 @@ export class UserInformationEntity {
   @PrimaryColumn()
   userId: number;
 
-  @Column({ type: "boolean", nullable: true })
-  sexIsFamale: boolean;
-
   @Column({ type: "varchar", length: 80 })
   organization: string;
 

@@ -224,7 +224,6 @@ export class UserController {
     return {
       meta: await this.userService.getUserMeta(user, currentUser),
       information: {
-        sexIsFamale: userInformation.sexIsFamale,
         organization: userInformation.organization,
         location: userInformation.location,
         url: userInformation.url,
@@ -275,7 +274,6 @@ export class UserController {
       meta: await this.userService.getUserMeta(user, currentUser),
       publicEmail: user.publicEmail,
       information: {
-        sexIsFamale: userInformation.sexIsFamale,
         organization: userInformation.organization,
         location: userInformation.location,
         url: userInformation.url,

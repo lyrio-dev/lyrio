@@ -125,7 +125,6 @@ export class UserService {
       user.bio = bio;
 
       const userInformation = await this.findUserInformationByUserId(user.id);
-      userInformation.sexIsFamale = information.sexIsFamale;
       userInformation.organization = information.organization;
       userInformation.location = information.location;
       userInformation.url = information.url;

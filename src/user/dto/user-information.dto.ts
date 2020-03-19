@@ -1,13 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsString, MaxLength, IsBoolean, IsOptional, IsUrl } from "class-validator";
+import { IsString, MaxLength, IsUrl } from "class-validator";
 
 export class UserInformationDto {
-  @ApiProperty()
-  @IsBoolean()
-  @IsOptional()
-  // `null` in a request means change the value to null, meaning "unknown" or "other", not means "not changing"
-  sexIsFamale: boolean;
-
   @ApiProperty()
   @IsString()
   @MaxLength(80)
