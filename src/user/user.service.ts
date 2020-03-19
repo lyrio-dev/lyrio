@@ -12,6 +12,8 @@ import { SubmissionStatus } from "@/submission/submission-status.enum";
 import { UserPrivilegeService, UserPrivilegeType } from "./user-privilege.service";
 import { UserInformationDto } from "./dto/user-information.dto";
 import { UserInformationEntity } from "./user-information.entity";
+import { UserPreference } from "./user-preference.interface";
+import { UserPreferenceEntity } from "./user-preference.entity";
 
 @Injectable()
 export class UserService {
@@ -22,6 +24,8 @@ export class UserService {
     private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(UserInformationEntity)
     private readonly userInformationRepository: Repository<UserInformationEntity>,
+    @InjectRepository(UserPreferenceEntity)
+    private readonly userPreferenceRepository: Repository<UserPreferenceEntity>,
     @Inject(forwardRef(() => AuthService))
     private readonly authService: AuthService,
     @Inject(forwardRef(() => UserPrivilegeService))
@@ -222,5 +226,16 @@ export class UserService {
         rating: MoreThan(user.rating)
       }))
     );
+  }
+
+  async getUserPreference(user: UserEntity): Promise<UserPreference> {
+    const userPreference = await this.userPreferenceRepository.findOne({ userId: user.id });
+    return userPreference.preference;
+  }
+
+  async updateUserPreference(user: UserEntity, preference: UserPreference): Promise<void> {
+    const userPreference = await this.userPreferenceRepository.findOne({ userId: user.id });
+    userPreference.preference = preference;
+    await this.userPreferenceRepository.save(userPreference);
   }
 }

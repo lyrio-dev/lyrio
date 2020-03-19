@@ -24,7 +24,13 @@ import {
   GetUserDetailResponseError,
   GetUserProfileRequestDto,
   GetUserProfileResponseDto,
-  GetUserProfileResponseError
+  GetUserProfileResponseError,
+  GetUserPreferenceRequestDto,
+  GetUserPreferenceResponseDto,
+  GetUserPreferenceResponseError,
+  UpdateUserPreferenceRequestDto,
+  UpdateUserPreferenceResponseDto,
+  UpdateUserPreferenceResponseError
 } from "./dto";
 import { UserPrivilegeType } from "./user-privilege.entity";
 import { AuthService } from "@/auth/auth.service";
@@ -282,5 +288,72 @@ export class UserController {
         github: userInformation.github
       }
     };
+  }
+
+  @Post("getUserPreference")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Get a user's meta and preference for user profile edit page."
+  })
+  async getUserPreference(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: GetUserPreferenceRequestDto
+  ): Promise<GetUserPreferenceResponseDto> {
+    if (!currentUser)
+      return {
+        error: GetUserPreferenceResponseError.PERMISSION_DENIED
+      };
+
+    const user = await this.userService.findUserById(request.userId);
+    if (!user)
+      return {
+        error: GetUserPreferenceResponseError.NO_SUCH_USER
+      };
+
+    if (
+      currentUser.id !== user.id &&
+      !(await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER))
+    )
+      return {
+        error: GetUserPreferenceResponseError.PERMISSION_DENIED
+      };
+
+    return {
+      meta: await this.userService.getUserMeta(user, currentUser),
+      preference: await this.userService.getUserPreference(user)
+    };
+  }
+
+  @Post("updateUserPreference")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Update a user's preference."
+  })
+  async updateUserPreference(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: UpdateUserPreferenceRequestDto
+  ): Promise<UpdateUserPreferenceResponseDto> {
+    if (!currentUser)
+      return {
+        error: UpdateUserPreferenceResponseError.PERMISSION_DENIED
+      };
+
+    const user = await this.userService.findUserById(request.userId);
+    if (!user)
+      return {
+        error: UpdateUserPreferenceResponseError.NO_SUCH_USER
+      };
+
+    if (
+      currentUser.id !== user.id &&
+      !(await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER))
+    )
+      return {
+        error: UpdateUserPreferenceResponseError.PERMISSION_DENIED
+      };
+
+    await this.userService.updateUserPreference(user, request.preference);
+
+    return {};
   }
 }

@@ -1,4 +1,6 @@
 export * from "./user-meta.dto";
+export * from "./user-information.dto";
+export * from "./user-preference.dto";
 
 export * from "./get-user-meta-request.dto";
 export * from "./get-user-meta-response.dto";
@@ -20,3 +22,9 @@ export * from "./get-user-detail-response.dto";
 
 export * from "./get-user-profile-request.dto";
 export * from "./get-user-profile-response.dto";
+
+export * from "./get-user-preference-request.dto";
+export * from "./get-user-preference-response.dto";
+
+export * from "./update-user-preference-request.dto";
+export * from "./update-user-preference-response.dto";

@@ -8,6 +8,7 @@ import { UserEntity } from "@/user/user.entity";
 import { UserAuthEntity } from "./user-auth.entity";
 import { UserService } from "@/user/user.service";
 import { UserInformationEntity } from "@/user/user-information.entity";
+import { UserPreferenceEntity } from "@/user/user-preference.entity";
 
 @Injectable()
 export class AuthService {
@@ -61,6 +62,11 @@ export class AuthService {
         userInformation.qq = "";
         userInformation.github = "";
         await transactionalEntityManager.save(userInformation);
+
+        const userPreference = new UserPreferenceEntity();
+        userPreference.userId = user.id;
+        userPreference.preference = {};
+        await transactionalEntityManager.save(userPreference);
       });
 
       return [null, user];
