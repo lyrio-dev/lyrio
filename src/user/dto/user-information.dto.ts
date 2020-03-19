@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsString, MaxLength, IsUrl } from "class-validator";
+import { IsString, MaxLength, IsUrl, ValidateIf } from "class-validator";
 
 export class UserInformationDto {
   @ApiProperty()
@@ -16,6 +16,7 @@ export class UserInformationDto {
   @IsUrl()
   @IsString()
   @MaxLength(80)
+  @ValidateIf(({ url }) => url !== "")
   url: string;
 
   @ApiProperty()
