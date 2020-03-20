@@ -1,4 +1,5 @@
 export * from "./user-meta.dto";
+export * from "./user-avatar.dto";
 export * from "./user-information.dto";
 export * from "./user-preference.dto";
 

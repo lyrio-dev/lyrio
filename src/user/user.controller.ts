@@ -173,6 +173,7 @@ export class UserController {
         request.username,
         request.email,
         request.publicEmail,
+        request.avatarInfo,
         request.bio,
         request.password,
         request.information
@@ -279,6 +280,7 @@ export class UserController {
     return {
       meta: await this.userService.getUserMeta(user, currentUser),
       publicEmail: user.publicEmail,
+      avatarInfo: user.avatarInfo,
       information: {
         organization: userInformation.organization,
         location: userInformation.location,

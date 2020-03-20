@@ -1,5 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
 
+import { UserAvatarDto } from "./user-avatar.dto";
+
 export class UserMetaDto {
   @ApiProperty()
   id: number;
@@ -10,14 +12,11 @@ export class UserMetaDto {
   @ApiProperty()
   email: string;
 
-  /**
-   * The email may not be visible to everyone, so encode its hash (for gravatar url) separately.
-   */
-  @ApiProperty()
-  gravatarEmailHash: string;
-
   @ApiProperty()
   bio: string;
+
+  @ApiProperty()
+  avatar: UserAvatarDto;
 
   @ApiProperty()
   isAdmin: boolean;

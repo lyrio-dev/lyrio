@@ -5,7 +5,7 @@ import crypto = require("crypto");
 
 import { UserEntity } from "./user.entity";
 import { AuthService } from "@/auth/auth.service";
-import { UpdateUserProfileResponseError, UserMetaDto } from "./dto";
+import { UpdateUserProfileResponseError, UserMetaDto, UserAvatarDto, UserAvatarType } from "./dto";
 import { escapeLike } from "@/database/database.utils";
 import { SubmissionEntity } from "@/submission/submission.entity";
 import { SubmissionStatus } from "@/submission/submission-status.enum";
@@ -58,13 +58,38 @@ export class UserService {
     });
   }
 
+  private getUserAvatar(user: UserEntity): UserAvatarDto {
+    const type = user.avatarInfo.substr(0, user.avatarInfo.indexOf(":"));
+    const plainKey = user.avatarInfo.slice(user.avatarInfo.indexOf(":") + 1);
+
+    switch (type) {
+      case "github":
+        return {
+          type: UserAvatarType.GitHub,
+          key: plainKey
+        };
+      case "qq":
+        return {
+          type: UserAvatarType.QQ,
+          key: plainKey
+        };
+      case "gravatar":
+      default:
+        return {
+          type: UserAvatarType.Gravatar,
+          key: crypto
+            .createHash("md5")
+            .update((plainKey || user.email).trim().toLowerCase())
+            .digest("hex")
+        };
+    }
+  }
+
   /**
    * If the current user is admin or have manage user pervilege, the email will be returned
    * even if the user set public email to false.
    */
   async getUserMeta(user: UserEntity, currentUser: UserEntity): Promise<UserMetaDto> {
-    const hash = crypto.createHash("md5");
-    hash.update(user.email.trim().toLowerCase());
     return {
       id: user.id,
       username: user.username,
@@ -75,7 +100,7 @@ export class UserService {
             (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER))))
           ? user.email
           : null,
-      gravatarEmailHash: hash.digest("hex"),
+      avatar: this.getUserAvatar(user),
       bio: user.bio,
       isAdmin: user.isAdmin,
       acceptedProblemCount: user.acceptedProblemCount,
@@ -114,6 +139,7 @@ export class UserService {
     username: string,
     email: string,
     publicEmail: boolean,
+    avatarInfo: string,
     bio: string,
     password: string,
     information: UserInformationDto
@@ -126,6 +152,7 @@ export class UserService {
       if (changingEmail) user.email = email;
 
       user.publicEmail = publicEmail;
+      user.avatarInfo = avatarInfo;
       user.bio = bio;
 
       const userInformation = await this.findUserInformationByUserId(user.id);

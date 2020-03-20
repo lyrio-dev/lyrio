@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsInt, IsEmail, Length, IsString, IsOptional, IsBoolean, ValidateNested } from "class-validator";
+import { IsInt, IsEmail, Length, IsString, IsOptional, IsBoolean, ValidateNested, MaxLength } from "class-validator";
 import { Type } from "class-transformer";
 
 import { IsUsername } from "@/common/validators";
@@ -23,6 +23,10 @@ export class UpdateUserProfileRequestDto {
   @ApiProperty()
   @IsBoolean()
   readonly publicEmail: boolean;
+
+  @ApiProperty()
+  @MaxLength(50)
+  readonly avatarInfo: string;
 
   @ApiProperty()
   @IsString()

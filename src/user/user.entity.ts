@@ -18,6 +18,17 @@ export class UserEntity {
   @Column({ type: "varchar", length: 160 })
   bio: string;
 
+  /**
+   * gravatar:email_address ("email_address" can be empty, meaning using the "email" field's value)
+   * github:github_username
+   * qq:qq_uin
+   *
+   * This field will NOT be directly send to client, and should be processed.
+   * e.g. Gravatar email address should be hashed for privacy
+   */
+  @Column({ type: "varchar", length: 50 })
+  avatarInfo: string;
+
   @Column({ type: "boolean" })
   isAdmin: boolean;
 

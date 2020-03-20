@@ -19,6 +19,10 @@ export class GetUserProfileResponseDto {
   @ApiProperty()
   publicEmail?: boolean;
 
+  // This property of user is not included in UserMeta type
+  @ApiProperty()
+  avatarInfo?: string;
+
   @ApiProperty()
   information?: UserInformationDto;
 }
