@@ -85,7 +85,7 @@ class SecurityConfig {
   readonly crossOrigin: CrossOriginConfig;
 }
 
-class PreferenceConfig {
+export class PreferenceConfig {
   @IsBoolean()
   readonly allowUserChangeUsername: boolean;
 

@@ -5,7 +5,7 @@ import * as jwt from "jsonwebtoken";
 import {
   LoginRequestDto,
   RegisterRequestDto,
-  GetSelfMetaResponseDto,
+  GetCurrentUserAndPreferenceResponseDto,
   LoginResponseDto,
   LoginResponseError,
   CheckAvailabilityRequestDto,
@@ -28,18 +28,21 @@ export class AuthController {
     private readonly authService: AuthService
   ) {}
 
-  @Get("getSelfMeta")
+  @Get("getCurrentUserAndPreference")
   @ApiBearerAuth()
   @ApiOperation({
-    summary: "Get the metadata of the current logged-in user."
+    summary: "Get the logged-in user's meta and preference and the server's preference."
   })
-  async getSelfMeta(@CurrentUser() currentUser: UserEntity): Promise<GetSelfMetaResponseDto> {
-    const result: GetSelfMetaResponseDto = new GetSelfMetaResponseDto();
+  async getCurrentUserAndPreference(
+    @CurrentUser() currentUser: UserEntity
+  ): Promise<GetCurrentUserAndPreferenceResponseDto> {
+    const result: GetCurrentUserAndPreferenceResponseDto = new GetCurrentUserAndPreferenceResponseDto();
     if (currentUser) {
       result.userMeta = await this.userService.getUserMeta(currentUser, currentUser);
-    } else {
-      result.userMeta = null;
+      result.userPreference = await this.userService.getUserPreference(currentUser);
     }
+
+    result.serverPreference = this.configService.config.preference;
 
     return result;
   }
@@ -48,7 +51,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: "Login with given credentials.",
-    description: "Return the logged-in user's metadata and token if success."
+    description: "Return session token if success."
   })
   async login(@CurrentUser() currentUser: UserEntity, @Body() request: LoginRequestDto): Promise<LoginResponseDto> {
     if (currentUser)
@@ -64,7 +67,6 @@ export class AuthController {
       };
 
     return {
-      userMeta: await this.userService.getUserMeta(user, user),
       token: jwt.sign(user.id.toString(), this.configService.config.security.sessionSecret)
     };
   }
@@ -100,7 +102,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: "Register then login.",
-    description: "Return the new user's metadata and token if success."
+    description: "Return the session token if success."
   })
   async register(
     @CurrentUser() currentUser: UserEntity,
@@ -119,7 +121,6 @@ export class AuthController {
       };
 
     return {
-      userMeta: await this.userService.getUserMeta(user, user),
       token: jwt.sign(user.id.toString(), this.configService.config.security.sessionSecret)
     };
   }
