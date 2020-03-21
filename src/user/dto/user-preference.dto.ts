@@ -4,18 +4,26 @@ import { IsEnum, IsOptional, IsBoolean, IsString, MaxLength, IsObject } from "cl
 export class UserPreferenceDto {
   @IsEnum(Locale)
   @IsOptional()
-  locale?: Locale;
+  systemLocale?: Locale;
+
+  @IsEnum(Locale)
+  @IsOptional()
+  contentLocale?: Locale;
 
   @IsBoolean()
   @IsOptional()
-  formatCodeByDefault?: boolean;
+  doNotFormatCodeByDefault?: boolean;
 
   @IsString()
   @MaxLength(1024)
   @IsOptional()
   codeFormatterOptions?: string;
 
+  @IsString()
+  @MaxLength(20)
+  defaultCodeLanguage?: string;
+
   @IsObject()
   @IsOptional()
-  languageOptions?: Record<string, Record<string, string>>;
+  defaultCodeLanguageOptions?: Record<string, string>;
 }
