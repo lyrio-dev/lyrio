@@ -37,16 +37,4 @@ export class UpdateUserProfileRequestDto {
   @Type(() => UserInformationDto)
   @ValidateNested()
   readonly information: UserInformationDto;
-
-  @ApiProperty()
-  @Length(6, 32)
-  @IsString()
-  @IsOptional()
-  readonly oldPassword?: string;
-
-  @ApiProperty()
-  @Length(6, 32)
-  @IsString()
-  @IsOptional()
-  readonly password?: string;
 }

@@ -30,7 +30,16 @@ import {
   GetUserPreferenceResponseError,
   UpdateUserPreferenceRequestDto,
   UpdateUserPreferenceResponseDto,
-  UpdateUserPreferenceResponseError
+  UpdateUserPreferenceResponseError,
+  GetUserSecuritySettingsRequestDto,
+  GetUserSecuritySettingsResponseDto,
+  GetUserSecuritySettingsResponseError,
+  UpdateUserPasswordRequestDto,
+  UpdateUserPasswordResponseDto,
+  UpdateUserPasswordResponseError,
+  UpdateUserEmailRequestDto,
+  UpdateUserEmailResponseDto,
+  UpdateUserEmailResponseError
 } from "./dto";
 import { UserPrivilegeType } from "./user-privilege.entity";
 import { AuthService } from "@/auth/auth.service";
@@ -138,10 +147,9 @@ export class UserController {
       };
 
     const isUserSelf = currentUser.id === user.id;
-    const isAdmin =
-      user.isAdmin || (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER));
+    const hasPrivilege = await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER);
 
-    if (!(isUserSelf || isAdmin))
+    if (!(isUserSelf || hasPrivilege))
       return {
         error: UpdateUserProfileResponseError.PERMISSION_DENIED
       };
@@ -149,23 +157,23 @@ export class UserController {
     if (request.username) {
       if (!this.configService.config.preference.allowUserChangeUsername) {
         // Normal users are not allowed to change their usernames
-        if (!isAdmin)
+        if (!hasPrivilege)
           return {
             error: UpdateUserProfileResponseError.PERMISSION_DENIED
           };
       }
     }
 
-    if (request.password) {
-      // A non-admin user must give the old password to change its password
-      if (!isAdmin) {
-        const userAuth = await this.authService.findUserAuthByUserId(request.userId);
-        if (!(await this.authService.checkPassword(userAuth, request.oldPassword)))
-          return {
-            error: UpdateUserProfileResponseError.WRONG_OLD_PASSWORD
-          };
-      }
-    }
+    // if (request.password) {
+    //   // A non-admin user must give the old password to change its password
+    //   if (!hasPrivilege) {
+    //     const userAuth = await this.authService.findUserAuthByUserId(request.userId);
+    //     if (!(await this.authService.checkPassword(userAuth, request.oldPassword)))
+    //       return {
+    //         error: UpdateUserProfileResponseError.WRONG_OLD_PASSWORD
+    //       };
+    //   }
+    // }
 
     return {
       error: await this.userService.updateUserProfile(
@@ -175,7 +183,6 @@ export class UserController {
         request.publicEmail,
         request.avatarInfo,
         request.bio,
-        request.password,
         request.information
       )
     };
@@ -357,5 +364,117 @@ export class UserController {
     await this.userService.updateUserPreference(user, request.preference);
 
     return {};
+  }
+
+  @Post("getUserSecuritySettings")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Get a user's security settings for user settings page."
+  })
+  async getUserSecuritySettings(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: GetUserSecuritySettingsRequestDto
+  ): Promise<GetUserSecuritySettingsResponseDto> {
+    if (!currentUser)
+      return {
+        error: GetUserSecuritySettingsResponseError.PERMISSION_DENIED
+      };
+
+    const user = await this.userService.findUserById(request.userId);
+    if (!user)
+      return {
+        error: GetUserSecuritySettingsResponseError.NO_SUCH_USER
+      };
+
+    if (
+      currentUser.id !== user.id &&
+      !(await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER))
+    )
+      return {
+        error: GetUserSecuritySettingsResponseError.PERMISSION_DENIED
+      };
+
+    return {
+      meta: await this.userService.getUserMeta(user, currentUser)
+    };
+  }
+
+  @Post("updateUserPassword")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Change a user's password by its old password."
+  })
+  async updateUserPassword(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: UpdateUserPasswordRequestDto
+  ): Promise<UpdateUserPasswordResponseDto> {
+    const user = await this.userService.findUserById(request.userId);
+    if (!user)
+      return {
+        error: UpdateUserPasswordResponseError.NO_SUCH_USER
+      };
+
+    if (!currentUser)
+      return {
+        error: UpdateUserPasswordResponseError.PERMISSION_DENIED
+      };
+
+    const isUserSelf = currentUser.id === user.id;
+    const hasPrivilege = await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER);
+
+    if (!(isUserSelf || hasPrivilege))
+      return {
+        error: UpdateUserPasswordResponseError.PERMISSION_DENIED
+      };
+
+    // A non-admin user must give the old password to change its password
+    const userAuth = await this.authService.findUserAuthByUserId(request.userId);
+    if (!hasPrivilege) {
+      if (!(await this.authService.checkPassword(userAuth, request.oldPassword)))
+        return {
+          error: UpdateUserPasswordResponseError.WRONG_OLD_PASSWORD
+        };
+    }
+
+    await this.authService.changePassword(userAuth, request.password);
+
+    return {};
+  }
+
+  @Post("updateUserEmail")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Change a user's email."
+  })
+  async updateUserEmail(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: UpdateUserEmailRequestDto
+  ): Promise<UpdateUserEmailResponseDto> {
+    const user = await this.userService.findUserById(request.userId);
+    if (!user)
+      return {
+        error: UpdateUserEmailResponseError.NO_SUCH_USER
+      };
+
+    if (!currentUser)
+      return {
+        error: UpdateUserEmailResponseError.PERMISSION_DENIED
+      };
+
+    const isUserSelf = currentUser.id === user.id;
+    const hasPrivilege = await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER);
+
+    if (!(isUserSelf || hasPrivilege))
+      return {
+        error: UpdateUserEmailResponseError.PERMISSION_DENIED
+      };
+
+    const success = await this.userService.updateUserEmail(user, request.email);
+
+    if (success) return {};
+    else
+      return {
+        error: UpdateUserEmailResponseError.DUPLICATE_EMAIL
+      };
   }
 }

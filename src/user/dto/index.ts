@@ -29,3 +29,12 @@ export * from "./get-user-preference-response.dto";
 
 export * from "./update-user-preference-request.dto";
 export * from "./update-user-preference-response.dto";
+
+export * from "./get-user-security-settings-request.dto";
+export * from "./get-user-security-settings-response.dto";
+
+export * from "./update-user-password-request.dto";
+export * from "./update-user-password-response.dto";
+
+export * from "./update-user-email-request.dto";
+export * from "./update-user-email-response.dto";

@@ -131,7 +131,7 @@ export class UserService {
   }
 
   /**
-   * The username, email and password won't be updated if null.
+   * The username and email won't be updated if null.
    * The information (bio, sex, org, location) will be always updated.
    */
   async updateUserProfile(
@@ -141,7 +141,6 @@ export class UserService {
     publicEmail: boolean,
     avatarInfo: string,
     bio: string,
-    password: string,
     information: UserInformationDto
   ): Promise<UpdateUserProfileResponseError> {
     const changingUsername = username != null;
@@ -164,13 +163,6 @@ export class UserService {
       userInformation.github = information.github;
 
       await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
-        if (password != null) {
-          await this.authService.changePassword(
-            await this.authService.findUserAuthByUserId(user.id),
-            password,
-            transactionalEntityManager
-          );
-        }
         await transactionalEntityManager.save(userInformation);
         await transactionalEntityManager.save(user);
       });
@@ -185,6 +177,17 @@ export class UserService {
     }
 
     return null;
+  }
+
+  async updateUserEmail(user: UserEntity, email: string): Promise<boolean> {
+    try {
+      user.email = email;
+      await this.userRepository.save(user);
+    } catch (e) {
+      if (!(await this.checkEmailAvailability(email))) return false;
+      throw e;
+    }
+    return true;
   }
 
   async searchUser(query: string, wildcard: "START" | "END" | "BOTH", maxTakeCount: number): Promise<UserEntity[]> {
