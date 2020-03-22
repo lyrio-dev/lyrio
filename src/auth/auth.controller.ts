@@ -18,6 +18,7 @@ import { UserService } from "@/user/user.service";
 import { AuthService } from "./auth.service";
 import { CurrentUser } from "@/common/user.decorator";
 import { UserEntity } from "@/user/user.entity";
+import { UserPrivilegeService } from "@/user/user-privilege.service";
 
 @ApiTags("Auth")
 @Controller("auth")
@@ -25,6 +26,7 @@ export class AuthController {
   constructor(
     private readonly configService: ConfigService,
     private readonly userService: UserService,
+    private readonly userPrivilegeService: UserPrivilegeService,
     private readonly authService: AuthService
   ) {}
 
@@ -39,6 +41,7 @@ export class AuthController {
     const result: GetCurrentUserAndPreferenceResponseDto = new GetCurrentUserAndPreferenceResponseDto();
     if (currentUser) {
       result.userMeta = await this.userService.getUserMeta(currentUser, currentUser);
+      result.userPrivileges = await this.userPrivilegeService.getUserPrivileges(currentUser.id);
       result.userPreference = await this.userService.getUserPreference(currentUser);
     }
 
