@@ -1,3 +1,4 @@
+import { ApiProperty } from "@nestjs/swagger";
 import { ValidateNested, IsIP, IsString, IsIn, IsBoolean, IsInt, Min } from "class-validator";
 import { Type } from "class-transformer";
 import { IsPortNumber } from "@/common/validators";
@@ -85,17 +86,22 @@ class SecurityConfig {
   readonly crossOrigin: CrossOriginConfig;
 }
 
+// This config items will be sent to client
 export class PreferenceConfig {
   @IsBoolean()
+  @ApiProperty()
   readonly allowUserChangeUsername: boolean;
 
   @IsBoolean()
+  @ApiProperty()
   readonly allowEveryoneCreateProblem: boolean;
 
   @IsBoolean()
+  @ApiProperty()
   readonly allowOwnerManageProblemPermission: boolean;
 
   @IsBoolean()
+  @ApiProperty()
   readonly allowOwnerDeleteProblem: boolean;
 }
 
