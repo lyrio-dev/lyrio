@@ -3,6 +3,7 @@ import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
 import { Repository, Connection } from "typeorm";
 import { ValidationError } from "class-validator";
 import moment = require("moment-timezone");
+import { v4 as uuid } from "uuid";
 
 import { SubmissionEntity } from "./submission.entity";
 import { SubmissionDetailEntity } from "./submission-detail.entity";
@@ -59,6 +60,12 @@ export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionPr
   public async findSubmissionById(submissionId: number): Promise<SubmissionEntity> {
     return await this.submissionRepository.findOne({
       id: submissionId
+    });
+  }
+
+  public async findSubmissionByTaskId(taskId: string): Promise<SubmissionEntity> {
+    return await this.submissionRepository.findOne({
+      taskId: taskId
     });
   }
 
@@ -201,18 +208,7 @@ export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionPr
     await this.userService.updateUserSubmissionCount(submitter.id, 1);
 
     try {
-      const judgeInfo = await this.problemService.getProblemJudgeInfo(problem);
-      const testData = await this.problemService.listProblemFiles(problem, ProblemFileType.TestData, false);
-
-      await this.judgeQueueService.pushTask(
-        new JudgeTask<SubmissionTaskExtraInfo>(submission.id, JudgeTaskType.Submission, JudgeTaskPriority.High, {
-          problemType: problem.type,
-          judgeInfo: judgeInfo,
-          samples: judgeInfo && judgeInfo["runSamples"] ? await this.problemService.getProblemSamples(problem) : null,
-          testData: Object.fromEntries(testData.map(problemFile => [problemFile.filename, problemFile.uuid])),
-          submissionContent: content
-        })
-      );
+      await this.judgeSubmission(submission, problem);
     } catch (e) {
       Logger.error(`Failed to start judge for submission ${submission.id}: ${e}`);
     }
@@ -289,6 +285,39 @@ export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionPr
     return result;
   }
 
+  public async judgeSubmission(submission: SubmissionEntity, problem: ProblemEntity): Promise<void> {
+    const oldSubmission = Object.assign({}, submission);
+
+    submission.taskId = uuid();
+    submission.score = null;
+    submission.status = SubmissionStatus.Pending;
+    submission.timeUsed = null;
+    submission.memoryUsed = null;
+    await this.submissionRepository.save(submission);
+
+    const submissionDetail = await this.getSubmissionDetail(submission);
+
+    const judgeInfo = await this.problemService.getProblemJudgeInfo(problem);
+    const testData = await this.problemService.listProblemFiles(problem, ProblemFileType.TestData, false);
+    await this.judgeQueueService.pushTask(
+      new JudgeTask<SubmissionTaskExtraInfo>(
+        submission.taskId,
+        JudgeTaskType.Submission,
+        submission.id,
+        JudgeTaskPriority.High,
+        {
+          problemType: problem.type,
+          judgeInfo: judgeInfo,
+          samples: judgeInfo && judgeInfo["runSamples"] ? await this.problemService.getProblemSamples(problem) : null,
+          testData: Object.fromEntries(testData.map(problemFile => [problemFile.filename, problemFile.uuid])),
+          submissionContent: submissionDetail.content
+        }
+      )
+    );
+
+    await this.onSubmissionUpdated(oldSubmission, submission);
+  }
+
   private async onSubmissionUpdated(oldSubmission: SubmissionEntity, submission: SubmissionEntity): Promise<void> {
     await this.submissionStatisticsService.onSubmissionUpdated(oldSubmission, submission);
 
@@ -305,13 +334,7 @@ export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionPr
     }
   }
 
-  private async onSubmissionFinished(submissionId: number, progress: SubmissionProgress): Promise<void> {
-    const submission = await this.findSubmissionById(submissionId);
-    if (!submission) {
-      Logger.warn(`Invalid submission Id ${submissionId} of task progress, ignoring`);
-      return;
-    }
-
+  private async onSubmissionFinished(submission: SubmissionEntity, progress: SubmissionProgress): Promise<void> {
     const oldSubmission = Object.assign({}, submission);
 
     const submissionDetail = await this.getSubmissionDetail(submission);
@@ -345,17 +368,23 @@ export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionPr
       await transactionalEntityManager.save(submissionDetail);
     });
 
-    Logger.log(`Submission ${submissionId} finished with status ${submission.status}`);
+    Logger.log(`Submission ${submission.id} finished with status ${submission.status}`);
 
     await this.onSubmissionUpdated(oldSubmission, submission);
   }
 
-  public async onTaskProgress(submissionId: number, progress: SubmissionProgress): Promise<void> {
-    // First update database, then report progress
-    if (progress.progressType === SubmissionProgressType.Finished) {
-      await this.onSubmissionFinished(submissionId, progress);
+  public async onTaskProgress(taskId: string, progress: SubmissionProgress): Promise<void> {
+    const submission = await this.findSubmissionByTaskId(taskId);
+    if (!submission) {
+      Logger.warn(`Invalid task Id ${taskId} of task progress, maybe there's a too-early rejudge?`);
+      return;
     }
 
-    await this.submissionProgressService.onSubmissionProgressReported(submissionId, progress);
+    // First update database, then report progress
+    if (progress.progressType === SubmissionProgressType.Finished) {
+      await this.onSubmissionFinished(submission, progress);
+    }
+
+    await this.submissionProgressService.onSubmissionProgressReported(submission.id, progress);
   }
 }

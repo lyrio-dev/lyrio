@@ -152,7 +152,7 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
       state.pendingTasks.push(task);
       client.emit("task", threadId, task, () => {
         Logger.verbose(
-          `Judge client ${client.id} (${state.judgeClient.name}) acknowledged task { id: ${task.id}, type: ${task.type} }`
+          `Judge client ${client.id} (${state.judgeClient.name}) acknowledged task { taskId: ${task.taskId}, type: ${task.type} }`
         );
         state.pendingTasks.splice(state.pendingTasks.indexOf(task), 1);
       });

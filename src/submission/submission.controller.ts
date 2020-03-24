@@ -23,7 +23,10 @@ import {
   GetSubmissionDetailResponseError,
   QuerySubmissionStatisticsRequestDto,
   QuerySubmissionStatisticsResponseDto,
-  QuerySubmissionStatisticsResponseError
+  QuerySubmissionStatisticsResponseError,
+  RejudgeSubmissionRequestDto,
+  RejudgeSubmissionResponseDto,
+  RejudgeSubmissionResponseError
 } from "./dto";
 import { ProblemEntity } from "@/problem/problem.entity";
 import { SubmissionStatus } from "./submission-status.enum";
@@ -299,5 +302,37 @@ export class SubmissionController {
       scores: await this.submissionStatisticsService.querySubmissionScoreStatistics(problem),
       count: count
     };
+  }
+
+  @ApiOperation({
+    summary: "Rejudge a submission."
+  })
+  @ApiBearerAuth()
+  @Post("rejudgeSubmission")
+  async rejudgeSubmission(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: RejudgeSubmissionRequestDto
+  ): Promise<RejudgeSubmissionResponseDto> {
+    if (!currentUser)
+      return {
+        error: RejudgeSubmissionResponseError.PERMISSION_DENIED
+      };
+
+    const submission = await this.submissionService.findSubmissionById(request.submissionId);
+    if (!submission)
+      return {
+        error: RejudgeSubmissionResponseError.NO_SUCH_SUBMISSION
+      };
+
+    const problem = await this.problemService.findProblemById(submission.problemId);
+
+    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.MODIFY)))
+      return {
+        error: RejudgeSubmissionResponseError.PERMISSION_DENIED
+      };
+
+    await this.submissionService.judgeSubmission(submission, problem);
+
+    return {};
   }
 }

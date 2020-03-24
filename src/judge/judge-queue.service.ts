@@ -1,6 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { Redis } from "ioredis";
-import * as uuid from "uuid/v4";
 
 import { RedisService } from "@/redis/redis.service";
 import { JudgeTaskProgressReceiver } from "./judge-task-progress-receiver.interface";
@@ -27,7 +26,7 @@ export enum JudgeTaskType {
 }
 
 export interface JudgeTaskMeta {
-  id: number;
+  taskId: string;
   type: JudgeTaskType;
 }
 
@@ -35,20 +34,17 @@ export interface JudgeTaskExtraInfo {}
 
 // Extra info is also send to judge client while ONLY meta is used to identity the task
 export class JudgeTask<ExtraInfo extends JudgeTaskExtraInfo> implements JudgeTaskMeta {
-  readonly uuid: string;
-
   constructor(
-    public id: number, // The ID is passed by the task creator, e.g. the submission ID
+    public taskId: string, // Passed by the task creator, to indentify the task
     public type: JudgeTaskType,
     public priority: JudgeTaskPriority,
+    public priorityId: number, // Passed by the task creator, lower means higher priority
     public extraInfo: ExtraInfo
-  ) {
-    this.uuid = uuid();
-  }
+  ) {}
 
   public getMeta(): JudgeTaskMeta {
     return {
-      id: this.id,
+      taskId: this.taskId,
       type: this.type
     };
   }
@@ -78,17 +74,19 @@ export class JudgeQueueService {
   public async pushTask<ExtraInfo>(task: JudgeTask<ExtraInfo>, repush: boolean = false): Promise<void> {
     if (repush)
       Logger.verbose(
-        `Repush judge task: { uuid: ${task.uuid}, id: ${task.id}, type: ${task.type}, priority: ${
+        `Repush judge task: { taskId: ${task.taskId}, type: ${task.type}, priority: ${
           JudgeTaskPriority[task.priority]
         } }`
       );
     else
       Logger.verbose(
-        `New judge task: { uuid: ${task.uuid}, id: ${task.id}, type: ${task.type}, priority: ${
-          JudgeTaskPriority[task.priority]
-        } }`
+        `New judge task: { taskId: ${task.taskId}, type: ${task.type}, priority: ${JudgeTaskPriority[task.priority]} }`
       );
-    await this.redisForPush.zadd(REDIS_KEY_JUDGE_QUEUE, combinePriority(task.id, task.priority), JSON.stringify(task));
+    await this.redisForPush.zadd(
+      REDIS_KEY_JUDGE_QUEUE,
+      combinePriority(task.priorityId, task.priority),
+      JSON.stringify(task)
+    );
   }
 
   public async consumeTask(): Promise<JudgeTask<JudgeTaskExtraInfo>> {
@@ -108,7 +106,7 @@ export class JudgeQueueService {
     const task: JudgeTask<JudgeTaskExtraInfo> = JSON.parse(taskJson);
 
     Logger.verbose(
-      `Consumed judge task { uuid: ${task.uuid}, id: ${task.id}, type: ${task.type}, priority: ${
+      `Consumed judge task { taskId: ${task.taskId}, type: ${task.type}, priority: ${
         JudgeTaskPriority[task.priority]
       } }`
     );
@@ -116,6 +114,6 @@ export class JudgeQueueService {
   }
 
   public async onTaskProgress(taskMeta: JudgeTaskMeta, progress: JudgeTaskProgress): Promise<void> {
-    await this.taskProgressReceivers.get(taskMeta.type).onTaskProgress(taskMeta.id, progress);
+    await this.taskProgressReceivers.get(taskMeta.type).onTaskProgress(taskMeta.taskId, progress);
   }
 }
