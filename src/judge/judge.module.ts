@@ -13,6 +13,6 @@ import { JudgeClientEntity } from "./judge-client.entity";
   imports: [forwardRef(() => RedisModule), forwardRef(() => FileModule), TypeOrmModule.forFeature([JudgeClientEntity])],
   controllers: [JudgeClientController],
   providers: [JudgeGateway, JudgeClientService, JudgeQueueService],
-  exports: [JudgeQueueService]
+  exports: [JudgeGateway, JudgeQueueService]
 })
 export class JudgeModule {}

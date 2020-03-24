@@ -19,7 +19,7 @@ import { SubmissionProgress } from "@/submission/submission-progress.interface";
 
 interface JudgeClientState {
   judgeClient: JudgeClientEntity;
-  pendingTasks: JudgeTask<JudgeTaskExtraInfo>[];
+  pendingTasks: Set<JudgeTask<JudgeTaskExtraInfo>>;
 }
 
 interface SubmissionProgressMessage {
@@ -32,12 +32,25 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   private server: Server;
   private mapSessionIdToJudgeClient: Map<string, JudgeClientState> = new Map();
+  private mapTaskIdToSocket: Map<string, Socket> = new Map();
 
   constructor(
     private readonly judgeClientService: JudgeClientService,
     private readonly judgeQueueService: JudgeQueueService,
     private readonly fileService: FileService
   ) {}
+
+  cancelTask(taskId: string) {
+    const client = this.mapTaskIdToSocket.get(taskId);
+    if (!client) {
+      Logger.warn(
+        `JudgeGateway.cancelTask() called with a task that we can't determine its judging client socket, ignoring`
+      );
+      return;
+    }
+
+    client.emit("cancel", taskId);
+  }
 
   private async checkConnection(client: Socket): Promise<boolean> {
     if (!client.connected) return false;
@@ -72,7 +85,7 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     this.mapSessionIdToJudgeClient.set(client.id, {
       judgeClient: judgeClient,
-      pendingTasks: []
+      pendingTasks: new Set()
     });
 
     // Now we are ready for consuming task
@@ -92,12 +105,13 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     await this.judgeClientService.disconnectJudgeClient(state.judgeClient);
 
-    if (state.pendingTasks.length === 0) return;
+    if (state.pendingTasks.size === 0) return;
     Logger.log(
-      `Repushing ${state.pendingTasks.length} tasks consumed by judge client ${client.id} (${state.judgeClient.name}).`
+      `Repushing ${state.pendingTasks.size} tasks consumed by judge client ${client.id} (${state.judgeClient.name}).`
     );
     // Push the pending tasks back to the queue
-    for (const task of state.pendingTasks) {
+    for (const task of state.pendingTasks.values()) {
+      this.mapTaskIdToSocket.delete(task.taskId);
       await this.judgeQueueService.pushTask(task, true);
     }
   }
@@ -149,12 +163,14 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
         await this.judgeQueueService.pushTask(task, true);
       }
 
-      state.pendingTasks.push(task);
+      state.pendingTasks.add(task);
+      this.mapTaskIdToSocket.set(task.taskId, client);
       client.emit("task", threadId, task, () => {
         Logger.verbose(
           `Judge client ${client.id} (${state.judgeClient.name}) acknowledged task { taskId: ${task.taskId}, type: ${task.type} }`
         );
-        state.pendingTasks.splice(state.pendingTasks.indexOf(task), 1);
+        state.pendingTasks.delete(task);
+        this.mapTaskIdToSocket.delete(task.taskId);
       });
 
       return;
@@ -172,6 +188,10 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-    await this.judgeQueueService.onTaskProgress(message.taskMeta, message.progress);
+    const notCanceled = await this.judgeQueueService.onTaskProgress(message.taskMeta, message.progress);
+    if (!notCanceled) {
+      Logger.log(`Emitting cancel event for task ${message.taskMeta.taskId}`);
+      client.emit("cancel", message.taskMeta.taskId);
+    }
   }
 }

@@ -28,22 +28,26 @@ export class SubmissionProgressService {
     this.redisSubscribe = this.redisService.getClient();
 
     this.redisSubscribe.on("message", (channel: string, message: string) => {
-      const { submissionId, progress } = JSON.parse(message);
-      this.consumeSubmissionProgress(submissionId, progress);
+      const { submissionId, canceled, progress } = JSON.parse(message);
+      this.consumeSubmissionProgress(submissionId, canceled, progress);
     });
     this.redisSubscribe.subscribe(REDIS_CHANNEL_SUBMISSION_PROGRESS);
   }
 
-  private async consumeSubmissionProgress(submissionId: number, progress: SubmissionProgress) {
+  private async consumeSubmissionProgress(submissionId: number, canceled: boolean, progress?: SubmissionProgress) {
     Logger.log("Consume progress for submission " + submissionId);
-    this.submissionProgressGateway.onSubmissionProgress(submissionId, progress);
+    this.submissionProgressGateway.onSubmissionProgress(submissionId, canceled, progress);
   }
 
   // If the progress type is "Finished", this method is called after the progress
   // result is stored in the database.
-  public async onSubmissionProgressReported(submissionId: number, progress: SubmissionProgress): Promise<void> {
+  public async onSubmissionProgressReported(
+    submissionId: number,
+    canceled: boolean,
+    progress?: SubmissionProgress
+  ): Promise<void> {
     Logger.log(`Progress for submission ${submissionId} received, pushing to Redis`);
-    if (progress.progressType === SubmissionProgressType.Finished) {
+    if (canceled || progress.progressType === SubmissionProgressType.Finished) {
       await this.redis.del(REDIS_KEY_SUBMISSION_PROGRESS + submissionId);
     } else {
       await this.redis.set(REDIS_KEY_SUBMISSION_PROGRESS + submissionId, JSON.stringify(progress));
@@ -54,6 +58,7 @@ export class SubmissionProgressService {
       REDIS_CHANNEL_SUBMISSION_PROGRESS,
       JSON.stringify({
         submissionId: submissionId,
+        canceled: canceled,
         progress: progress
       })
     );

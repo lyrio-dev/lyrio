@@ -14,3 +14,6 @@ export * from "./query-submission-statistics-response.dto";
 
 export * from "./rejudge-submission-request.dto";
 export * from "./rejudge-submission-response.dto";
+
+export * from "./cancel-submission-request.dto";
+export * from "./cancel-submission-response.dto";

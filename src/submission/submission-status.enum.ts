@@ -3,6 +3,7 @@ export enum SubmissionStatus {
 
   ConfigurationError = "ConfigurationError",
   SystemError = "SystemError",
+  Canceled = "Canceled",
 
   CompilationError = "CompilationError",
 

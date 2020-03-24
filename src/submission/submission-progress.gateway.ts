@@ -205,8 +205,8 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
     }
   }
 
-  public async onSubmissionProgress(submissionId: number, progress: SubmissionProgress) {
-    if (progress.progressType !== SubmissionProgressType.Finished) {
+  public async onSubmissionProgress(submissionId: number, canceled: boolean, progress?: SubmissionProgress) {
+    if (!canceled && progress.progressType !== SubmissionProgressType.Finished) {
       this.sendMessage(this.getRoom(SubmissionProgressSubscriptionType.Meta, submissionId), submissionId, {
         progressMeta: progress.progressType
       });

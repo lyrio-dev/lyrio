@@ -26,7 +26,10 @@ import {
   QuerySubmissionStatisticsResponseError,
   RejudgeSubmissionRequestDto,
   RejudgeSubmissionResponseDto,
-  RejudgeSubmissionResponseError
+  RejudgeSubmissionResponseError,
+  CancelSubmissionRequestDto,
+  CancelSubmissionResponseDto,
+  CancelSubmissionResponseError
 } from "./dto";
 import { ProblemEntity } from "@/problem/problem.entity";
 import { SubmissionStatus } from "./submission-status.enum";
@@ -332,6 +335,41 @@ export class SubmissionController {
       };
 
     await this.submissionService.judgeSubmission(submission, problem);
+
+    return {};
+  }
+
+  @ApiOperation({
+    summary:
+      "Cancel a submission if it is running. Cancel a non-running submission will result in not error and no effect."
+  })
+  @ApiBearerAuth()
+  @Post("cancelSubmission")
+  async cancelSubmission(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: CancelSubmissionRequestDto
+  ): Promise<CancelSubmissionResponseDto> {
+    if (!currentUser)
+      return {
+        error: CancelSubmissionResponseError.PERMISSION_DENIED
+      };
+
+    const submission = await this.submissionService.findSubmissionById(request.submissionId);
+    if (!submission)
+      return {
+        error: CancelSubmissionResponseError.NO_SUCH_SUBMISSION
+      };
+
+    if (submission.submitterId !== currentUser.id) {
+      const problem = await this.problemService.findProblemById(submission.problemId);
+
+      if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.MODIFY)))
+        return {
+          error: CancelSubmissionResponseError.PERMISSION_DENIED
+        };
+    }
+
+    await this.submissionService.cancelSubmission(submission);
 
     return {};
   }

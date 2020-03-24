@@ -113,7 +113,10 @@ export class JudgeQueueService {
     return task;
   }
 
-  public async onTaskProgress(taskMeta: JudgeTaskMeta, progress: JudgeTaskProgress): Promise<void> {
-    await this.taskProgressReceivers.get(taskMeta.type).onTaskProgress(taskMeta.taskId, progress);
+  /**
+   * @return `false` means the task is canceled.
+   */
+  public async onTaskProgress(taskMeta: JudgeTaskMeta, progress: JudgeTaskProgress): Promise<boolean> {
+    return await this.taskProgressReceivers.get(taskMeta.type).onTaskProgress(taskMeta.taskId, progress);
   }
 }
