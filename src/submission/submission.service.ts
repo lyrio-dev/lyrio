@@ -296,6 +296,10 @@ export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionPr
 
       const oldSubmission = Object.assign({}, submission);
 
+      if (submission.taskId) {
+        this.judgeGateway.cancelTask(submission.taskId);
+      }
+
       submission.taskId = uuid();
       submission.score = null;
       submission.status = SubmissionStatus.Pending;
@@ -329,10 +333,10 @@ export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionPr
 
   public async cancelSubmission(submission: SubmissionEntity): Promise<void> {
     const submissionId = submission.id;
-    await this.lockSubmission(submissionId, async () => {
+    const canceled = await this.lockSubmission(submissionId, async () => {
       const submission = await this.findSubmissionById(submissionId);
 
-      if (!submission.taskId) return;
+      if (!submission.taskId) return false;
 
       this.judgeGateway.cancelTask(submission.taskId);
 
@@ -353,7 +357,12 @@ export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionPr
       });
 
       await this.onSubmissionUpdated(oldSubmission, submission);
+
+      return true;
     });
+
+    if (!canceled) return;
+
     await this.submissionProgressService.onSubmissionProgressReported(submissionId, true);
   }
 
