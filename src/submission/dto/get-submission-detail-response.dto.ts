@@ -29,4 +29,10 @@ export class GetSubmissionDetailResponseDto {
 
   @ApiProperty()
   progressSubscriptionKey?: string;
+
+  @ApiProperty()
+  permissionRejudge?: boolean;
+
+  @ApiProperty()
+  permissionCancel?: boolean;
 }

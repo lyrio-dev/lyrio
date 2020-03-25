@@ -219,6 +219,12 @@ export class SubmissionController {
     const pending = submission.status === SubmissionStatus.Pending;
     const progress = !pending ? null : await this.submissionProgressService.getSubmissionProgress(submission.id);
 
+    const hasPermission = await this.problemService.userHasPermission(
+      currentUser,
+      problem,
+      ProblemPermissionType.MODIFY
+    );
+
     return {
       meta: {
         id: submission.id,
@@ -242,7 +248,9 @@ export class SubmissionController {
         : this.submissionProgressGateway.encodeSubscription({
             type: SubmissionProgressSubscriptionType.Detail,
             submissionIds: [submission.id]
-          })
+          }),
+      permissionRejudge: hasPermission,
+      permissionCancel: hasPermission || (currentUser && submission.submitterId === currentUser.id)
     };
   }
 
