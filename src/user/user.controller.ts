@@ -8,6 +8,7 @@ import { UserPrivilegeService } from "./user-privilege.service";
 import {
   GetUserMetaResponseDto,
   GetUserMetaRequestDto,
+  GetUserMetaResponseError,
   SetUserPrivilegesResponseDto,
   SetUserPrivilegesRequestDto,
   SetUserPrivilegesResponseError,
@@ -78,23 +79,26 @@ export class UserController {
     };
   }
 
-  @Get("getUserMeta")
+  @Post("getUserMeta")
   @ApiBearerAuth()
   @ApiOperation({
     summary: "Get a user's metadata with its ID or username."
   })
   async getUserMeta(
     @CurrentUser() currentUser: UserEntity,
-    @Query() request: GetUserMetaRequestDto
+    @Body() request: GetUserMetaRequestDto
   ): Promise<GetUserMetaResponseDto> {
     let user: UserEntity;
     if (request.userId) {
-      user = await this.userService.findUserById(parseInt(request.userId));
+      user = await this.userService.findUserById(request.userId);
     } else if (request.username) {
       user = await this.userService.findUserByUsername(request.username);
     }
 
-    if (!user) return {};
+    if (!user)
+      return {
+        error: GetUserMetaResponseError.NO_SUCH_USER
+      };
 
     const result: GetUserMetaResponseDto = {
       meta: await this.userService.getUserMeta(user, currentUser)

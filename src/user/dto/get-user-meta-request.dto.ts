@@ -1,15 +1,15 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsOptional, IsBooleanString } from "class-validator";
-import { IsIntString } from "@/common/validators";
+import { IsOptional, IsInt, IsBoolean } from "class-validator";
+
 import { IsUsername } from "@/common/validators";
 
 export class GetUserMetaRequestDto {
   @ApiProperty({
     required: false
   })
-  @IsIntString()
+  @IsInt()
   @IsOptional()
-  readonly userId?: string;
+  readonly userId?: number;
 
   @ApiProperty({
     required: false
@@ -19,7 +19,7 @@ export class GetUserMetaRequestDto {
   readonly username?: string;
 
   @ApiProperty()
-  @IsBooleanString()
+  @IsBoolean()
   @IsOptional()
   readonly getPrivileges?: boolean;
 }
