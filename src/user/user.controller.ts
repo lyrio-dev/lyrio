@@ -97,7 +97,7 @@ export class UserController {
     if (!user) return {};
 
     const result: GetUserMetaResponseDto = {
-      userMeta: await this.userService.getUserMeta(user, currentUser)
+      meta: await this.userService.getUserMeta(user, currentUser)
     };
 
     if (request.getPrivileges) {

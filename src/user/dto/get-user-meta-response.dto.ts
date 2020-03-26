@@ -5,7 +5,7 @@ import { UserPrivilegeType } from "../user-privilege.entity";
 
 export class GetUserMetaResponseDto {
   @ApiProperty()
-  userMeta?: UserMetaDto;
+  meta?: UserMetaDto;
 
   @ApiProperty({ enum: UserPrivilegeType, isArray: true })
   privileges?: UserPrivilegeType[];
