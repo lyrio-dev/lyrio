@@ -276,6 +276,11 @@ export class SubmissionController {
         error: QuerySubmissionStatisticsResponseError.NO_SUCH_PROBLEM
       };
 
+    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.VIEW)))
+      return {
+        error: QuerySubmissionStatisticsResponseError.PERMISSION_DENIED
+      };
+
     const [submissions, count] = await this.submissionStatisticsService.querySubmissionStatisticsAndCount(
       problem,
       request.statisticsType,
