@@ -2,7 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { Redis } from "ioredis";
 
 import { RedisService } from "@/redis/redis.service";
-import { JudgeTaskProgressReceiver } from "./judge-task-progress-receiver.interface";
+import { JudgeTaskService } from "./judge-task-service.interface";
 import { JudgeTaskProgress } from "./judge-task-progress.interface";
 
 // Smaller means higher priority
@@ -57,7 +57,10 @@ const REDIS_CONSUME_TIMEOUT = 10;
 export class JudgeQueueService {
   private readonly redisForPush: Redis;
   private readonly redisForConsume: Redis;
-  private readonly taskProgressReceivers: Map<JudgeTaskType, JudgeTaskProgressReceiver<JudgeTaskProgress>> = new Map();
+  private readonly taskServices: Map<
+    JudgeTaskType,
+    JudgeTaskService<JudgeTaskProgress, JudgeTaskExtraInfo>
+  > = new Map();
 
   constructor(private readonly redisService: RedisService) {
     this.redisForPush = this.redisService.getClient();
@@ -66,26 +69,31 @@ export class JudgeQueueService {
 
   public registerTaskType<TaskProgress>(
     taskType: JudgeTaskType,
-    progressReceiver: JudgeTaskProgressReceiver<TaskProgress>
+    service: JudgeTaskService<TaskProgress, JudgeTaskExtraInfo>
   ) {
-    this.taskProgressReceivers.set(taskType, progressReceiver);
+    this.taskServices.set(taskType, service);
   }
 
-  public async pushTask<ExtraInfo>(task: JudgeTask<ExtraInfo>, repush: boolean = false): Promise<void> {
+  public async pushTask(
+    taskId: string,
+    type: JudgeTaskType,
+    priority: JudgeTaskPriority,
+    priorityId: number,
+    repush: boolean = false
+  ): Promise<void> {
     if (repush)
       Logger.verbose(
-        `Repush judge task: { taskId: ${task.taskId}, type: ${task.type}, priority: ${
-          JudgeTaskPriority[task.priority]
-        } }`
+        `Repush judge task: { taskId: ${taskId}, type: ${type}, priority: ${JudgeTaskPriority[priority]} }`
       );
     else
-      Logger.verbose(
-        `New judge task: { taskId: ${task.taskId}, type: ${task.type}, priority: ${JudgeTaskPriority[task.priority]} }`
-      );
+      Logger.verbose(`New judge task: { taskId: ${taskId}, type: ${type}, priority: ${JudgeTaskPriority[priority]} }`);
     await this.redisForPush.zadd(
       REDIS_KEY_JUDGE_QUEUE,
-      combinePriority(task.priorityId, task.priority),
-      JSON.stringify(task)
+      combinePriority(priorityId, priority),
+      JSON.stringify({
+        taskId: taskId,
+        type: type
+      })
     );
   }
 
@@ -103,7 +111,14 @@ export class JudgeQueueService {
     }
 
     const [combinedPriority, taskJson] = redisResponse;
-    const task: JudgeTask<JudgeTaskExtraInfo> = JSON.parse(taskJson);
+    const taskMeta: JudgeTaskMeta = JSON.parse(taskJson);
+    const task = await this.taskServices.get(taskMeta.type).getTaskById(taskMeta.taskId);
+    if (!task) {
+      Logger.verbose(
+        `Consumed judge task { taskId: ${taskMeta.taskId}, type: ${taskMeta.type} }, but taskId is invalid, maybe canceled?`
+      );
+      return null;
+    }
 
     Logger.verbose(
       `Consumed judge task { taskId: ${task.taskId}, type: ${task.type}, priority: ${
@@ -117,6 +132,6 @@ export class JudgeQueueService {
    * @return `false` means the task is canceled.
    */
   public async onTaskProgress(taskMeta: JudgeTaskMeta, progress: JudgeTaskProgress): Promise<boolean> {
-    return await this.taskProgressReceivers.get(taskMeta.type).onTaskProgress(taskMeta.taskId, progress);
+    return await this.taskServices.get(taskMeta.type).onTaskProgress(taskMeta.taskId, progress);
   }
 }

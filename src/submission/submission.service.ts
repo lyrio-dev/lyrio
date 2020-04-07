@@ -18,7 +18,7 @@ import {
   JudgeTask,
   JudgeTaskExtraInfo
 } from "@/judge/judge-queue.service";
-import { JudgeTaskProgressReceiver } from "@/judge/judge-task-progress-receiver.interface";
+import { JudgeTaskService } from "@/judge/judge-task-service.interface";
 import { SubmissionProgress, SubmissionProgressType } from "./submission-progress.interface";
 import { ProblemFileType } from "@/problem/problem-file.entity";
 import { ProblemJudgeInfo } from "@/problem/type/problem-judge-info.interface";
@@ -41,7 +41,7 @@ interface SubmissionTaskExtraInfo extends JudgeTaskExtraInfo {
 }
 
 @Injectable()
-export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionProgress> {
+export class SubmissionService implements JudgeTaskService<SubmissionProgress, SubmissionTaskExtraInfo> {
   constructor(
     @InjectConnection()
     private connection: Connection,
@@ -307,24 +307,11 @@ export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionPr
       submission.memoryUsed = null;
       await this.submissionRepository.save(submission);
 
-      const submissionDetail = await this.getSubmissionDetail(submission);
-
-      const judgeInfo = await this.problemService.getProblemJudgeInfo(problem);
-      const testData = await this.problemService.listProblemFiles(problem, ProblemFileType.TestData, false);
       await this.judgeQueueService.pushTask(
-        new JudgeTask<SubmissionTaskExtraInfo>(
-          submission.taskId,
-          JudgeTaskType.Submission,
-          submission.id,
-          JudgeTaskPriority.High,
-          {
-            problemType: problem.type,
-            judgeInfo: judgeInfo,
-            samples: judgeInfo && judgeInfo["runSamples"] ? await this.problemService.getProblemSamples(problem) : null,
-            testData: Object.fromEntries(testData.map(problemFile => [problemFile.filename, problemFile.uuid])),
-            submissionContent: submissionDetail.content
-          }
-        )
+        submission.taskId,
+        JudgeTaskType.Submission,
+        JudgeTaskPriority.High,
+        submission.id
       );
 
       await this.onSubmissionUpdated(oldSubmission, submission);
@@ -468,6 +455,36 @@ export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionPr
     });
 
     return true;
+  }
+
+  public async getTaskById(taskId: string): Promise<JudgeTask<SubmissionTaskExtraInfo>> {
+    try {
+      const submission = await this.findSubmissionByTaskId(taskId);
+      if (!submission) return null;
+
+      const submissionDetail = await this.getSubmissionDetail(submission);
+
+      const problem = await this.problemService.findProblemById(submission.problemId);
+      const judgeInfo = await this.problemService.getProblemJudgeInfo(problem);
+      const testData = await this.problemService.listProblemFiles(problem, ProblemFileType.TestData, false);
+
+      return new JudgeTask<SubmissionTaskExtraInfo>(
+        submission.taskId,
+        JudgeTaskType.Submission,
+        submission.id,
+        JudgeTaskPriority.High,
+        {
+          problemType: problem.type,
+          judgeInfo: judgeInfo,
+          samples: judgeInfo && judgeInfo["runSamples"] ? await this.problemService.getProblemSamples(problem) : null,
+          testData: Object.fromEntries(testData.map(problemFile => [problemFile.filename, problemFile.uuid])),
+          submissionContent: submissionDetail.content
+        }
+      );
+    } catch (e) {
+      Logger.error(`Error in getTaskById("${taskId}"): ${e}`);
+      return null;
+    }
   }
 
   async lockSubmission<T>(submissionId: number, callback: () => Promise<T>): Promise<T> {

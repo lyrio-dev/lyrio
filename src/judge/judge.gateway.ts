@@ -112,7 +112,7 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // Push the pending tasks back to the queue
     for (const task of state.pendingTasks.values()) {
       this.mapTaskIdToSocket.delete(task.taskId);
-      await this.judgeQueueService.pushTask(task, true);
+      await this.judgeQueueService.pushTask(task.taskId, task.type, task.priority, task.priorityId, true);
     }
   }
 
@@ -160,7 +160,7 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
         Logger.verbose(
           `Consumed task for client ${client.id} (${state.judgeClient.name}), but connection became invalid, repushing task back to queue`
         );
-        await this.judgeQueueService.pushTask(task, true);
+        await this.judgeQueueService.pushTask(task.taskId, task.type, task.priority, task.priorityId, true);
       }
 
       state.pendingTasks.add(task);
