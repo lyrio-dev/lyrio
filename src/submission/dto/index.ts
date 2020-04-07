@@ -20,3 +20,6 @@ export * from "./cancel-submission-response.dto";
 
 export * from "./set-submission-public-request.dto";
 export * from "./set-submission-public-response.dto";
+
+export * from "./delete-submission-request.dto";
+export * from "./delete-submission-response.dto";

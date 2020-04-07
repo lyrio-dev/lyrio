@@ -32,7 +32,10 @@ import {
   CancelSubmissionResponseError,
   SetSubmissionPublicRequestDto,
   SetSubmissionPublicResponseDto,
-  SetSubmissionPublicResponseError
+  SetSubmissionPublicResponseError,
+  DeleteSubmissionRequestDto,
+  DeleteSubmissionResponseDto,
+  DeleteSubmissionResponseError
 } from "./dto";
 import { ProblemEntity } from "@/problem/problem.entity";
 import { SubmissionStatus } from "./submission-status.enum";
@@ -254,7 +257,8 @@ export class SubmissionController {
           }),
       permissionRejudge: hasPermission,
       permissionCancel: hasPermission || (currentUser && submission.submitterId === currentUser.id),
-      permissionSetPublic: hasPermission
+      permissionSetPublic: hasPermission,
+      permissionDelete: hasPermission
     };
   }
 
@@ -419,6 +423,38 @@ export class SubmissionController {
       };
 
     await this.submissionService.setSubmissionPublic(submission, request.isPublic);
+
+    return {};
+  }
+
+  @ApiOperation({
+    summary: "Delete a submission."
+  })
+  @ApiBearerAuth()
+  @Post("deleteSubmission")
+  async deleteSubmission(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: DeleteSubmissionRequestDto
+  ): Promise<DeleteSubmissionResponseDto> {
+    if (!currentUser)
+      return {
+        error: DeleteSubmissionResponseError.PERMISSION_DENIED
+      };
+
+    const submission = await this.submissionService.findSubmissionById(request.submissionId);
+    if (!submission)
+      return {
+        error: DeleteSubmissionResponseError.NO_SUCH_SUBMISSION
+      };
+
+    const problem = await this.problemService.findProblemById(submission.problemId);
+
+    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.MODIFY)))
+      return {
+        error: DeleteSubmissionResponseError.PERMISSION_DENIED
+      };
+
+    await this.submissionService.deleteSubmission(submission);
 
     return {};
   }

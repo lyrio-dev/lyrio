@@ -371,6 +371,21 @@ export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionPr
     await this.submissionRepository.save(submission);
   }
 
+  public async deleteSubmission(submission: SubmissionEntity): Promise<void> {
+    if (submission.taskId) {
+      this.judgeGateway.cancelTask(submission.taskId);
+    }
+
+    await this.submissionRepository.delete(submission);
+    await this.submissionStatisticsService.onSubmissionUpdated(submission, null);
+    if (submission.status === SubmissionStatus.Accepted) {
+      await this.problemService.updateProblemStatistics(submission.problemId, -1, -1);
+      await this.userService.updateUserAcceptedCount(submission.submitterId);
+    } else {
+      await this.problemService.updateProblemStatistics(submission.problemId, -1, 0);
+    }
+  }
+
   private async onSubmissionUpdated(oldSubmission: SubmissionEntity, submission: SubmissionEntity): Promise<void> {
     await this.submissionStatisticsService.onSubmissionUpdated(oldSubmission, submission);
 
