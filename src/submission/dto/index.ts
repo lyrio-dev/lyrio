@@ -17,3 +17,6 @@ export * from "./rejudge-submission-response.dto";
 
 export * from "./cancel-submission-request.dto";
 export * from "./cancel-submission-response.dto";
+
+export * from "./set-submission-public-request.dto";
+export * from "./set-submission-public-response.dto";

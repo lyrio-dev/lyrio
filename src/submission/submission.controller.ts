@@ -29,7 +29,10 @@ import {
   RejudgeSubmissionResponseError,
   CancelSubmissionRequestDto,
   CancelSubmissionResponseDto,
-  CancelSubmissionResponseError
+  CancelSubmissionResponseError,
+  SetSubmissionPublicRequestDto,
+  SetSubmissionPublicResponseDto,
+  SetSubmissionPublicResponseError
 } from "./dto";
 import { ProblemEntity } from "@/problem/problem.entity";
 import { SubmissionStatus } from "./submission-status.enum";
@@ -118,7 +121,10 @@ export class SubmissionController {
       currentUser,
       UserPrivilegeType.MANAGE_PROBLEM
     );
-    const isProblemOwned = filterProblem && currentUser && filterProblem.ownerId === currentUser.id;
+    const hasViewProblemPermission =
+      hasManageProblemPrivilege ||
+      (filterProblem &&
+        (await this.problemService.userHasPermission(currentUser, filterProblem, ProblemPermissionType.VIEW)));
     const isSubmissionsOwned = filterSubmitter && currentUser && filterSubmitter.id === currentUser.id;
     const queryResult = await this.submissionService.querySubmissions(
       filterProblem ? filterProblem.id : null,
@@ -127,7 +133,7 @@ export class SubmissionController {
       request.status,
       request.minId,
       request.maxId,
-      !(hasManageProblemPrivilege || isProblemOwned || isSubmissionsOwned),
+      !(hasManageProblemPrivilege || hasViewProblemPermission || isSubmissionsOwned),
       request.takeCount > this.configService.config.queryLimit.submissionsTake
         ? this.configService.config.queryLimit.submissionsTake
         : request.takeCount
@@ -204,10 +210,7 @@ export class SubmissionController {
       };
 
     const problem = await this.problemService.findProblemById(submission.problemId);
-    if (
-      !submission.isPublic &&
-      !(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.VIEW))
-    )
+    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.VIEW)))
       return {
         error: GetSubmissionDetailResponseError.PERMISSION_DENIED
       };
@@ -250,7 +253,8 @@ export class SubmissionController {
             submissionIds: [submission.id]
           }),
       permissionRejudge: hasPermission,
-      permissionCancel: hasPermission || (currentUser && submission.submitterId === currentUser.id)
+      permissionCancel: hasPermission || (currentUser && submission.submitterId === currentUser.id),
+      permissionSetPublic: hasPermission
     };
   }
 
@@ -383,6 +387,38 @@ export class SubmissionController {
     }
 
     await this.submissionService.cancelSubmission(submission);
+
+    return {};
+  }
+
+  @ApiOperation({
+    summary: "Set if a submission is public or not."
+  })
+  @ApiBearerAuth()
+  @Post("setSubmissionPublic")
+  async setSubmissionPublic(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: SetSubmissionPublicRequestDto
+  ): Promise<SetSubmissionPublicResponseDto> {
+    if (!currentUser)
+      return {
+        error: SetSubmissionPublicResponseError.PERMISSION_DENIED
+      };
+
+    const submission = await this.submissionService.findSubmissionById(request.submissionId);
+    if (!submission)
+      return {
+        error: SetSubmissionPublicResponseError.NO_SUCH_SUBMISSION
+      };
+
+    const problem = await this.problemService.findProblemById(submission.problemId);
+
+    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.MODIFY)))
+      return {
+        error: SetSubmissionPublicResponseError.PERMISSION_DENIED
+      };
+
+    await this.submissionService.setSubmissionPublic(submission, request.isPublic);
 
     return {};
   }

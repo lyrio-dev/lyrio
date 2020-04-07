@@ -35,4 +35,7 @@ export class GetSubmissionDetailResponseDto {
 
   @ApiProperty()
   permissionCancel?: boolean;
+
+  @ApiProperty()
+  permissionSetPublic?: boolean;
 }

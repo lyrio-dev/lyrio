@@ -107,7 +107,6 @@ export class SubmissionStatisticsService {
               .select("submitterId")
               .addSelect(`${aggregateFunction}(${field})`, "fieldValue")
               .from(SubmissionEntity, "submission")
-              .where("isPublic = 1")
               .andWhere("status = :status", { status: SubmissionStatus.Accepted })
               .andWhere("problemId = :problemId", { problemId: problem.id })
               .groupBy("submitterId")

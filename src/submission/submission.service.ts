@@ -366,6 +366,11 @@ export class SubmissionService implements JudgeTaskProgressReceiver<SubmissionPr
     await this.submissionProgressService.onSubmissionProgressReported(submissionId, true);
   }
 
+  public async setSubmissionPublic(submission: SubmissionEntity, isPublic: boolean): Promise<void> {
+    submission.isPublic = isPublic;
+    await this.submissionRepository.save(submission);
+  }
+
   private async onSubmissionUpdated(oldSubmission: SubmissionEntity, submission: SubmissionEntity): Promise<void> {
     await this.submissionStatisticsService.onSubmissionUpdated(oldSubmission, submission);
 
