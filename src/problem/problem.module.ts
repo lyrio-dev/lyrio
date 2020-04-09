@@ -16,6 +16,7 @@ import { GroupModule } from "@/group/group.module";
 import { PermissionModule } from "@/permission/permission.module";
 import { FileModule } from "@/file/file.module";
 import { RedisModule } from "@/redis/redis.module";
+import { SubmissionModule } from "@/submission/submission.module";
 
 import { ProblemJudgeInfoService } from "./type/problem-judge-info.service";
 import { ProblemTypedJudgeInfoTraditionalService } from "./type/traditional/problem-typed-judge-info-traditional.service";
@@ -34,7 +35,8 @@ import { ProblemTypedJudgeInfoTraditionalService } from "./type/traditional/prob
     forwardRef(() => GroupModule),
     forwardRef(() => PermissionModule),
     forwardRef(() => FileModule),
-    forwardRef(() => RedisModule)
+    forwardRef(() => RedisModule),
+    forwardRef(() => SubmissionModule)
   ],
   providers: [ProblemService, ProblemJudgeInfoService, ProblemTypedJudgeInfoTraditionalService],
   controllers: [ProblemController],

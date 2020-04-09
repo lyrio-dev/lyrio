@@ -126,7 +126,7 @@ export class FileService implements OnModuleInit {
         this.minioClient.removeObject(this.bucket, uuid).catch(e => {
           Logger.error(`Failed to delete file ${uuid}: ${e}`);
         });
-    } else {
+    } else if (uuid.length > 0) {
       await transactionalEntityManager.delete(FileEntity, { uuid: In(uuid) });
       return () =>
         this.minioClient.removeObjects(this.bucket, uuid).catch(e => {

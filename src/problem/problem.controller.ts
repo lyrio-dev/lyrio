@@ -64,7 +64,10 @@ import {
   GetProblemTagDetailResponseError,
   GetAllProblemTagsOfAllLocalesRequestDto,
   GetAllProblemTagsOfAllLocalesResponseDto,
-  GetAllProblemTagsOfAllLocalesResponseError
+  GetAllProblemTagsOfAllLocalesResponseError,
+  DeleteProblemRequestDto,
+  DeleteProblemResponseDto,
+  DeleteProblemResponseError
 } from "./dto";
 import { GroupEntity } from "@/group/group.entity";
 import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.service";
@@ -344,51 +347,63 @@ export class ProblemController {
     @CurrentUser() currentUser: UserEntity,
     @Body() request: SetProblemPermissionsRequestDto
   ): Promise<SetProblemPermissionsResponseDto> {
-    const problem = await this.problemService.findProblemById(request.problemId);
-    if (!problem)
-      return {
-        error: SetProblemPermissionsResponseError.NO_SUCH_PROBLEM,
-        errorObjectId: request.problemId
-      };
-
-    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.MANAGE_PERMISSION)))
+    if (!currentUser)
       return {
         error: SetProblemPermissionsResponseError.PERMISSION_DENIED
       };
 
-    const users = await this.userService.findUsersByExistingIds(
-      request.userPermissions.map(userPermission => userPermission.userId)
+    return await this.problemService.lockProblemById<SetProblemPermissionsResponseDto>(
+      request.problemId,
+      "READ",
+      async problem => {
+        if (!problem)
+          return {
+            error: SetProblemPermissionsResponseError.NO_SUCH_PROBLEM,
+            errorObjectId: request.problemId
+          };
+
+        if (
+          !(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.MANAGE_PERMISSION))
+        )
+          return {
+            error: SetProblemPermissionsResponseError.PERMISSION_DENIED
+          };
+
+        const users = await this.userService.findUsersByExistingIds(
+          request.userPermissions.map(userPermission => userPermission.userId)
+        );
+        const userPermissions: [UserEntity, ProblemPermissionLevel][] = [];
+        for (const i in request.userPermissions) {
+          const { userId, permissionLevel } = request.userPermissions[i];
+          if (!users[i])
+            return {
+              error: SetProblemPermissionsResponseError.NO_SUCH_USER,
+              errorObjectId: userId
+            };
+
+          userPermissions.push([users[i], permissionLevel]);
+        }
+
+        const groups = await this.groupService.findGroupsByExistingIds(
+          request.groupPermissions.map(groupPermission => groupPermission.groupId)
+        );
+        const groupPermissions: [GroupEntity, ProblemPermissionLevel][] = [];
+        for (const i in request.groupPermissions) {
+          const { groupId, permissionLevel } = request.groupPermissions[i];
+          if (!groups[i])
+            return {
+              error: SetProblemPermissionsResponseError.NO_SUCH_GROUP,
+              errorObjectId: groupId
+            };
+
+          groupPermissions.push([groups[i], permissionLevel]);
+        }
+
+        await this.problemService.setProblemPermissions(problem, userPermissions, groupPermissions);
+
+        return {};
+      }
     );
-    const userPermissions: [UserEntity, ProblemPermissionLevel][] = [];
-    for (const i in request.userPermissions) {
-      const { userId, permissionLevel } = request.userPermissions[i];
-      if (!users[i])
-        return {
-          error: SetProblemPermissionsResponseError.NO_SUCH_USER,
-          errorObjectId: userId
-        };
-
-      userPermissions.push([users[i], permissionLevel]);
-    }
-
-    const groups = await this.groupService.findGroupsByExistingIds(
-      request.groupPermissions.map(groupPermission => groupPermission.groupId)
-    );
-    const groupPermissions: [GroupEntity, ProblemPermissionLevel][] = [];
-    for (const i in request.groupPermissions) {
-      const { groupId, permissionLevel } = request.groupPermissions[i];
-      if (!groups[i])
-        return {
-          error: SetProblemPermissionsResponseError.NO_SUCH_GROUP,
-          errorObjectId: groupId
-        };
-
-      groupPermissions.push([groups[i], permissionLevel]);
-    }
-
-    await this.problemService.setProblemPermissions(problem, userPermissions, groupPermissions);
-
-    return {};
   }
 
   @Post("setProblemDisplayId")
@@ -763,5 +778,43 @@ export class ProblemController {
         })
       )
     };
+  }
+
+  @Post("deleteProblem")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Delete a problem and everything related."
+  })
+  async deleteProblem(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: DeleteProblemRequestDto
+  ): Promise<DeleteProblemResponseDto> {
+    const problem = await this.problemService.findProblemById(request.problemId);
+
+    if (!problem)
+      return {
+        error: DeleteProblemResponseError.NO_SUCH_PROBLEM
+      };
+
+    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.DELETE)))
+      return {
+        error: DeleteProblemResponseError.PERMISSION_DENIED
+      };
+
+    // Lock the problem after permission check to avoid DDoS attacks.
+    return await this.problemService.lockProblemById<DeleteProblemResponseDto>(
+      request.problemId,
+      "WRITE",
+      async problem => {
+        if (!problem)
+          return {
+            error: DeleteProblemResponseError.NO_SUCH_PROBLEM
+          };
+
+        await this.problemService.deleteProblem(problem);
+
+        return {};
+      }
+    );
   }
 }

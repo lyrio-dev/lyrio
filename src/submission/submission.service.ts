@@ -1,4 +1,4 @@
-import { Injectable, Logger, Ip } from "@nestjs/common";
+import { Injectable, Logger, Ip, Inject, forwardRef } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
 import { Repository, Connection } from "typeorm";
 import { ValidationError } from "class-validator";
@@ -24,7 +24,7 @@ import { ProblemFileType } from "@/problem/problem-file.entity";
 import { ProblemJudgeInfo } from "@/problem/type/problem-judge-info.interface";
 import { SubmissionContent } from "./submission-content.interface";
 import { SubmissionTypedService } from "./type/submission-typed.service";
-import { SubmissionProgressService } from "./submission-progress.service";
+import { SubmissionProgressService, SubmissionEventType } from "./submission-progress.service";
 import { SubmissionBasicMetaDto } from "./dto";
 import { SubmissionStatisticsService } from "./submission-statistics.service";
 import { UserService } from "@/user/user.service";
@@ -50,6 +50,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     @InjectRepository(SubmissionDetailEntity)
     private readonly submissionDetailRepository: Repository<SubmissionDetailEntity>,
     private readonly problemService: ProblemService,
+    @Inject(forwardRef(() => UserService))
     private readonly userService: UserService,
     private readonly judgeQueueService: JudgeQueueService,
     private readonly redisService: RedisService,
@@ -175,6 +176,9 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     };
   }
 
+  /**
+   * @param problem Should be locked by `ProblemService.lockProblemById(id, "READ")`.
+   */
   public async createSubmission(
     submitter: UserEntity,
     problem: ProblemEntity,
@@ -212,7 +216,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     await this.userService.updateUserSubmissionCount(submitter.id, 1);
 
     try {
-      await this.judgeSubmission(submission, problem);
+      await this.judgeSubmission(submission);
     } catch (e) {
       Logger.error(`Failed to start judge for submission ${submission.id}: ${e}`);
     }
@@ -289,41 +293,43 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     return result;
   }
 
-  public async judgeSubmission(submission: SubmissionEntity, problem: ProblemEntity): Promise<void> {
-    const submissionId = submission.id;
-    await this.lockSubmission(submissionId, async () => {
-      const submission = await this.findSubmissionById(submissionId);
+  /**
+   * @param submission Must be locked (or just created, ID not exposed to user).
+   */
+  public async judgeSubmission(submission: SubmissionEntity): Promise<void> {
+    const oldSubmission = Object.assign({}, submission);
 
-      const oldSubmission = Object.assign({}, submission);
+    if (submission.taskId) {
+      this.judgeGateway.cancelTask(submission.taskId);
+    }
 
-      if (submission.taskId) {
-        this.judgeGateway.cancelTask(submission.taskId);
-      }
+    submission.taskId = uuid();
+    submission.score = null;
+    submission.status = SubmissionStatus.Pending;
+    submission.timeUsed = null;
+    submission.memoryUsed = null;
+    await this.submissionRepository.save(submission);
 
-      submission.taskId = uuid();
-      submission.score = null;
-      submission.status = SubmissionStatus.Pending;
-      submission.timeUsed = null;
-      submission.memoryUsed = null;
-      await this.submissionRepository.save(submission);
+    await this.judgeQueueService.pushTask(
+      submission.taskId,
+      JudgeTaskType.Submission,
+      JudgeTaskPriority.High,
+      submission.id
+    );
 
-      await this.judgeQueueService.pushTask(
-        submission.taskId,
-        JudgeTaskType.Submission,
-        JudgeTaskPriority.High,
-        submission.id
-      );
+    await this.onSubmissionUpdated(oldSubmission, submission);
+  }
 
-      await this.onSubmissionUpdated(oldSubmission, submission);
+  public async rejudgeSubmission(submission: SubmissionEntity): Promise<void> {
+    await this.lockSubmission(submission, true, async submission => {
+      if (!submission) return;
+      this.judgeSubmission(submission);
     });
   }
 
   public async cancelSubmission(submission: SubmissionEntity): Promise<void> {
-    const submissionId = submission.id;
-    const canceled = await this.lockSubmission(submissionId, async () => {
-      const submission = await this.findSubmissionById(submissionId);
-
-      if (!submission.taskId) return false;
+    const canceled = await this.lockSubmission(submission, true, async submission => {
+      if (!submission || !submission.taskId) return false;
 
       this.judgeGateway.cancelTask(submission.taskId);
 
@@ -350,7 +356,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
 
     if (!canceled) return;
 
-    await this.submissionProgressService.onSubmissionProgressReported(submissionId, true);
+    await this.submissionProgressService.emitSubmissionEvent(submission.id, SubmissionEventType.Canceled);
   }
 
   public async setSubmissionPublic(submission: SubmissionEntity, isPublic: boolean): Promise<void> {
@@ -359,20 +365,29 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
   }
 
   public async deleteSubmission(submission: SubmissionEntity): Promise<void> {
-    if (submission.taskId) {
-      this.judgeGateway.cancelTask(submission.taskId);
-    }
+    // This function updates related info, lock the problem for READ first, then lock the submission
+    await this.lockSubmission(submission, true, async submission => {
+      if (!submission) return;
 
-    await this.submissionRepository.delete(submission);
-    await this.submissionStatisticsService.onSubmissionUpdated(submission, null);
-    if (submission.status === SubmissionStatus.Accepted) {
-      await this.problemService.updateProblemStatistics(submission.problemId, -1, -1);
-      await this.userService.updateUserAcceptedCount(submission.submitterId);
-    } else {
-      await this.problemService.updateProblemStatistics(submission.problemId, -1, 0);
-    }
+      if (submission.taskId) {
+        this.judgeGateway.cancelTask(submission.taskId);
+        await this.submissionProgressService.emitSubmissionEvent(submission.id, SubmissionEventType.Deleted);
+      }
+
+      await this.submissionRepository.remove(submission);
+      await this.submissionStatisticsService.onSubmissionUpdated(submission, null);
+      if (submission.status === SubmissionStatus.Accepted) {
+        await this.problemService.updateProblemStatistics(submission.problemId, -1, -1);
+        await this.userService.updateUserAcceptedCount(submission.submitterId, submission.problemId, "AC_TO_NON_AC");
+      } else {
+        await this.problemService.updateProblemStatistics(submission.problemId, -1, 0);
+      }
+    });
   }
 
+  /**
+   * This function updates related info, the problem must be locked for READ first, then the submission must be locked.
+   */
   private async onSubmissionUpdated(oldSubmission: SubmissionEntity, submission: SubmissionEntity): Promise<void> {
     await this.submissionStatisticsService.onSubmissionUpdated(oldSubmission, submission);
 
@@ -380,16 +395,21 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     const newAccepted = submission.status === SubmissionStatus.Accepted;
     if (!oldAccepted && newAccepted) {
       await this.problemService.updateProblemStatistics(submission.problemId, 0, 1);
+      await this.userService.updateUserAcceptedCount(submission.submitterId, submission.problemId, "NON_AC_TO_AC");
     } else if (oldAccepted && !newAccepted) {
       await this.problemService.updateProblemStatistics(submission.problemId, 0, -1);
-    }
-
-    if (oldAccepted != newAccepted) {
-      await this.userService.updateUserAcceptedCount(submission.submitterId);
+      await this.userService.updateUserAcceptedCount(submission.submitterId, submission.problemId, "AC_TO_NON_AC");
     }
   }
 
-  private async onSubmissionFinished(submission: SubmissionEntity, progress: SubmissionProgress): Promise<void> {
+  /**
+   * This function updates related info, the problem must be locked for READ first, then the submission must be locked.
+   */
+  private async onSubmissionFinished(
+    submission: SubmissionEntity,
+    problem: ProblemEntity,
+    progress: SubmissionProgress
+  ): Promise<void> {
     const oldSubmission = Object.assign({}, submission);
 
     const submissionDetail = await this.getSubmissionDetail(submission);
@@ -407,10 +427,10 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
         }))
     };
 
+    submission.taskId = null;
     submission.status = progress.status;
     submission.score = progress.score;
 
-    const problem = await this.problemService.findProblemById(submission.problemId);
     const timeAndMemory = await this.submissionTypedService.getTimeAndMemoryUsedFromSubmissionResult(
       problem.type,
       submissionDetail.result
@@ -438,20 +458,21 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
       return false;
     }
 
-    const submissionId = submission.id;
-    await this.lockSubmission(submissionId, async () => {
-      const submission = await this.findSubmissionById(submissionId);
-      if (submission.taskId !== taskId) {
+    const finished = progress.progressType === SubmissionProgressType.Finished;
+
+    // Don't lock the problem if not finished since we don't modify the database.
+    await this.lockSubmission(submission, finished, async (submission, problem?) => {
+      if (!submission || submission.taskId !== taskId) {
         Logger.warn(`Invalid task Id ${taskId} of task progress, maybe there's a too-early rejudge?`);
         return false;
       }
 
       // First update database, then report progress
-      if (progress.progressType === SubmissionProgressType.Finished) {
-        await this.onSubmissionFinished(submission, progress);
+      if (finished) {
+        await this.onSubmissionFinished(submission, problem, progress);
       }
 
-      await this.submissionProgressService.onSubmissionProgressReported(submission.id, false, progress);
+      await this.submissionProgressService.emitSubmissionEvent(submission.id, SubmissionEventType.Progress, progress);
     });
 
     return true;
@@ -487,7 +508,60 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     }
   }
 
-  async lockSubmission<T>(submissionId: number, callback: () => Promise<T>): Promise<T> {
-    return this.redisService.lock(`Submission_${submissionId}`, callback);
+  /**
+   * Lock a submission and its problem (optionally). Ensure the submission's `taskId` is not changed and its problem exists.
+   */
+  async lockSubmission<T>(
+    submission: SubmissionEntity,
+    lockProblem: boolean,
+    callback: (submission: SubmissionEntity, problem?: ProblemEntity) => Promise<T>
+  ): Promise<T> {
+    if (lockProblem) {
+      return this.problemService.lockProblemById(submission.problemId, "READ", async problem => {
+        if (!problem) return await callback(null);
+        return this.redisService.lock(
+          `Submission_${submission.id}`,
+          async () => await callback(await this.findSubmissionById(submission.id), problem)
+        );
+      });
+    } else {
+      return this.redisService.lock(
+        `Submission_${submission.id}`,
+        async () => await callback(await this.findSubmissionById(submission.id))
+      );
+    }
+  }
+
+  async getUserProblemAcceptedSubmissionCount(userId: number, problemId: number): Promise<number> {
+    return await this.submissionRepository.count({
+      submitterId: userId,
+      problemId: problemId,
+      status: SubmissionStatus.Accepted
+    });
+  }
+
+  /**
+   * Cancel pending submissions when a problem is deleted.
+   */
+  async onDeleteProblem(problemId: number): Promise<void> {
+    const pendingSubmissions = await this.submissionRepository
+      .createQueryBuilder()
+      .select()
+      .where("problemId = :problemId", { problemId: problemId })
+      .andWhere("taskId IS NOT NULL")
+      .getMany();
+    await Promise.all(
+      pendingSubmissions.map(async submission => {
+        this.judgeGateway.cancelTask(submission.taskId);
+        await this.submissionProgressService.emitSubmissionEvent(submission.id, SubmissionEventType.Deleted);
+      })
+    );
+  }
+
+  /**
+   * Do some cleanups AFTER a problem is deleted.
+   */
+  async onProblemDeleted(problemId: number): Promise<void> {
+    await this.submissionStatisticsService.onProblemDeleted(problemId);
   }
 }

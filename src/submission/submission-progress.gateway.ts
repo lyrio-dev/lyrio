@@ -10,6 +10,7 @@ import { SubmissionService } from "./submission.service";
 import { SubmissionBasicMetaDto } from "./dto";
 import { SubmissionResult } from "./submission-result.interface";
 import { SubmissionStatus } from "./submission-status.enum";
+import { SubmissionEventType } from "./submission-progress.service";
 
 export enum SubmissionProgressSubscriptionType {
   Meta,
@@ -205,8 +206,8 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
     }
   }
 
-  public async onSubmissionProgress(submissionId: number, canceled: boolean, progress?: SubmissionProgress) {
-    if (!canceled && progress.progressType !== SubmissionProgressType.Finished) {
+  public async onSubmissionEvent(submissionId: number, type: SubmissionEventType, progress?: SubmissionProgress) {
+    if (type === SubmissionEventType.Progress && progress.progressType !== SubmissionProgressType.Finished) {
       this.sendMessage(this.getRoom(SubmissionProgressSubscriptionType.Meta, submissionId), submissionId, {
         progressMeta: progress.progressType
       });
@@ -217,16 +218,21 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
     } else {
       // This is called after database updated
 
-      const submission = await this.submissionService.findSubmissionById(submissionId);
-      const basicMeta = await this.submissionService.getSubmissionBasicMeta(submission);
-      const submissionDetail = await this.submissionService.getSubmissionDetail(submission);
-      this.sendMessage(this.getRoom(SubmissionProgressSubscriptionType.Meta, submissionId), submissionId, {
-        resultMeta: basicMeta
-      });
-      this.sendMessage(this.getRoom(SubmissionProgressSubscriptionType.Detail, submissionId), submissionId, {
-        resultMeta: basicMeta,
-        resultDetail: submissionDetail.result
-      });
+      if (type !== SubmissionEventType.Deleted) {
+        const submission = await this.submissionService.findSubmissionById(submissionId);
+        const submissionDetail = await this.submissionService.getSubmissionDetail(submission);
+        // If the submission has been deleted, don't attempt to send the result.
+        if (submission && submissionDetail) {
+          const basicMeta = await this.submissionService.getSubmissionBasicMeta(submission);
+          this.sendMessage(this.getRoom(SubmissionProgressSubscriptionType.Meta, submissionId), submissionId, {
+            resultMeta: basicMeta
+          });
+          this.sendMessage(this.getRoom(SubmissionProgressSubscriptionType.Detail, submissionId), submissionId, {
+            resultMeta: basicMeta,
+            resultDetail: submissionDetail.result
+          });
+        }
+      }
 
       this.clearRoom(this.getRoom(SubmissionProgressSubscriptionType.Meta, submissionId));
       this.clearRoom(this.getRoom(SubmissionProgressSubscriptionType.Detail, submissionId));

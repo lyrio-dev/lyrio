@@ -1,6 +1,6 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, forwardRef, Inject } from "@nestjs/common";
 import { InjectConnection, InjectRepository } from "@nestjs/typeorm";
-import { Connection, Repository, FindConditions, FindManyOptions, EntityManager, Brackets, In } from "typeorm";
+import { Connection, Repository, EntityManager, Brackets, In } from "typeorm";
 
 import { UserEntity } from "@/user/user.entity";
 import { GroupEntity } from "@/group/group.entity";
@@ -33,6 +33,7 @@ import { FileService } from "@/file/file.service";
 import { ConfigService } from "@/config/config.service";
 import { FileUploadInfoDto } from "@/file/dto";
 import { RedisService } from "@/redis/redis.service";
+import { SubmissionService } from "@/submission/submission.service";
 
 export enum ProblemPermissionType {
   VIEW = "VIEW",
@@ -67,10 +68,13 @@ export class ProblemService {
     private readonly problemJudgeInfoService: ProblemJudgeInfoService,
     private readonly localizedContentService: LocalizedContentService,
     private readonly userPrivilegeService: UserPrivilegeService,
+    @Inject(forwardRef(() => UserService))
     private readonly userService: UserService,
     private readonly groupService: GroupService,
     private readonly permissionService: PermissionService,
     private readonly fileService: FileService,
+    @Inject(forwardRef(() => SubmissionService))
+    private readonly submissionService: SubmissionService,
     private readonly configService: ConfigService,
     private readonly redisService: RedisService
   ) {}
@@ -395,6 +399,9 @@ export class ProblemService {
     return problemJudgeInfo.judgeInfo;
   }
 
+  /**
+   * @param problem Should be locked by `ProblemService.lockProblemById(id, "READ")`.
+   */
   async setProblemPermissions(
     problem: ProblemEntity,
     userPermissions: [UserEntity, ProblemPermissionLevel][],
@@ -503,12 +510,14 @@ export class ProblemService {
   }
 
   // Manage problem file actions should be locked to make sure the limit check works.
-  async lockManageProblemFile<T>(
-    problem: ProblemEntity,
+  private async lockManageProblemFile<T>(
+    problemId: number,
     type: ProblemFileType,
-    callback: () => Promise<T>
+    callback: (problem: ProblemEntity) => Promise<T>
   ): Promise<T> {
-    return this.redisService.lock(`ManageProblemFile_${type}_${problem.id}`, callback);
+    return this.lockProblemById(problemId, "READ", async problem => {
+      return this.redisService.lock(`ManageProblemFile_${type}_${problem.id}`, async () => callback(problem));
+    });
   }
 
   /**
@@ -528,7 +537,9 @@ export class ProblemService {
     filename: string,
     noLimit: boolean
   ): Promise<FileUploadInfoDto | "TOO_MANY_FILES" | "TOTAL_SIZE_TOO_LARGE" | "INVALID_OPERATION" | "NOT_UPLOADED"> {
-    return await this.lockManageProblemFile(problem, type, async () => {
+    return await this.lockManageProblemFile(problem.id, type, async problem => {
+      if (!problem) return "INVALID_OPERATION";
+
       // Check limit
       if (!noLimit) {
         const error = await this.checkAddProblemFileLimit(problem, type, size, filename);
@@ -574,7 +585,9 @@ export class ProblemService {
   }
 
   async removeProblemFiles(problem: ProblemEntity, type: ProblemFileType, filenames: string[]): Promise<void> {
-    return await this.lockManageProblemFile(problem, type, async () => {
+    return await this.lockManageProblemFile(problem.id, type, async problem => {
+      if (!problem) return;
+
       let deleteFilesActually: () => void = null;
       await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
         const problemFiles = await transactionalEntityManager.find(ProblemFileEntity, {
@@ -625,7 +638,9 @@ export class ProblemService {
     filename: string,
     newFilename: string
   ): Promise<boolean> {
-    return await this.lockManageProblemFile(problem, type, async () => {
+    return await this.lockManageProblemFile(problem.id, type, async problem => {
+      if (!problem) return false;
+
       const problemFile = await this.problemFileRepository.findOne({
         problemId: problem.id,
         type: type,
@@ -782,5 +797,59 @@ export class ProblemService {
     });
 
     return await this.findProblemTagsByExistingIds(problemTagMaps.map(problemTagMap => problemTagMap.problemTagId));
+  }
+
+  /**
+   * Lock a problem by ID with Read/Write Lock.
+   * @param type `"READ"` to ensure the problem exists while holding the lock, `"WRITE"` is for deleting the problem.
+   */
+  async lockProblemById<T>(
+    id: number,
+    type: "READ" | "WRITE",
+    callback: (problem: ProblemEntity) => Promise<T>
+  ): Promise<T> {
+    return this.redisService.lockReadWrite(
+      `AcquireProblem_${id}`,
+      type,
+      async () => await callback(await this.findProblemById(id))
+    );
+  }
+
+  /**
+   * @param problem Must be locked by `ProblemService.lockProblemById(id, "WRITE")`.
+   */
+  async deleteProblem(problem: ProblemEntity) {
+    let deleteFilesActually: () => void = null;
+    await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
+      // update user submission count and accepted problem count
+      await this.userService.onDeleteProblem(problem.id, transactionalEntityManager);
+
+      // delete files
+      const problemFiles = await transactionalEntityManager.find(ProblemFileEntity, {
+        problemId: problem.id
+      });
+      deleteFilesActually = await this.fileService.deleteFile(
+        problemFiles.map(problemFile => problemFile.uuid),
+        transactionalEntityManager
+      );
+      await transactionalEntityManager.remove(problemFiles);
+
+      // delete permission
+      await this.permissionService.replaceUsersAndGroupsPermissionForObject(
+        problem.id,
+        PermissionObjectType.PROBLEM,
+        [],
+        [],
+        transactionalEntityManager
+      );
+
+      // cancel submissions
+      await this.submissionService.onDeleteProblem(problem.id);
+
+      // delete everything
+      await transactionalEntityManager.remove(problem);
+    });
+    if (deleteFilesActually) deleteFilesActually();
+    await this.submissionService.onProblemDeleted(problem.id);
   }
 }

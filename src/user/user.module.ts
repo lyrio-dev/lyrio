@@ -11,6 +11,7 @@ import { UserPrivilegeService } from "./user-privilege.service";
 import { UserController } from "./user.controller";
 import { AuthModule } from "@/auth/auth.module";
 import { SubmissionModule } from "@/submission/submission.module";
+import { RedisModule } from "@/redis/redis.module";
 
 @Module({
   imports: [
@@ -20,7 +21,8 @@ import { SubmissionModule } from "@/submission/submission.module";
     TypeOrmModule.forFeature([UserPreferenceEntity]),
     forwardRef(() => ConfigModule),
     forwardRef(() => AuthModule),
-    forwardRef(() => SubmissionModule)
+    forwardRef(() => SubmissionModule),
+    forwardRef(() => RedisModule)
   ],
   providers: [UserService, UserPrivilegeService],
   controllers: [UserController],

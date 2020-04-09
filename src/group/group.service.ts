@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Inject, forwardRef } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
 import { Repository, Connection, Like } from "typeorm";
 
@@ -25,6 +25,7 @@ export class GroupService {
     private readonly groupRepository: Repository<GroupEntity>,
     @InjectRepository(GroupMembershipEntity)
     private readonly groupMembershipRepository: Repository<GroupMembershipEntity>,
+    @Inject(forwardRef(() => UserService))
     private readonly userService: UserService
   ) {}
 

@@ -66,29 +66,30 @@ export class SubmissionController {
         error: SubmitResponseError.PERMISSION_DENIED
       };
 
-    const problem = await this.problemService.findProblemById(request.problemId);
-    if (!problem)
+    return await this.problemService.lockProblemById<SubmitResponseDto>(request.problemId, "READ", async problem => {
+      if (!problem)
+        return {
+          error: SubmitResponseError.NO_SUCH_PROBLEM
+        };
+
+      // TODO: add "submit" permission
+      if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.VIEW)))
+        return {
+          error: SubmitResponseError.PERMISSION_DENIED
+        };
+
+      const [validationError, submission] = await this.submissionService.createSubmission(
+        currentUser,
+        problem,
+        request.content
+      );
+
+      if (validationError && validationError.length > 0) throw new BadRequestException(validationError);
+
       return {
-        error: SubmitResponseError.NO_SUCH_PROBLEM
+        submissionId: submission.id
       };
-
-    // TODO: add "submit" permission
-    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.VIEW)))
-      return {
-        error: SubmitResponseError.PERMISSION_DENIED
-      };
-
-    const [validationError, submission] = await this.submissionService.createSubmission(
-      currentUser,
-      problem,
-      request.content
-    );
-
-    if (validationError && validationError.length > 0) throw new BadRequestException(validationError);
-
-    return {
-      submissionId: submission.id
-    };
+    });
   }
 
   @ApiOperation({
@@ -355,7 +356,7 @@ export class SubmissionController {
         error: RejudgeSubmissionResponseError.PERMISSION_DENIED
       };
 
-    await this.submissionService.judgeSubmission(submission, problem);
+    await this.submissionService.rejudgeSubmission(submission);
 
     return {};
   }

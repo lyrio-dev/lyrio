@@ -220,4 +220,13 @@ export class SubmissionStatisticsService {
       }
     }
   }
+
+  public async onProblemDeleted(problemId: number): Promise<void> {
+    await Promise.all([
+      ...Object.values(SubmissionStatisticsType).map(type =>
+        this.redis.del(this.getRedisKeySubmissionStatistics(problemId, type))
+      ),
+      this.redis.del(this.getRedisKeySubmissionScoreStatistics(problemId))
+    ]);
+  }
 }

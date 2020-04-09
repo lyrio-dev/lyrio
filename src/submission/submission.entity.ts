@@ -13,6 +13,8 @@ import { SubmissionDetailEntity } from "./submission-detail.entity";
 @Index(["isPublic", "submitterId", "status", "codeLanguage"])
 @Index(["isPublic", "codeLanguage", "submitterId"])
 @Index(["isPublic", "status", "codeLanguage"])
+@Index(["problemId", "submitterId"])
+@Index(["problemId", "submitterId", "status"])
 export class SubmissionEntity {
   @PrimaryGeneratedColumn()
   id: number;
@@ -54,7 +56,7 @@ export class SubmissionEntity {
   @Index()
   submitTime: Date;
 
-  @ManyToOne(type => ProblemEntity)
+  @ManyToOne(type => ProblemEntity, { onDelete: "CASCADE" })
   @JoinColumn()
   problem: Promise<ProblemEntity>;
 

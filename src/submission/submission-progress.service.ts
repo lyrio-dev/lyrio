@@ -5,8 +5,14 @@ import { SubmissionProgress, SubmissionProgressType } from "./submission-progres
 import { RedisService } from "@/redis/redis.service";
 import { SubmissionProgressGateway } from "./submission-progress.gateway";
 
+export enum SubmissionEventType {
+  Progress,
+  Canceled,
+  Deleted
+}
+
 const REDIS_KEY_SUBMISSION_PROGRESS = "submissionProgress_";
-const REDIS_CHANNEL_SUBMISSION_PROGRESS = "submissionProgress";
+const REDIS_CHANNEL_SUBMISSION_EVENT = "submissionEvent";
 
 // The process for after a progress received:
 // 1. If its type is "Finished", it's converted to a "result" and stored to the database,
@@ -28,37 +34,37 @@ export class SubmissionProgressService {
     this.redisSubscribe = this.redisService.getClient();
 
     this.redisSubscribe.on("message", (channel: string, message: string) => {
-      const { submissionId, canceled, progress } = JSON.parse(message);
-      this.consumeSubmissionProgress(submissionId, canceled, progress);
+      const { submissionId, type, progress } = JSON.parse(message);
+      this.onSubmissionEvent(submissionId, type, progress);
     });
-    this.redisSubscribe.subscribe(REDIS_CHANNEL_SUBMISSION_PROGRESS);
+    this.redisSubscribe.subscribe(REDIS_CHANNEL_SUBMISSION_EVENT);
   }
 
-  private async consumeSubmissionProgress(submissionId: number, canceled: boolean, progress?: SubmissionProgress) {
-    Logger.log("Consume progress for submission " + submissionId);
-    this.submissionProgressGateway.onSubmissionProgress(submissionId, canceled, progress);
+  private async onSubmissionEvent(submissionId: number, type: SubmissionEventType, progress?: SubmissionProgress) {
+    Logger.log("Consume event for submission " + submissionId);
+    this.submissionProgressGateway.onSubmissionEvent(submissionId, type, progress);
   }
 
   // If the progress type is "Finished", this method is called after the progress
   // result is stored in the database.
-  public async onSubmissionProgressReported(
+  public async emitSubmissionEvent(
     submissionId: number,
-    canceled: boolean,
+    type: SubmissionEventType,
     progress?: SubmissionProgress
   ): Promise<void> {
     Logger.log(`Progress for submission ${submissionId} received, pushing to Redis`);
-    if (canceled || progress.progressType === SubmissionProgressType.Finished) {
-      await this.redis.del(REDIS_KEY_SUBMISSION_PROGRESS + submissionId);
-    } else {
+    if (type === SubmissionEventType.Progress && progress.progressType !== SubmissionProgressType.Finished) {
       await this.redis.set(REDIS_KEY_SUBMISSION_PROGRESS + submissionId, JSON.stringify(progress));
+    } else {
+      await this.redis.del(REDIS_KEY_SUBMISSION_PROGRESS + submissionId);
     }
 
-    // This will call this.consumeSubmissionProgress
+    // This will call this.onSubmissionEvent
     await this.redis.publish(
-      REDIS_CHANNEL_SUBMISSION_PROGRESS,
+      REDIS_CHANNEL_SUBMISSION_EVENT,
       JSON.stringify({
         submissionId: submissionId,
-        canceled: canceled,
+        type: type,
         progress: progress
       })
     );

@@ -1,19 +1,21 @@
 import { Injectable, forwardRef, Inject } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
-import { Repository, Connection, Like, MoreThan } from "typeorm";
+import { Repository, Connection, Like, MoreThan, EntityManager } from "typeorm";
 import crypto = require("crypto");
 
 import { UserEntity } from "./user.entity";
 import { AuthService } from "@/auth/auth.service";
 import { UpdateUserProfileResponseError, UserMetaDto, UserAvatarDto, UserAvatarType } from "./dto";
 import { escapeLike } from "@/database/database.utils";
-import { SubmissionEntity } from "@/submission/submission.entity";
-import { SubmissionStatus } from "@/submission/submission-status.enum";
 import { UserPrivilegeService, UserPrivilegeType } from "./user-privilege.service";
 import { UserInformationDto } from "./dto/user-information.dto";
 import { UserInformationEntity } from "./user-information.entity";
 import { UserPreference } from "./user-preference.interface";
 import { UserPreferenceEntity } from "./user-preference.entity";
+import { RedisService } from "@/redis/redis.service";
+import { SubmissionService } from "@/submission/submission.service";
+import { SubmissionEntity } from "@/submission/submission.entity";
+import { SubmissionStatus } from "@/submission/submission-status.enum";
 
 @Injectable()
 export class UserService {
@@ -26,8 +28,10 @@ export class UserService {
     private readonly userInformationRepository: Repository<UserInformationEntity>,
     @InjectRepository(UserPreferenceEntity)
     private readonly userPreferenceRepository: Repository<UserPreferenceEntity>,
-    @Inject(forwardRef(() => AuthService))
-    private readonly authService: AuthService,
+    @Inject(forwardRef(() => RedisService))
+    private readonly redisService: RedisService,
+    @Inject(forwardRef(() => SubmissionService))
+    private readonly submissionService: SubmissionService,
     @Inject(forwardRef(() => UserPrivilegeService))
     private readonly userPrivilegeService: UserPrivilegeService
   ) {}
@@ -220,33 +224,56 @@ export class UserService {
     });
   }
 
+  async onDeleteProblem(problemId: number, transactionalEntityManager: EntityManager): Promise<void> {
+    // submissionCount
+    await transactionalEntityManager.query(
+      "UPDATE `user` " +
+        "INNER JOIN " +
+        "(SELECT `submitterId`, COUNT(*) AS `count` FROM `submission` WHERE `problemId` = ? GROUP BY `submitterId`) `statistics`" +
+        "ON `user`.`id` = `statistics`.`submitterId` " +
+        "SET `submissionCount` = `submissionCount` - `statistics`.`count`",
+      [problemId]
+    );
+
+    // acceptedProblemCount
+    const queryAcceptedUsers = transactionalEntityManager
+      .createQueryBuilder()
+      .select("DISTINCT(submitterId)")
+      .from(SubmissionEntity, "submission")
+      .where("problemId = :problemId", { problemId: problemId })
+      .andWhere("status = :status", { status: SubmissionStatus.Accepted });
+    await transactionalEntityManager
+      .createQueryBuilder()
+      .update(UserEntity, {
+        acceptedProblemCount: () => "acceptedProblemCount - 1"
+      })
+      .where(() => `id IN (${queryAcceptedUsers.getQuery()})`)
+      .setParameters(queryAcceptedUsers.expressionMap.parameters)
+      .execute();
+  }
+
   async updateUserSubmissionCount(userId: number, incSubmissionCount: number): Promise<void> {
     if (incSubmissionCount !== 0) {
       await this.userRepository.increment({ id: userId }, "submissionCount", incSubmissionCount);
     }
   }
 
-  async updateUserAcceptedCount(userId: number): Promise<void> {
-    await this.userRepository
-      .createQueryBuilder()
-      .update({
-        acceptedProblemCount: () =>
-          "(" +
-          this.connection
-            .createQueryBuilder()
-            .select("COUNT(DISTINCT submission.problemId)")
-            .from(SubmissionEntity, "submission")
-            .where("submission.submitterId = :userId")
-            .andWhere("submission.status = :status")
-            .getQuery() +
-          ")"
-      })
-      .where("id = :userId")
-      .setParameters({
-        userId: userId,
-        status: SubmissionStatus.Accepted
-      })
-      .execute();
+  async updateUserAcceptedCount(
+    userId: number,
+    problemId: number,
+    type: "NON_AC_TO_AC" | "AC_TO_NON_AC"
+  ): Promise<void> {
+    await this.redisService.lock(`updateUserAcceptedCount_${userId}_${problemId}`, async () => {
+      if (type === "NON_AC_TO_AC") {
+        if ((await this.submissionService.getUserProblemAcceptedSubmissionCount(userId, problemId)) === 1) {
+          await this.userRepository.increment({ id: userId }, "acceptedProblemCount", 1);
+        }
+      } else {
+        if ((await this.submissionService.getUserProblemAcceptedSubmissionCount(userId, problemId)) === 0) {
+          await this.userRepository.increment({ id: userId }, "acceptedProblemCount", -1);
+        }
+      }
+    });
   }
 
   async getUserRank(user: UserEntity): Promise<number> {
