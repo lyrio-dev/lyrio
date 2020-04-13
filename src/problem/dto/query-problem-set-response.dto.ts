@@ -1,8 +1,10 @@
 import { ApiProperty } from "@nestjs/swagger";
+
 import { ProblemMetaDto } from "./problem-meta.dto";
 import { Locale } from "@/common/locale.type";
 import { LocalizedProblemTagDto } from "./localized-problem-tag.dto";
 import { UserMetaDto } from "@/user/dto";
+import { SubmissionBasicMetaDto } from "@/submission/dto";
 
 export enum QueryProblemSetErrorDto {
   PERMISSION_DENIED = "PERMISSION_DENIED",
@@ -21,6 +23,9 @@ export class QueryProblemSetResponseItemDto {
 
   @ApiProperty({ enum: Locale })
   resultLocale: Locale;
+
+  @ApiProperty()
+  submission?: SubmissionBasicMetaDto;
 }
 
 export class QueryProblemSetResponsePermissionDto {

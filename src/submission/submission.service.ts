@@ -540,6 +540,28 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     });
   }
 
+  async getUserLatestSubmissionByProblems(
+    user: UserEntity,
+    problems: ProblemEntity[],
+    acceptedOnly?: boolean
+  ): Promise<Map<number, SubmissionEntity>> {
+    if (problems.length === 0) return new Map();
+
+    const queryBuilder = this.submissionRepository
+      .createQueryBuilder()
+      .select("MAX(id)", "id")
+      .where("submitterId = :submitterId", { submitterId: user.id })
+      .andWhere("problemId IN (:...problemIds)", { problemIds: problems.map(problem => problem.id) })
+      .groupBy("problemId");
+    const queryResult: { id: string }[] = await (acceptedOnly
+      ? queryBuilder.andWhere("status = :status", { status: SubmissionStatus.Accepted })
+      : queryBuilder
+    ).getRawMany();
+    const submissionIds = queryResult.map(result => parseInt(result.id));
+    const submissions = await this.findSubmissionsByExistingIds(submissionIds);
+    return new Map(submissions.map(submission => [submission.problemId, submission]));
+  }
+
   /**
    * Cancel pending submissions when a problem is deleted.
    */

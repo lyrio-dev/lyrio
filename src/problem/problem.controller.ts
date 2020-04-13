@@ -72,6 +72,7 @@ import {
 import { GroupEntity } from "@/group/group.entity";
 import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.service";
 import { Locale } from "@/common/locale.type";
+import { SubmissionService } from "@/submission/submission.service";
 
 @ApiTags("Problem")
 @Controller("problem")
@@ -82,7 +83,8 @@ export class ProblemController {
     private readonly userService: UserService,
     private readonly userPrivilegeService: UserPrivilegeService,
     private readonly groupService: GroupService,
-    private readonly fileService: FileService
+    private readonly fileService: FileService,
+    private readonly submissionService: SubmissionService
   ) {}
 
   @Post("queryProblemSet")
@@ -125,39 +127,47 @@ export class ProblemController {
       request.takeCount
     );
 
-    const response: QueryProblemSetResponseDto = {
+    const acceptedSubmissions =
+      currentUser && (await this.submissionService.getUserLatestSubmissionByProblems(currentUser, problems, true));
+    const nonAcceptedSubmissions =
+      currentUser &&
+      (await this.submissionService.getUserLatestSubmissionByProblems(
+        currentUser,
+        problems.filter(problem => !acceptedSubmissions.has(problem.id))
+      ));
+
+    return {
       count: count,
-      result: [],
+      result: await Promise.all(
+        problems.map(async problem => {
+          const titleLocale = problem.locales.includes(request.locale) ? request.locale : problem.locales[0];
+          const title = await this.problemService.getProblemLocalizedTitle(problem, titleLocale);
+          const problemTags = await this.problemService.getProblemTagsByProblem(problem);
+          return {
+            meta: await this.problemService.getProblemMeta(problem, true),
+            title: title,
+            tags: await Promise.all(
+              problemTags.map(problemTag => this.problemService.getProblemTagLocalized(problemTag, request.locale))
+            ),
+            resultLocale: titleLocale,
+            submission: currentUser && (acceptedSubmissions.get(problem.id) || nonAcceptedSubmissions.get(problem.id))
+          };
+        })
+      ),
       permissions: {
         createProblem: await this.problemService.userHasCreateProblemPermission(currentUser),
         manageTags: hasPrivilege,
         filterByOwner: hasPrivilege,
         filterNonpublic: hasPrivilege
-      }
+      },
+      filterTags:
+        filterTags &&
+        filterTags.length &&
+        (await Promise.all(
+          filterTags.map(problemTag => this.problemService.getProblemTagLocalized(problemTag, request.locale))
+        )),
+      filterOwner: filterOwner && (await this.userService.getUserMeta(filterOwner, currentUser))
     };
-
-    if (filterTags && filterTags.length)
-      response.filterTags = await Promise.all(
-        filterTags.map(problemTag => this.problemService.getProblemTagLocalized(problemTag, request.locale))
-      );
-
-    if (filterOwner) response.filterOwner = await this.userService.getUserMeta(filterOwner, currentUser);
-
-    for (const problem of problems) {
-      const titleLocale = problem.locales.includes(request.locale) ? request.locale : problem.locales[0];
-      const title = await this.problemService.getProblemLocalizedTitle(problem, titleLocale);
-      const problemTags = await this.problemService.getProblemTagsByProblem(problem);
-      response.result.push({
-        meta: await this.problemService.getProblemMeta(problem, true),
-        title: title,
-        tags: await Promise.all(
-          problemTags.map(problemTag => this.problemService.getProblemTagLocalized(problemTag, request.locale))
-        ),
-        resultLocale: titleLocale
-      });
-    }
-
-    return response;
   }
 
   @Post("createProblem")
