@@ -73,6 +73,7 @@ import { GroupEntity } from "@/group/group.entity";
 import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.service";
 import { Locale } from "@/common/locale.type";
 import { SubmissionService } from "@/submission/submission.service";
+import { SubmissionStatus } from "@/submission/submission-status.enum";
 
 @ApiTags("Problem")
 @Controller("problem")
@@ -343,6 +344,28 @@ export class ProblemController {
           }))
         )
       };
+    }
+
+    if (request.lastSubmissionAndLastAcceptedSubmission) {
+      if (currentUser) {
+        const lastSubmission = (
+          await this.submissionService.getUserLatestSubmissionByProblems(currentUser, [problem], false)
+        ).get(problem.id);
+        const lastAcceptedSubmission =
+          lastSubmission && lastSubmission.status === SubmissionStatus.Accepted
+            ? lastSubmission
+            : (await this.submissionService.getUserLatestSubmissionByProblems(currentUser, [problem], true)).get(
+                problem.id
+              );
+
+        result.lastSubmission = {
+          lastSubmission: lastSubmission && (await this.submissionService.getSubmissionBasicMeta(lastSubmission)),
+          lastAcceptedSubmission:
+            lastAcceptedSubmission && (await this.submissionService.getSubmissionBasicMeta(lastAcceptedSubmission)),
+          lastSubmissionContent:
+            lastSubmission && (await this.submissionService.getSubmissionDetail(lastSubmission)).content
+        };
+      } else result.lastSubmission = {};
     }
 
     return result;

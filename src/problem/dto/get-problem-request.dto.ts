@@ -70,4 +70,9 @@ export class GetProblemRequestDto {
   @IsBoolean()
   @IsOptional()
   readonly permissions?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  readonly lastSubmissionAndLastAcceptedSubmission?: boolean;
 }

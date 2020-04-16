@@ -555,7 +555,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
       .groupBy("problemId");
     const queryResult: { id: string }[] = await (acceptedOnly
       ? queryBuilder.andWhere("status = :status", { status: SubmissionStatus.Accepted })
-      : queryBuilder
+      : queryBuilder.andWhere("status != :status", { status: SubmissionStatus.Pending })
     ).getRawMany();
     const submissionIds = queryResult.map(result => parseInt(result.id));
     const submissions = await this.findSubmissionsByExistingIds(submissionIds);

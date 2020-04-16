@@ -9,6 +9,8 @@ import { ProblemPermissionType, ProblemPermissionLevel } from "@/problem/problem
 import { UserMetaDto } from "@/user/dto";
 import { GroupMetaDto } from "@/group/dto";
 import { LocalizedProblemTagDto } from "./localized-problem-tag.dto";
+import { SubmissionBasicMetaDto } from "@/submission/dto";
+import { SubmissionContent } from "@/submission/submission-content.interface";
 
 export enum GetProblemResponseError {
   PERMISSION_DENIED = "PERMISSION_DENIED",
@@ -44,12 +46,23 @@ class ProblemGroupPermissionDto {
   permissionLevel: ProblemPermissionLevel;
 }
 
-class ProblemPermissions {
+class ProblemPermissionsDto {
   @ApiProperty({ type: [ProblemUserPermissionDto] })
   userPermissions: ProblemUserPermissionDto[];
 
   @ApiProperty({ type: [ProblemGroupPermissionDto] })
   groupPermissions: ProblemGroupPermissionDto[];
+}
+
+class ProblemLastSubmissionDto {
+  @ApiProperty()
+  lastSubmission?: SubmissionBasicMetaDto;
+
+  @ApiProperty()
+  lastSubmissionContent?: SubmissionContent;
+
+  @ApiProperty()
+  lastAcceptedSubmission?: SubmissionBasicMetaDto;
 }
 
 export class GetProblemResponseDto {
@@ -87,5 +100,8 @@ export class GetProblemResponseDto {
   permissionOfCurrentUser?: ProblemPermissionOfCurrentUserDto;
 
   @ApiProperty()
-  permissions?: ProblemPermissions;
+  permissions?: ProblemPermissionsDto;
+
+  @ApiProperty()
+  lastSubmission?: ProblemLastSubmissionDto;
 }
