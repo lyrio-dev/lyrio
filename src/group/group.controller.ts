@@ -21,7 +21,8 @@ import {
   SetGroupAdminResponseDto,
   SetGroupAdminResponseError,
   SearchGroupRequestDto,
-  SearchGroupResponseDto
+  SearchGroupResponseDto,
+  GetGroupListResponseDto
 } from "./dto";
 import { ConfigService } from "@/config/config.service";
 import { GroupService } from "./group.service";
@@ -248,5 +249,32 @@ export class GroupController {
       };
 
     return {};
+  }
+
+  @Get("getGroupList")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Get groups joined by current user, or all groups if the user has manage group privilege."
+  })
+  async getGroupList(@CurrentUser() currentUser: UserEntity): Promise<GetGroupListResponseDto> {
+    if (!currentUser)
+      return {
+        groups: [],
+        groupsWithAdminPermission: []
+      };
+
+    if (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER_GROUP)) {
+      const groups = await this.groupService.getAllGroups();
+      return {
+        groups: await Promise.all(groups.map(async group => await this.groupService.getGroupMeta(group))),
+        groupsWithAdminPermission: groups.map(group => group.id)
+      };
+    } else {
+      const [groups, groupsWithAdminPermission] = await this.groupService.getUserJoinedGroups(currentUser);
+      return {
+        groups: await Promise.all(groups.map(async group => await this.groupService.getGroupMeta(group))),
+        groupsWithAdminPermission: groupsWithAdminPermission
+      };
+    }
   }
 }

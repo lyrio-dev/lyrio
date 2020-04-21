@@ -20,3 +20,5 @@ export * from "./set-group-admin-response.dto";
 
 export * from "./search-group-request.dto";
 export * from "./search-group-response.dto";
+
+export * from "./get-group-list-response.dto";

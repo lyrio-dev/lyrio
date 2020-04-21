@@ -15,6 +15,7 @@ import { UserService } from "@/user/user.service";
 import { GroupEntity } from "./group.entity";
 import { GroupMembershipEntity } from "./group-membership.entity";
 import { escapeLike } from "@/database/database.utils";
+import { UserEntity } from "@/user/user.entity";
 
 @Injectable()
 export class GroupService {
@@ -112,7 +113,7 @@ export class GroupService {
         return DeleteGroupResponseError.GROUP_NOT_EMPTY;
       }
 
-      // TODO: Check if the group has privilige
+      // TODO: Check if the group has permission
     }
 
     await this.groupRepository.delete(group);
@@ -192,5 +193,22 @@ export class GroupService {
       },
       take: maxTakeCount
     });
+  }
+
+  async getUserJoinedGroups(user: UserEntity): Promise<[GroupEntity[], number[]]> {
+    const groupMemberships = await this.groupMembershipRepository.find({
+      userId: user.id
+    });
+    const groups = await this.findGroupsByExistingIds(groupMemberships.map(groupMembership => groupMembership.groupId));
+    return [
+      groups,
+      groupMemberships
+        .filter((groupMembership, i) => groupMembership.isGroupAdmin || groups[i].ownerId == user.id)
+        .map(groupMembership => groupMembership.groupId)
+    ];
+  }
+
+  async getAllGroups(): Promise<GroupEntity[]> {
+    return await this.groupRepository.find();
   }
 }
