@@ -9,4 +9,7 @@ export class GroupMetaDto {
 
   @ApiProperty()
   readonly ownerId: number;
+
+  @ApiProperty()
+  readonly memberCount: number;
 }

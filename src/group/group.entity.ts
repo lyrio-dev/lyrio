@@ -17,4 +17,7 @@ export class GroupEntity {
 
   @Column()
   ownerId: number;
+
+  @Column({ type: "integer" })
+  memberCount: number;
 }

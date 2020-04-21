@@ -57,7 +57,8 @@ export class GroupService {
     return {
       id: group.id,
       name: group.name,
-      ownerId: group.ownerId
+      ownerId: group.ownerId,
+      memberCount: group.memberCount
     };
   }
 
@@ -86,6 +87,7 @@ export class GroupService {
         group = new GroupEntity();
         group.name = name;
         group.ownerId = ownerId;
+        group.memberCount = 1;
         await transactionalEntityManager.save(group);
 
         const groupMembership = new GroupMembershipEntity();
@@ -125,11 +127,14 @@ export class GroupService {
     if (!(await this.userService.userExists(userId))) return AddUserToGroupResponseError.NO_SUCH_USER;
 
     try {
-      const groupMembership = new GroupMembershipEntity();
-      groupMembership.userId = userId;
-      groupMembership.groupId = group.id;
-      groupMembership.isGroupAdmin = false;
-      await this.groupMembershipRepository.save(groupMembership);
+      await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
+        const groupMembership = new GroupMembershipEntity();
+        groupMembership.userId = userId;
+        groupMembership.groupId = group.id;
+        groupMembership.isGroupAdmin = false;
+        await transactionalEntityManager.save(groupMembership);
+        await transactionalEntityManager.increment(GroupEntity, { id: group.id }, "memberCount", -1);
+      });
     } catch (e) {
       if (
         await this.groupMembershipRepository.count({
@@ -157,7 +162,10 @@ export class GroupService {
 
     if (groupMembership.isGroupAdmin) return RemoveUserFromGroupResponseError.OWNER_OR_GROUP_ADMIN_CAN_NOT_BE_REMOVED;
 
-    await this.groupMembershipRepository.delete(groupMembership);
+    await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
+      await transactionalEntityManager.remove(groupMembership);
+      await transactionalEntityManager.increment(GroupEntity, { id: group.id }, "memberCount", -1);
+    });
 
     return null;
   }
