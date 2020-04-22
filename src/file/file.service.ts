@@ -186,11 +186,7 @@ export class FileService implements OnModuleInit {
           })()
         );
       });
-      stream.on("end", () =>
-        Promise.all(promises)
-          .then(resolve)
-          .catch(reject)
-      );
+      stream.on("end", () => Promise.all(promises).then(resolve).catch(reject));
       stream.on("error", reject);
     });
     await this.minioClient.removeObjects(this.bucket, deleteList);

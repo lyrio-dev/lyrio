@@ -239,10 +239,7 @@ export class ProblemService {
       .orderBy("problem.displayId IS NOT NULL", "DESC")
       .addOrderBy("problem.displayId", "ASC")
       .addOrderBy("problem.id", "ASC");
-    const result = await queryBuilder
-      .skip(skipCount)
-      .take(takeCount)
-      .getRawMany();
+    const result = await queryBuilder.skip(skipCount).take(takeCount).getRawMany();
     return [await this.findProblemsByExistingIds(result.map(row => row["id"])), count];
   }
 

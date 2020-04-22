@@ -72,9 +72,6 @@ export class SubmissionEntity {
   @Index()
   submitterId: number;
 
-  @OneToOne(
-    type => SubmissionDetailEntity,
-    submissionDetail => submissionDetail.submission
-  )
+  @OneToOne(type => SubmissionDetailEntity, submissionDetail => submissionDetail.submission)
   detail: Promise<SubmissionDetailEntity>;
 }

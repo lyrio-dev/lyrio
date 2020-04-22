@@ -50,15 +50,9 @@ export class ProblemEntity {
   @Column({ type: "integer" })
   acceptedSubmissionCount: number;
 
-  @OneToOne(
-    type => ProblemSampleEntity,
-    problemSample => problemSample.problem
-  )
+  @OneToOne(type => ProblemSampleEntity, problemSample => problemSample.problem)
   sample: Promise<ProblemSampleEntity>;
 
-  @OneToOne(
-    type => ProblemJudgeInfoEntity,
-    problemJudgeInfo => problemJudgeInfo.problem
-  )
+  @OneToOne(type => ProblemJudgeInfoEntity, problemJudgeInfo => problemJudgeInfo.problem)
   judgeInfo: Promise<ProblemJudgeInfoEntity>;
 }

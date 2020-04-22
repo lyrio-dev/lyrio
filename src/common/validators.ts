@@ -1,7 +1,7 @@
 import { registerDecorator, ValidationOptions, ValidationArguments, IsInt } from "class-validator";
 
 export function If<T = any>(callback: (value: T) => boolean, validationOptions?: ValidationOptions) {
-  return function(object: Object, propertyName: string) {
+  return function (object: Object, propertyName: string) {
     registerDecorator({
       target: object.constructor,
       propertyName: propertyName,

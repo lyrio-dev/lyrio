@@ -47,9 +47,6 @@ export class UserEntity {
   @Column({ type: "datetime" })
   registrationTime: Date;
 
-  @OneToOne(
-    type => UserAuthEntity,
-    userAuth => userAuth.user
-  )
+  @OneToOne(type => UserAuthEntity, userAuth => userAuth.user)
   userAuth: Promise<UserAuthEntity>;
 }

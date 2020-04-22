@@ -157,16 +157,8 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     const largestId = result[0].id,
       smallestId = result[result.length - 1].id;
     const [hasSmallerId, hasLargerId] = await Promise.all([
-      queryBuilderWithoutPagination
-        .clone()
-        .andWhere("id < :smallestId", { smallestId: smallestId })
-        .take(1)
-        .getCount(),
-      queryBuilderWithoutPagination
-        .clone()
-        .andWhere("id > :largestId", { largestId: largestId })
-        .take(1)
-        .getCount()
+      queryBuilderWithoutPagination.clone().andWhere("id < :smallestId", { smallestId: smallestId }).take(1).getCount(),
+      queryBuilderWithoutPagination.clone().andWhere("id > :largestId", { largestId: largestId }).take(1).getCount()
     ]);
 
     return {
@@ -280,15 +272,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
       ])
     );
 
-    const result = [...new Array(days).keys()].map(
-      i =>
-        map.get(
-          startDate
-            .clone()
-            .add(i, "day")
-            .valueOf()
-        ) || 0
-    );
+    const result = [...new Array(days).keys()].map(i => map.get(startDate.clone().add(i, "day").valueOf()) || 0);
 
     return result;
   }
