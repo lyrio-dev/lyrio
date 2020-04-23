@@ -133,7 +133,7 @@ export class GroupService {
         groupMembership.groupId = group.id;
         groupMembership.isGroupAdmin = false;
         await transactionalEntityManager.save(groupMembership);
-        await transactionalEntityManager.increment(GroupEntity, { id: group.id }, "memberCount", -1);
+        await transactionalEntityManager.increment(GroupEntity, { id: group.id }, "memberCount", 1);
       });
     } catch (e) {
       if (
