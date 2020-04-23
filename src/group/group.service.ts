@@ -219,4 +219,10 @@ export class GroupService {
   async getAllGroups(): Promise<GroupEntity[]> {
     return await this.groupRepository.find();
   }
+
+  async getGroupMemberList(group: GroupEntity): Promise<GroupMembershipEntity[]> {
+    return await this.groupMembershipRepository.find({
+      groupId: group.id
+    });
+  }
 }

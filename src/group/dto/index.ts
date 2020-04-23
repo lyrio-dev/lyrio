@@ -22,3 +22,6 @@ export * from "./search-group-request.dto";
 export * from "./search-group-response.dto";
 
 export * from "./get-group-list-response.dto";
+
+export * from "./get-group-member-list-request.dto";
+export * from "./get-group-member-list-response.dto";

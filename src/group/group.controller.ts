@@ -22,13 +22,17 @@ import {
   SetGroupAdminResponseError,
   SearchGroupRequestDto,
   SearchGroupResponseDto,
-  GetGroupListResponseDto
+  GetGroupListResponseDto,
+  GetGroupMemberListRequestDto,
+  GetGroupMemberListResponseDto,
+  GetGroupMemberListResponseError
 } from "./dto";
 import { ConfigService } from "@/config/config.service";
 import { GroupService } from "./group.service";
 import { CurrentUser } from "@/common/user.decorator";
 import { UserEntity } from "@/user/user.entity";
 import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.service";
+import { UserService } from "@/user/user.service";
 
 @ApiTags("Group")
 @Controller("group")
@@ -36,6 +40,7 @@ export class GroupController {
   constructor(
     private readonly configService: ConfigService,
     private readonly groupService: GroupService,
+    private readonly userService: UserService,
     private readonly userPrivilegeService: UserPrivilegeService
   ) {}
 
@@ -276,5 +281,45 @@ export class GroupController {
         groupsWithAdminPermission: groupsWithAdminPermission
       };
     }
+  }
+
+  @Post("getGroupMemberList")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Get list of members of a group."
+  })
+  async getGroupMemberList(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: GetGroupMemberListRequestDto
+  ): Promise<GetGroupMemberListResponseDto> {
+    if (!currentUser)
+      return {
+        error: GetGroupMemberListResponseError.PERMISSION_DENIED
+      };
+
+    const group = await this.groupService.findGroupById(request.groupId);
+    if (!group)
+      return {
+        error: GetGroupMemberListResponseError.NO_SUCH_GROUP
+      };
+
+    const memberships = await this.groupService.getGroupMemberList(group);
+    if (!memberships.some(membership => membership.userId === currentUser.id)) {
+      if (!(await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER_GROUP))) {
+        return {
+          error: GetGroupMemberListResponseError.PERMISSION_DENIED
+        };
+      }
+    }
+
+    const users = await this.userService.findUsersByExistingIds(memberships.map(membership => membership.userId));
+    return {
+      memberList: await Promise.all(
+        memberships.map(async (membership, i) => ({
+          userMeta: await this.userService.getUserMeta(users[i], currentUser),
+          isGroupAdmin: membership.isGroupAdmin
+        }))
+      )
+    };
   }
 }

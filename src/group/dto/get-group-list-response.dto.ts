@@ -3,9 +3,9 @@ import { ApiProperty } from "@nestjs/swagger";
 import { GroupMetaDto } from "./group-meta.dto";
 
 export class GetGroupListResponseDto {
-  @ApiProperty()
+  @ApiProperty({ type: [GroupMetaDto] })
   groups: GroupMetaDto[];
 
-  @ApiProperty()
+  @ApiProperty({ type: [Number] })
   groupsWithAdminPermission: number[];
 }
