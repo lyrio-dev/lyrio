@@ -25,3 +25,6 @@ export * from "./get-group-list-response.dto";
 
 export * from "./get-group-member-list-request.dto";
 export * from "./get-group-member-list-response.dto";
+
+export * from "./rename-group-request.dto";
+export * from "./rename-group-response.dto";

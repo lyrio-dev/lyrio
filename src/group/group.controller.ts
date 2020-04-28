@@ -25,7 +25,10 @@ import {
   GetGroupListResponseDto,
   GetGroupMemberListRequestDto,
   GetGroupMemberListResponseDto,
-  GetGroupMemberListResponseError
+  GetGroupMemberListResponseError,
+  RenameGroupRequestDto,
+  RenameGroupResponseDto,
+  RenameGroupResponseError
 } from "./dto";
 import { ConfigService } from "@/config/config.service";
 import { GroupService } from "./group.service";
@@ -132,6 +135,41 @@ export class GroupController {
     if (error)
       return {
         error: error
+      };
+
+    return {};
+  }
+
+  @Post("renameGroup")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Rename a existing group."
+  })
+  async renameGroup(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: RenameGroupRequestDto
+  ): Promise<RenameGroupResponseDto> {
+    if (
+      !(
+        currentUser &&
+        (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER_GROUP))
+      )
+    )
+      return {
+        error: RenameGroupResponseError.PERMISSION_DENIED
+      };
+
+    const group = await this.groupService.findGroupById(request.groupId);
+    if (!group)
+      return {
+        error: RenameGroupResponseError.NO_SUCH_GROUP
+      };
+
+    const success = await this.groupService.renameGroup(group, request.name);
+
+    if (!success)
+      return {
+        error: RenameGroupResponseError.DUPLICATE_GROUP_NAME
       };
 
     return {};

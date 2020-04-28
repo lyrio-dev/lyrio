@@ -123,6 +123,18 @@ export class GroupService {
     return null;
   }
 
+  async renameGroup(group: GroupEntity, name: string): Promise<boolean> {
+    try {
+      group.name = name;
+      await this.groupRepository.save(group);
+      return true;
+    } catch (e) {
+      if (await this.groupRepository.count({ name: name })) return false;
+
+      throw e;
+    }
+  }
+
   async addUserToGroup(userId: number, group: GroupEntity): Promise<AddUserToGroupResponseError> {
     if (!(await this.userService.userExists(userId))) return AddUserToGroupResponseError.NO_SUCH_USER;
 
