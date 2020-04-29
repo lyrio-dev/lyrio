@@ -6,7 +6,6 @@ import {
   CreateGroupResponseError,
   AddUserToGroupResponseError,
   RemoveUserFromGroupResponseError,
-  DeleteGroupResponseError,
   SetGroupAdminResponseError,
   GroupMetaDto
 } from "./dto";
@@ -57,7 +56,6 @@ export class GroupService {
     return {
       id: group.id,
       name: group.name,
-      ownerId: group.ownerId,
       memberCount: group.memberCount
     };
   }
@@ -80,21 +78,14 @@ export class GroupService {
     ).map(memberShip => memberShip.groupId);
   }
 
-  async createGroup(ownerId: number, name: string): Promise<[CreateGroupResponseError, GroupEntity]> {
+  async createGroup(name: string): Promise<[CreateGroupResponseError, GroupEntity]> {
     try {
       let group: GroupEntity;
       await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
         group = new GroupEntity();
         group.name = name;
-        group.ownerId = ownerId;
-        group.memberCount = 1;
+        group.memberCount = 0;
         await transactionalEntityManager.save(group);
-
-        const groupMembership = new GroupMembershipEntity();
-        groupMembership.userId = ownerId;
-        groupMembership.groupId = group.id;
-        groupMembership.isGroupAdmin = false;
-        await transactionalEntityManager.save(groupMembership);
       });
 
       return [null, group];
@@ -153,13 +144,11 @@ export class GroupService {
   async removeUserFromGroup(userId: number, group: GroupEntity): Promise<RemoveUserFromGroupResponseError> {
     if (!(await this.userService.userExists(userId))) return RemoveUserFromGroupResponseError.NO_SUCH_USER;
 
-    if (userId === group.ownerId) return RemoveUserFromGroupResponseError.OWNER_OR_GROUP_ADMIN_CAN_NOT_BE_REMOVED;
-
     const groupMembership = await this.findGroupMembership(userId, group.id);
 
     if (!groupMembership) return RemoveUserFromGroupResponseError.USER_NOT_IN_GROUP;
 
-    if (groupMembership.isGroupAdmin) return RemoveUserFromGroupResponseError.OWNER_OR_GROUP_ADMIN_CAN_NOT_BE_REMOVED;
+    if (groupMembership.isGroupAdmin) return RemoveUserFromGroupResponseError.GROUP_ADMIN_CAN_NOT_BE_REMOVED;
 
     await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
       await transactionalEntityManager.remove(groupMembership);
@@ -210,7 +199,7 @@ export class GroupService {
     return [
       groups,
       groupMemberships
-        .filter((groupMembership, i) => groupMembership.isGroupAdmin || groups[i].ownerId == user.id)
+        .filter((groupMembership, i) => groupMembership.isGroupAdmin)
         .map(groupMembership => groupMembership.groupId)
     ];
   }
@@ -222,6 +211,12 @@ export class GroupService {
   async getGroupMemberList(group: GroupEntity): Promise<GroupMembershipEntity[]> {
     return await this.groupMembershipRepository.find({
       groupId: group.id
+    });
+  }
+
+  async getUserJoinedGroupsCount(user: UserEntity): Promise<number> {
+    return await this.groupMembershipRepository.count({
+      userId: user.id
     });
   }
 }

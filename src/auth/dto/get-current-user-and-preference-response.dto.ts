@@ -9,6 +9,9 @@ export class GetCurrentUserAndPreferenceResponseDto {
   @ApiProperty()
   userMeta?: UserMetaDto;
 
+  @ApiProperty()
+  joinedGroupsCount?: number;
+
   @ApiProperty({ enum: UserPrivilegeType, isArray: true })
   userPrivileges?: UserPrivilegeType[];
 

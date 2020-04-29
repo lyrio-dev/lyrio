@@ -1,6 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Index, ManyToOne, Column, JoinColumn } from "typeorm";
-
-import { UserEntity } from "@/user/user.entity";
+import { Entity, PrimaryGeneratedColumn, Index, Column } from "typeorm";
 
 @Entity("group")
 export class GroupEntity {
@@ -10,13 +8,6 @@ export class GroupEntity {
   @Column({ type: "varchar", length: 48 })
   @Index({ unique: true })
   name: string;
-
-  @ManyToOne(type => UserEntity)
-  @JoinColumn()
-  owner: Promise<UserEntity>;
-
-  @Column()
-  ownerId: number;
 
   @Column({ type: "integer" })
   memberCount: number;

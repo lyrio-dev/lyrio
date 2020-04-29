@@ -100,7 +100,7 @@ export class GroupController {
         error: CreateGroupResponseError.PERMISSION_DENIED
       };
 
-    const [error, group] = await this.groupService.createGroup(currentUser.id, request.groupName);
+    const [error, group] = await this.groupService.createGroup(request.groupName);
     if (error)
       return {
         error: error
@@ -199,7 +199,6 @@ export class GroupController {
 
     if (
       !(
-        currentUser.id === group.ownerId ||
         (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER_GROUP)) ||
         (await this.groupService.isGroupAdmin(currentUser.id, group.id))
       )
@@ -239,7 +238,6 @@ export class GroupController {
 
     if (
       !(
-        currentUser.id === group.ownerId ||
         (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER_GROUP)) ||
         (await this.groupService.isGroupAdmin(currentUser.id, group.id))
       )
@@ -277,12 +275,7 @@ export class GroupController {
         error: SetGroupAdminResponseError.NO_SUCH_GROUP
       };
 
-    if (
-      !(
-        currentUser.id === group.ownerId ||
-        (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER_GROUP))
-      )
-    )
+    if (!(await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER_GROUP)))
       return {
         error: SetGroupAdminResponseError.PERMISSION_DENIED
       };

@@ -19,6 +19,7 @@ import { AuthService } from "./auth.service";
 import { CurrentUser } from "@/common/user.decorator";
 import { UserEntity } from "@/user/user.entity";
 import { UserPrivilegeService } from "@/user/user-privilege.service";
+import { GroupService } from "@/group/group.service";
 
 @ApiTags("Auth")
 @Controller("auth")
@@ -27,7 +28,8 @@ export class AuthController {
     private readonly configService: ConfigService,
     private readonly userService: UserService,
     private readonly userPrivilegeService: UserPrivilegeService,
-    private readonly authService: AuthService
+    private readonly authService: AuthService,
+    private readonly groupService: GroupService
   ) {}
 
   @Get("getCurrentUserAndPreference")
@@ -41,6 +43,7 @@ export class AuthController {
     const result: GetCurrentUserAndPreferenceResponseDto = new GetCurrentUserAndPreferenceResponseDto();
     if (currentUser) {
       result.userMeta = await this.userService.getUserMeta(currentUser, currentUser);
+      result.joinedGroupsCount = await this.groupService.getUserJoinedGroupsCount(currentUser);
       result.userPrivileges = await this.userPrivilegeService.getUserPrivileges(currentUser.id);
       result.userPreference = await this.userService.getUserPreference(currentUser);
     }
