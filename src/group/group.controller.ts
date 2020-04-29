@@ -131,11 +131,13 @@ export class GroupController {
         error: DeleteGroupResponseError.PERMISSION_DENIED
       };
 
-    const error = await this.groupService.deleteGroup(request.groupId, request.force);
-    if (error)
+    const group = await this.groupService.findGroupById(request.groupId);
+    if (!group)
       return {
-        error: error
+        error: DeleteGroupResponseError.NO_SUCH_GROUP
       };
+
+    await this.groupService.deleteGroup(group);
 
     return {};
   }

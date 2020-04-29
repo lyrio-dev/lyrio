@@ -106,21 +106,8 @@ export class GroupService {
     }
   }
 
-  async deleteGroup(id: number, force: boolean): Promise<DeleteGroupResponseError> {
-    const group = await this.findGroupById(id);
-    if (!group) return DeleteGroupResponseError.NO_SUCH_GROUP;
-
-    if (!force) {
-      if (await this.groupMembershipRepository.count({ groupId: id })) {
-        return DeleteGroupResponseError.GROUP_NOT_EMPTY;
-      }
-
-      // TODO: Check if the group has permission
-    }
-
-    await this.groupRepository.delete(group);
-
-    return null;
+  async deleteGroup(group: GroupEntity): Promise<void> {
+    await this.groupRepository.remove(group);
   }
 
   async renameGroup(group: GroupEntity, name: string): Promise<boolean> {

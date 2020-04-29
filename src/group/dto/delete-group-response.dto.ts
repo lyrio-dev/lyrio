@@ -2,9 +2,7 @@ import { ApiProperty } from "@nestjs/swagger";
 
 export enum DeleteGroupResponseError {
   PERMISSION_DENIED = "PERMISSION_DENIED",
-  NO_SUCH_GROUP = "NO_SUCH_GROUP",
-  GROUP_NOT_EMPTY = "GROUP_NOT_EMPTY",
-  GROUP_HAVE_PRIVILIGE = "GROUP_HAVE_PRIVILIGE"
+  NO_SUCH_GROUP = "NO_SUCH_GROUP"
 }
 
 export class DeleteGroupResponseDto {

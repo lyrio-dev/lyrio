@@ -5,8 +5,4 @@ export class DeleteGroupRequestDto {
   @ApiProperty()
   @IsInt()
   readonly groupId: number;
-
-  @ApiProperty()
-  @IsBoolean()
-  readonly force: boolean;
 }
