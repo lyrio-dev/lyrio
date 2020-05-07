@@ -1,4 +1,4 @@
-import { Injectable, Logger, Ip, Inject, forwardRef } from "@nestjs/common";
+import { Injectable, Logger, Inject, forwardRef } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
 import { Repository, Connection } from "typeorm";
 import { ValidationError } from "class-validator";
@@ -21,9 +21,8 @@ import {
 import { JudgeTaskService } from "@/judge/judge-task-service.interface";
 import { SubmissionProgress, SubmissionProgressType } from "./submission-progress.interface";
 import { ProblemFileType } from "@/problem/problem-file.entity";
-import { ProblemJudgeInfo } from "@/problem/type/problem-judge-info.interface";
+import { ProblemJudgeInfo } from "@/problem/problem-judge-info.interface";
 import { SubmissionContent } from "./submission-content.interface";
-import { SubmissionTypedService } from "./type/submission-typed.service";
 import { SubmissionProgressService, SubmissionEventType } from "./submission-progress.service";
 import { SubmissionBasicMetaDto } from "./dto";
 import { SubmissionStatisticsService } from "./submission-statistics.service";
@@ -31,6 +30,7 @@ import { UserService } from "@/user/user.service";
 import { ProblemSampleData } from "@/problem/problem-sample-data.interface";
 import { RedisService } from "@/redis/redis.service";
 import { JudgeGateway } from "@/judge/judge.gateway";
+import { ProblemTypeFactoryService } from "@/problem-type/problem-type-factory.service";
 
 interface SubmissionTaskExtraInfo extends JudgeTaskExtraInfo {
   problemType: ProblemType;
@@ -50,11 +50,11 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     @InjectRepository(SubmissionDetailEntity)
     private readonly submissionDetailRepository: Repository<SubmissionDetailEntity>,
     private readonly problemService: ProblemService,
+    private readonly problemTypeFactoryService: ProblemTypeFactoryService,
     @Inject(forwardRef(() => UserService))
     private readonly userService: UserService,
     private readonly judgeQueueService: JudgeQueueService,
     private readonly redisService: RedisService,
-    private readonly submissionTypedService: SubmissionTypedService,
     private readonly submissionProgressService: SubmissionProgressService,
     private readonly submissionStatisticsService: SubmissionStatisticsService,
     private readonly judgeGateway: JudgeGateway
@@ -176,16 +176,15 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     problem: ProblemEntity,
     content: SubmissionContent
   ): Promise<[ValidationError[], SubmissionEntity]> {
-    const validationError = await this.submissionTypedService.validateSubmissionContent(problem.type, content);
+    const validationError = await this.problemTypeFactoryService.type(problem.type).validateSubmissionContent(content);
     if (validationError && validationError.length > 0) return [validationError, null];
 
     const submission = await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
       const submission = new SubmissionEntity();
       submission.isPublic = problem.isPublic;
-      const pair = await this.submissionTypedService.getCodeLanguageAndAnswerSizeFromSubmissionContent(
-        problem.type,
-        content
-      );
+      const pair = await this.problemTypeFactoryService
+        .type(problem.type)
+        .getCodeLanguageAndAnswerSizeFromSubmissionContent(content);
       submission.codeLanguage = pair.language;
       submission.answerSize = pair.answerSize;
       submission.score = null;
@@ -415,10 +414,9 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     submission.status = progress.status;
     submission.score = progress.score;
 
-    const timeAndMemory = await this.submissionTypedService.getTimeAndMemoryUsedFromSubmissionResult(
-      problem.type,
-      submissionDetail.result
-    );
+    const timeAndMemory = this.problemTypeFactoryService
+      .type(problem.type)
+      .getTimeAndMemoryUsedFromSubmissionResult(submissionDetail.result);
     submission.timeUsed = timeAndMemory.timeUsed;
     submission.memoryUsed = timeAndMemory.memoryUsed;
 
@@ -462,7 +460,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     return true;
   }
 
-  public async getTaskById(taskId: string): Promise<JudgeTask<SubmissionTaskExtraInfo>> {
+  public async getTaskToBeSentToJudgeByTaskId(taskId: string): Promise<JudgeTask<SubmissionTaskExtraInfo>> {
     try {
       const submission = await this.findSubmissionByTaskId(taskId);
       if (!submission) return null;
@@ -471,7 +469,11 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
 
       const problem = await this.problemService.findProblemById(submission.problemId);
       const judgeInfo = await this.problemService.getProblemJudgeInfo(problem);
-      const testData = await this.problemService.listProblemFiles(problem, ProblemFileType.TestData, false);
+      const testData = await this.problemService.getProblemFiles(problem, ProblemFileType.TestData);
+
+      const preprocessedJudgeInfo = this.problemTypeFactoryService
+        .type(problem.type)
+        .preprocessJudgeInfo(judgeInfo, testData);
 
       return new JudgeTask<SubmissionTaskExtraInfo>(
         submission.taskId,
@@ -480,8 +482,11 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
         JudgeTaskPriority.High,
         {
           problemType: problem.type,
-          judgeInfo: judgeInfo,
-          samples: judgeInfo && judgeInfo["runSamples"] ? await this.problemService.getProblemSamples(problem) : null,
+          judgeInfo: preprocessedJudgeInfo,
+          samples:
+            preprocessedJudgeInfo && preprocessedJudgeInfo["runSamples"]
+              ? await this.problemService.getProblemSamples(problem)
+              : null,
           testData: Object.fromEntries(testData.map(problemFile => [problemFile.filename, problemFile.uuid])),
           submissionContent: submissionDetail.content
         }

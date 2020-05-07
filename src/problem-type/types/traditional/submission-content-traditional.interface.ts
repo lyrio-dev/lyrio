@@ -1,6 +1,8 @@
 import { IsString, Length, IsObject, IsBoolean, IsOptional } from "class-validator";
 
-export class SubmissionContentTraditional {
+import { SubmissionContent } from "@/submission/submission-content.interface";
+
+export class SubmissionContentTraditional implements SubmissionContent {
   @IsString()
   @Length(1, 20)
   language: string;

@@ -112,7 +112,7 @@ export class JudgeQueueService {
 
     const [combinedPriority, taskJson] = redisResponse;
     const taskMeta: JudgeTaskMeta = JSON.parse(taskJson);
-    const task = await this.taskServices.get(taskMeta.type).getTaskById(taskMeta.taskId);
+    const task = await this.taskServices.get(taskMeta.type).getTaskToBeSentToJudgeByTaskId(taskMeta.taskId);
     if (!task) {
       Logger.verbose(
         `Consumed judge task { taskId: ${taskMeta.taskId}, type: ${taskMeta.type} }, but taskId is invalid, maybe canceled?`

@@ -2,7 +2,7 @@ import { ApiProperty } from "@nestjs/swagger";
 
 import { ProblemMetaDto } from "./problem-meta.dto";
 import { ProblemSampleDataMemberDto } from "./problem-sample-data-member.dto";
-import { ProblemJudgeInfo } from "../type/problem-judge-info.interface";
+import { ProblemJudgeInfo } from "../problem-judge-info.interface";
 import { ProblemFileDto } from "./problem-file.dto";
 import { ProblemLocalizedContentDto } from "./problem-statement.dto";
 import { ProblemPermissionType, ProblemPermissionLevel } from "@/problem/problem.service";

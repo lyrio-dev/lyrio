@@ -11,7 +11,7 @@ import { ProblemSampleEntity } from "./problem-sample.entity";
 import { ProblemFileType, ProblemFileEntity } from "./problem-file.entity";
 import { ProblemTagEntity } from "./problem-tag.entity";
 import { ProblemTagMapEntity } from "./problem-tag-map.entity";
-import { ProblemJudgeInfoService } from "./type/problem-judge-info.service";
+import { ProblemTypeFactoryService } from "../problem-type/problem-type-factory.service";
 import {
   ProblemStatementDto,
   UpdateProblemStatementRequestDto,
@@ -24,7 +24,7 @@ import { LocalizedContentType } from "@/localized-content/localized-content.enti
 import { Locale } from "@/common/locale.type";
 import { ProblemContentSection } from "./problem-content.interface";
 import { ProblemSampleData } from "./problem-sample-data.interface";
-import { ProblemJudgeInfo } from "./type/problem-judge-info.interface";
+import { ProblemJudgeInfo } from "./problem-judge-info.interface";
 import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.service";
 import { PermissionService, PermissionObjectType } from "@/permission/permission.service";
 import { UserService } from "@/user/user.service";
@@ -65,7 +65,7 @@ export class ProblemService {
     private readonly problemTagRepository: Repository<ProblemTagEntity>,
     @InjectRepository(ProblemTagMapEntity)
     private readonly problemTagMapRepository: Repository<ProblemTagMapEntity>,
-    private readonly problemJudgeInfoService: ProblemJudgeInfoService,
+    private readonly problemTypeFactoryService: ProblemTypeFactoryService,
     private readonly localizedContentService: LocalizedContentService,
     private readonly userPrivilegeService: UserPrivilegeService,
     @Inject(forwardRef(() => UserService))
@@ -263,7 +263,7 @@ export class ProblemService {
 
       const problemJudgeInfo = new ProblemJudgeInfoEntity();
       problemJudgeInfo.problemId = problem.id;
-      problemJudgeInfo.judgeInfo = this.problemJudgeInfoService.getDefaultJudgeInfo(type);
+      problemJudgeInfo.judgeInfo = this.problemTypeFactoryService.type(type).getDefaultJudgeInfo();
       await transactionalEntityManager.save(problemJudgeInfo);
 
       const problemSample = new ProblemSampleEntity();
@@ -354,7 +354,21 @@ export class ProblemService {
     return true;
   }
 
-  async updateProblemJudgeInfo(problem: ProblemEntity, judgeInfo: ProblemJudgeInfo): Promise<void> {
+  async updateProblemJudgeInfo(
+    problem: ProblemEntity,
+    judgeInfo: ProblemJudgeInfo,
+    ignoreLimitsOnValidation: boolean
+  ): Promise<string[]> {
+    const testData = await this.getProblemFiles(problem, ProblemFileType.TestData);
+    try {
+      this.problemTypeFactoryService
+        .type(problem.type)
+        .validateJudgeInfo(judgeInfo, testData, ignoreLimitsOnValidation);
+    } catch (e) {
+      if (Array.isArray(e)) return e;
+      throw e;
+    }
+
     const problemJudgeInfo = await this.problemJudgeInfoRepository.findOne({
       problemId: problem.id
     });
@@ -608,15 +622,21 @@ export class ProblemService {
     });
   }
 
+  async getProblemFiles(problem: ProblemEntity, type: ProblemFileType): Promise<ProblemFileEntity[]> {
+    const problemFiles = await this.problemFileRepository.find({
+      problemId: problem.id,
+      type: type
+    });
+
+    return problemFiles;
+  }
+
   async listProblemFiles(
     problem: ProblemEntity,
     type: ProblemFileType,
     withSize: boolean = false
   ): Promise<ProblemFileDto[]> {
-    const problemFiles: ProblemFileDto[] = await this.problemFileRepository.find({
-      problemId: problem.id,
-      type: type
-    });
+    const problemFiles = await this.getProblemFiles(problem, type);
 
     if (withSize) {
       const fileSizes = await this.fileService.getFileSizes(problemFiles.map(problemFile => problemFile.uuid));

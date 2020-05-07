@@ -652,12 +652,26 @@ export class ProblemController {
         error: UpdateProblemJudgeInfoResponseError.NO_SUCH_PROBLEM
       };
 
-    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.MODIFY)))
+    const hasPrivilege = await this.userPrivilegeService.userHasPrivilege(
+      currentUser,
+      UserPrivilegeType.MANAGE_PROBLEM
+    );
+    if (
+      !(
+        hasPrivilege ||
+        (await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.MODIFY))
+      )
+    )
       return {
         error: UpdateProblemJudgeInfoResponseError.PERMISSION_DENIED
       };
 
-    await this.problemService.updateProblemJudgeInfo(problem, request.judgeInfo);
+    const judgeInfoError = await this.problemService.updateProblemJudgeInfo(problem, request.judgeInfo, hasPrivilege);
+    if (judgeInfoError)
+      return {
+        error: UpdateProblemJudgeInfoResponseError.INVALID_JUDGE_INFO,
+        judgeInfoError: judgeInfoError
+      };
 
     return {};
   }

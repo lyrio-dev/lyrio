@@ -17,9 +17,7 @@ import { PermissionModule } from "@/permission/permission.module";
 import { FileModule } from "@/file/file.module";
 import { RedisModule } from "@/redis/redis.module";
 import { SubmissionModule } from "@/submission/submission.module";
-
-import { ProblemJudgeInfoService } from "./type/problem-judge-info.service";
-import { ProblemTypedJudgeInfoTraditionalService } from "./type/traditional/problem-typed-judge-info-traditional.service";
+import { ProblemTypeModule } from "@/problem-type/problem-type.module";
 
 @Module({
   imports: [
@@ -36,10 +34,11 @@ import { ProblemTypedJudgeInfoTraditionalService } from "./type/traditional/prob
     forwardRef(() => PermissionModule),
     forwardRef(() => FileModule),
     forwardRef(() => RedisModule),
-    forwardRef(() => SubmissionModule)
+    forwardRef(() => SubmissionModule),
+    forwardRef(() => ProblemTypeModule)
   ],
-  providers: [ProblemService, ProblemJudgeInfoService, ProblemTypedJudgeInfoTraditionalService],
+  providers: [ProblemService],
   controllers: [ProblemController],
-  exports: [ProblemService, ProblemJudgeInfoService]
+  exports: [ProblemService]
 })
 export class ProblemModule {}

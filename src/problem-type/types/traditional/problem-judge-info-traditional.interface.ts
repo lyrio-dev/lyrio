@@ -1,12 +1,12 @@
-import { ProblemJudgeInfo } from "../problem-judge-info.interface";
+import { ProblemJudgeInfo } from "@/problem/problem-judge-info.interface";
 
 export interface ProblemJudgeInfoTraditional extends ProblemJudgeInfo {
   /*
    * The default time / memory limit
    * One is ignored in a subtask if the it defined its own default
    */
-  timeLimit?: number;
-  memoryLimit?: number;
+  timeLimit: number;
+  memoryLimit: number;
 
   /*
    * Be null if not using file IO
@@ -25,6 +25,7 @@ export interface ProblemJudgeInfoTraditional extends ProblemJudgeInfo {
   /*
    * There could be multiple subtasks in a problem
    * Each subtask contains some testcases
+   * null for detecting from testdata files automatically
    */
   subtasks: {
     /*
@@ -35,8 +36,8 @@ export interface ProblemJudgeInfoTraditional extends ProblemJudgeInfo {
     memoryLimit?: number;
 
     testcases: {
-      inputFilename?: string;
-      outputFilename?: string;
+      inputFilename: string;
+      outputFilename: string;
 
       // If one of these is null,
       // the one's default of the subtask if exists, or of problem is used

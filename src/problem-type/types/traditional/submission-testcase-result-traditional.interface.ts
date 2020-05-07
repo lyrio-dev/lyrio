@@ -1,4 +1,4 @@
-import { SubmissionTestcaseResult } from "../../submission-result.interface";
+import { SubmissionTestcaseResult } from "@/submission/submission-result.interface";
 
 // For subtasks and testcasese
 export enum SubmissionTestcaseStatusTraditional {

@@ -40,6 +40,7 @@ import {
 import { ProblemEntity } from "@/problem/problem.entity";
 import { SubmissionStatus } from "./submission-status.enum";
 import { SubmissionStatisticsService } from "./submission-statistics.service";
+import { ProblemTypeFactoryService } from "@/problem-type/problem-type-factory.service";
 
 @ApiTags("Submission")
 @Controller("submission")
@@ -47,6 +48,7 @@ export class SubmissionController {
   constructor(
     private readonly submissionService: SubmissionService,
     private readonly problemService: ProblemService,
+    private readonly problemTypeFactoryService: ProblemTypeFactoryService,
     private readonly userService: UserService,
     private readonly userPrivilegeService: UserPrivilegeService,
     private readonly configService: ConfigService,

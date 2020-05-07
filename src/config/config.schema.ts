@@ -121,6 +121,18 @@ class ResourceLimitConfig {
   @IsInt()
   @Min(0)
   readonly problemAdditionalFileSize: number;
+
+  @IsInt()
+  @Min(1)
+  readonly problemTestcases: number;
+
+  @IsInt()
+  @Min(1)
+  readonly problemTimeLimit: number;
+
+  @IsInt()
+  @Min(1)
+  readonly problemMemoryLimit: number;
 }
 
 class QueryLimitConfig {

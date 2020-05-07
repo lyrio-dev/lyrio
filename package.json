@@ -31,6 +31,7 @@
     "@types/serialize-javascript": "^1.5.0",
     "@types/socket.io": "^2.1.4",
     "@types/socket.io-redis": "^1.0.25",
+    "@types/toposort": "^2.0.3",
     "@types/uuid": "^7.0.2",
     "bcrypt": "^4.0.1",
     "class-transformer": "^0.2.3",
@@ -53,8 +54,10 @@
     "serialize-javascript": "^3.0.0",
     "socket.io-redis": "^5.2.0",
     "swagger-ui-express": "^4.1.4",
+    "toposort": "^2.0.2",
     "typeorm": "^0.2.24",
     "uuid": "^7.0.3",
+    "valid-filename": "^3.1.0",
     "xdomain": "^0.8.2"
   },
   "devDependencies": {

@@ -42,7 +42,10 @@
         "problemTestdataFiles": 40,
         "problemTestdataSize": 134217728,
         "problemAdditionalFileFiles": 40,
-        "problemAdditionalFileSize": 134217728
+        "problemAdditionalFileSize": 134217728,
+        "problemTestcases": 20,
+        "problemTimeLimit": 2000,
+        "problemMemoryLimit": 512
     },
     "queryLimit": {
         "problemSetProblemsTake": 100,
