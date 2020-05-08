@@ -11,6 +11,7 @@ import { ProblemFileEntity } from "@/problem/problem-file.entity";
 import { SubmissionContentTraditional } from "./submission-content-traditional.interface";
 import { SubmissionTestcaseResultTraditional } from "./submission-testcase-result-traditional.interface";
 import { SubmissionResult } from "@/submission/submission-result.interface";
+import { CodeLanguageService } from "@/code-language/code-language.service";
 
 @Injectable()
 export class ProblemTypeTraditionalService
@@ -20,7 +21,7 @@ export class ProblemTypeTraditionalService
       SubmissionContentTraditional,
       SubmissionTestcaseResultTraditional
     > {
-  constructor(private configService: ConfigService) {}
+  constructor(private configService: ConfigService, private codeLanguageService: CodeLanguageService) {}
 
   getDefaultJudgeInfo(): ProblemJudgeInfoTraditional {
     return {
@@ -192,7 +193,12 @@ export class ProblemTypeTraditionalService
   }
 
   async validateSubmissionContent(submissionContent: SubmissionContentTraditional): Promise<ValidationError[]> {
-    return validate(plainToClass(SubmissionContentTraditional, submissionContent));
+    const errors = await validate(plainToClass(SubmissionContentTraditional, submissionContent));
+    if (errors.length > 0) return errors;
+    return this.codeLanguageService.validateLanguageOptions(
+      submissionContent.language,
+      submissionContent.languageOptions
+    );
   }
 
   async getCodeLanguageAndAnswerSizeFromSubmissionContent(submissionContent: SubmissionContentTraditional) {
