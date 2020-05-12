@@ -32,6 +32,6 @@ export interface SubmissionTestcaseResultTraditional extends SubmissionTestcaseR
   output?: string;
   userOutput?: string;
   userError?: string;
-  graderMessage?: string;
+  checkerMessage?: string;
   systemMessage?: string;
 }

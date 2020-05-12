@@ -12,6 +12,7 @@ import { SubmissionContentTraditional } from "./submission-content-traditional.i
 import { SubmissionTestcaseResultTraditional } from "./submission-testcase-result-traditional.interface";
 import { SubmissionResult } from "@/submission/submission-result.interface";
 import { CodeLanguageService } from "@/code-language/code-language.service";
+import { CodeLanguage } from "@/code-language/code-language.type";
 
 @Injectable()
 export class ProblemTypeTraditionalService
@@ -28,7 +29,11 @@ export class ProblemTypeTraditionalService
       timeLimit: Math.min(1000, this.configService.config.resourceLimit.problemTimeLimit),
       memoryLimit: Math.min(512, this.configService.config.resourceLimit.problemTimeLimit),
       runSamples: true,
-      subtasks: null
+      subtasks: null,
+      checker: {
+        type: "lines",
+        caseSensitive: false
+      }
     };
   }
 
@@ -180,6 +185,32 @@ export class ProblemTypeTraditionalService
     );
     if (sum > 100) {
       throw ["POINTS_SUM_UP_TO_LARGER_THAN_100_SUBTASKS", sum];
+    }
+
+    if (!judgeInfo.checker || !["integers", "floats", "lines", "binary", "custom"].includes(judgeInfo.checker.type)) {
+      throw ["INVALID_CHECKER_TYPE"];
+    }
+    switch (judgeInfo.checker.type) {
+      case "floats":
+        if (!(Number.isSafeInteger(judgeInfo.checker.precision) && judgeInfo.checker.precision > 0))
+          throw ["INVALID_CHECKER_OPTIONS"];
+        break;
+      case "lines":
+        if (typeof judgeInfo.checker.caseSensitive !== "boolean") throw ["INVALID_CHECKER_OPTIONS"];
+        break;
+      case "custom":
+        const checker = judgeInfo.checker;
+        if (!["testlib", "legacy", "lemon", "hustoj", "qduoj", "domjudge"].includes(checker.interface))
+          throw ["INVALID_CHECKER_INTERFACE"];
+        if (!Object.values(CodeLanguage).includes(checker.language)) throw ["INVALID_CHECKER_LANGUAGE"];
+        if (!testData.some(file => file.filename === checker.filename))
+          throw ["NO_SUCH_CHECKER_FILE", checker.filename];
+        const languageOptionsValidationErrors = this.codeLanguageService.validateLanguageOptions(
+          checker.language,
+          checker.languageOptions
+        );
+        if (languageOptionsValidationErrors.length > 0) throw ["INVALID_CHECKER_LANGUAGE_OPTIONS"];
+        break;
     }
 
     try {
