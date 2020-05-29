@@ -99,4 +99,7 @@ export interface ProblemJudgeInfoTraditional extends ProblemJudgeInfo {
   // binary:   check if the user's output and answer files are equal in binary
   // custom:   use a custom program to check the user's output
   checker: CheckerTypeIntegers | CheckerTypeFloats | CheckerTypeLines | CheckerTypeBinary | CheckerTypeCustom;
+
+  // The map of files to be copied to the source code directory when compileing for each code language
+  extraSourceFiles?: Partial<Record<CodeLanguage, Record<string, string>>>;
 }
