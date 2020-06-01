@@ -1,31 +1,6 @@
 import { ProblemJudgeInfo } from "@/problem/problem-judge-info.interface";
 import { CodeLanguage } from "@/code-language/code-language.type";
-
-interface CheckerTypeIntegers {
-  type: "integers";
-}
-
-interface CheckerTypeFloats {
-  type: "floats";
-  precision: number;
-}
-
-interface CheckerTypeLines {
-  type: "lines";
-  caseSensitive: boolean;
-}
-
-interface CheckerTypeBinary {
-  type: "binary";
-}
-
-interface CheckerTypeCustom {
-  type: "custom";
-  interface: string;
-  language: CodeLanguage;
-  languageOptions: unknown;
-  filename: string;
-}
+import { Checker } from "@/problem-type/common/checker";
 
 export interface ProblemJudgeInfoTraditional extends ProblemJudgeInfo {
   /*
@@ -90,15 +65,7 @@ export interface ProblemJudgeInfoTraditional extends ProblemJudgeInfo {
     dependencies?: number[];
   }[];
 
-  // integers: check the equivalent of each integer in user's output and answer
-  // floats:   check each float in user's output and answer
-  //           allow output with relative or absolute error not exceeding [floats.precision].
-  // lines:    check the equivalent of text in each line (separated by "\n"), maybe case-insensitive
-  //           any space characters (space, \t, \r) in the end of a line will be ignored
-  //           any empty lines in the end of file will be ignored
-  // binary:   check if the user's output and answer files are equal in binary
-  // custom:   use a custom program to check the user's output
-  checker: CheckerTypeIntegers | CheckerTypeFloats | CheckerTypeLines | CheckerTypeBinary | CheckerTypeCustom;
+  checker: Checker;
 
   // The map of files to be copied to the source code directory when compileing for each code language
   extraSourceFiles?: Partial<Record<CodeLanguage, Record<string, string>>>;
