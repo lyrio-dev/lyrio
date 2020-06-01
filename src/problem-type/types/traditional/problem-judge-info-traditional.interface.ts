@@ -63,8 +63,8 @@ export interface ProblemJudgeInfoTraditional extends ProblemJudgeInfo {
     memoryLimit?: number;
 
     testcases: {
-      inputFilename: string;
-      outputFilename: string;
+      inputFile: string;
+      outputFile: string;
 
       // If one of these is null,
       // the one's default of the subtask if exists, or of problem is used
@@ -74,7 +74,7 @@ export interface ProblemJudgeInfoTraditional extends ProblemJudgeInfo {
       // The weight of this testcase in the subtask,
       // which should add up to 100 for all testcases of this subtask
       // Auto if not set
-      percentagePoints?: number;
+      points?: number;
     }[];
 
     // Refer to https://cms.readthedocs.io/en/v1.4/Task%20types.html
@@ -83,7 +83,7 @@ export interface ProblemJudgeInfoTraditional extends ProblemJudgeInfo {
     // The weight of this subtask in the problem,
     // which should add up to 100 for all subtasks of this problem
     // Auto if not set
-    percentagePoints?: number;
+    points?: number;
 
     // The IDs of subtasks this subtask depends
     // A subtask will be skipped if one of it dependencies fails

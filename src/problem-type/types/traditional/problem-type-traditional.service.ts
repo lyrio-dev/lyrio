@@ -71,8 +71,8 @@ export class ProblemTypeTraditionalService
                     : numbersA[firstNonEqualIndex] - numbersB[firstNonEqualIndex];
                 })
                 .map(([input, output]) => ({
-                  inputFilename: input.filename,
-                  outputFilename: output.filename
+                  inputFile: input.filename,
+                  outputFile: output.filename
                 }))
             }
           ]
@@ -134,7 +134,7 @@ export class ProblemTypeTraditionalService
     // [A, B] means B depends on A
     const edges: [number, number][] = [];
     (judgeInfo.subtasks || []).forEach(
-      ({ timeLimit, memoryLimit, scoringType, percentagePoints, dependencies, testcases }, i) => {
+      ({ timeLimit, memoryLimit, scoringType, points, dependencies, testcases }, i) => {
         if (timeLimit != null) validateTimeLimit(timeLimit, "SUBTASK", i);
         if (memoryLimit != null) validateMemoryLimit(memoryLimit, "SUBTASK", i);
 
@@ -142,11 +142,8 @@ export class ProblemTypeTraditionalService
           throw ["INVALID_SCORING_TYPE", i + 1, scoringType];
         }
 
-        if (
-          percentagePoints != null &&
-          (typeof percentagePoints !== "number" || percentagePoints < 0 || percentagePoints > 100)
-        )
-          throw ["INVALID_POINTS_SUBTASK", i + 1, percentagePoints];
+        if (points != null && (typeof points !== "number" || points < 0 || points > 100))
+          throw ["INVALID_POINTS_SUBTASK", i + 1, points];
 
         if (Array.isArray(dependencies)) {
           dependencies.forEach(dependency => {
@@ -158,31 +155,25 @@ export class ProblemTypeTraditionalService
 
         if (!Array.isArray(testcases) || testcases.length === 0) throw ["SUBTASK_HAS_NO_TESTCASES", i + 1];
 
-        testcases.forEach(({ inputFilename, outputFilename, timeLimit, memoryLimit, percentagePoints }, j) => {
-          if (!testData.some(file => file.filename === inputFilename))
-            throw ["NO_SUCH_INPUT_FILE", i + 1, j + 1, inputFilename];
-          if (!testData.some(file => file.filename === outputFilename))
-            throw ["NO_SUCH_OUTPUT_FILE", i + 1, j + 1, outputFilename];
+        testcases.forEach(({ inputFile, outputFile, timeLimit, memoryLimit, points }, j) => {
+          if (!testData.some(file => file.filename === inputFile))
+            throw ["NO_SUCH_INPUT_FILE", i + 1, j + 1, inputFile];
+          if (!testData.some(file => file.filename === outputFile))
+            throw ["NO_SUCH_OUTPUT_FILE", i + 1, j + 1, outputFile];
 
           if (timeLimit != null) validateTimeLimit(timeLimit, "TESTCASE", i, j);
           if (memoryLimit != null) validateMemoryLimit(memoryLimit, "TESTCASE", i, j);
-          if (
-            percentagePoints != null &&
-            (typeof percentagePoints !== "number" || percentagePoints < 0 || percentagePoints > 100)
-          )
-            throw ["INVALID_POINTS_TESTCASE", i + 1, j + 1, percentagePoints];
+          if (points != null && (typeof points !== "number" || points < 0 || points > 100))
+            throw ["INVALID_POINTS_TESTCASE", i + 1, j + 1, points];
         });
 
-        const sum = testcases.reduce((s, { percentagePoints }) => (percentagePoints ? s + percentagePoints : s), 0);
+        const sum = testcases.reduce((s, { points }) => (points ? s + points : s), 0);
         if (sum > 100) {
           throw ["POINTS_SUM_UP_TO_LARGER_THAN_100_TESTCASES", i + 1, sum];
         }
       }
     );
-    const sum = (judgeInfo.subtasks || []).reduce(
-      (s, { percentagePoints }) => (percentagePoints ? s + percentagePoints : s),
-      0
-    );
+    const sum = (judgeInfo.subtasks || []).reduce((s, { points }) => (points ? s + points : s), 0);
     if (sum > 100) {
       throw ["POINTS_SUM_UP_TO_LARGER_THAN_100_SUBTASKS", sum];
     }
