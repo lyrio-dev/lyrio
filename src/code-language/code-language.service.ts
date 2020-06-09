@@ -11,7 +11,6 @@ const LanguageOptionsClasses = {
 @Injectable()
 export class CodeLanguageService {
   validateLanguageOptions(language: CodeLanguage, languageOptions: unknown): ValidationError[] {
-    console.log(LanguageOptionsClasses[language], languageOptions);
     return validateSync(plainToClass(LanguageOptionsClasses[language], languageOptions));
   }
 }
