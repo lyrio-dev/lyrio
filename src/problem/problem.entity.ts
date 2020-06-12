@@ -6,7 +6,8 @@ import { Locale } from "@/common/locale.type";
 import { ProblemSampleEntity } from "./problem-sample.entity";
 
 export enum ProblemType {
-  TRADITIONAL = "TRADITIONAL"
+  TRADITIONAL = "TRADITIONAL",
+  INTERACTION = "INTERACTION"
 }
 
 @Entity("problem")

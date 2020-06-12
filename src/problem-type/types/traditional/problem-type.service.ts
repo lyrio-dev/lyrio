@@ -2,12 +2,12 @@ import { Injectable } from "@nestjs/common";
 import { ValidationError, validate } from "class-validator";
 import { plainToClass } from "class-transformer";
 
-import { ProblemJudgeInfoTraditional } from "./problem-judge-info-traditional.interface";
+import { ProblemJudgeInfoTraditional } from "./problem-judge-info.interface";
 import { ProblemTypeServiceInterface } from "../../problem-type-service.interface";
 import { ConfigService } from "@/config/config.service";
 import { ProblemFileEntity } from "@/problem/problem-file.entity";
-import { SubmissionContentTraditional } from "./submission-content-traditional.interface";
-import { SubmissionTestcaseResultTraditional } from "./submission-testcase-result-traditional.interface";
+import { SubmissionContentTraditional } from "./submission-content.interface";
+import { SubmissionTestcaseResultTraditional } from "./submission-testcase-result.interface";
 import { SubmissionResult } from "@/submission/submission-result.interface";
 import { CodeLanguageService } from "@/code-language/code-language.service";
 import { validateMetaAndSubtasks } from "@/problem-type/common/meta-and-subtasks";

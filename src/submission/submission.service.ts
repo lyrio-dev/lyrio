@@ -551,6 +551,14 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     return new Map(submissions.map(submission => [submission.problemId, submission]));
   }
 
+  async problemHasAnySubmission(problem: ProblemEntity): Promise<boolean> {
+    return (
+      (await this.submissionRepository.count({
+        problemId: problem.id
+      })) != 0
+    );
+  }
+
   /**
    * Cancel pending submissions when a problem is deleted.
    */

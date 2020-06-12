@@ -67,7 +67,10 @@ import {
   GetAllProblemTagsOfAllLocalesResponseError,
   DeleteProblemRequestDto,
   DeleteProblemResponseDto,
-  DeleteProblemResponseError
+  DeleteProblemResponseError,
+  ChangeProblemTypeRequestDto,
+  ChangeProblemTypeResponseDto,
+  ChangeProblemTypeResponseError
 } from "./dto";
 import { GroupEntity } from "@/group/group.entity";
 import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.service";
@@ -859,6 +862,47 @@ export class ProblemController {
           };
 
         await this.problemService.deleteProblem(problem);
+
+        return {};
+      }
+    );
+  }
+
+  @Post("changeProblemType")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Change a problem (with no submissions)'s type"
+  })
+  async changeProblemType(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: ChangeProblemTypeRequestDto
+  ): Promise<ChangeProblemTypeResponseDto> {
+    const problem = await this.problemService.findProblemById(request.problemId);
+
+    if (!problem)
+      return {
+        error: ChangeProblemTypeResponseError.NO_SUCH_PROBLEM
+      };
+
+    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.DELETE)))
+      return {
+        error: ChangeProblemTypeResponseError.PERMISSION_DENIED
+      };
+
+    // Lock the problem after permission check to avoid DDoS attacks.
+    return await this.problemService.lockProblemById<ChangeProblemTypeResponseDto>(
+      request.problemId,
+      "WRITE",
+      async problem => {
+        if (!problem)
+          return {
+            error: ChangeProblemTypeResponseError.NO_SUCH_PROBLEM
+          };
+
+        if (!(await this.problemService.changeProblemType(problem, request.type)))
+          return {
+            error: ChangeProblemTypeResponseError.PROBLEM_HAS_SUBMISSION
+          };
 
         return {};
       }

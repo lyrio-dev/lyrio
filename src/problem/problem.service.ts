@@ -869,4 +869,25 @@ export class ProblemService {
     if (deleteFilesActually) deleteFilesActually();
     await this.submissionService.onProblemDeleted(problem.id);
   }
+
+  /**
+   * @param problem Must be locked by `ProblemService.lockProblemById(id, "WRITE")`.
+   */
+  async changeProblemType(problem: ProblemEntity, type: ProblemType): Promise<boolean> {
+    if (await this.submissionService.problemHasAnySubmission(problem)) return false;
+    problem.type = type;
+    await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
+      await transactionalEntityManager.save(problem);
+      await transactionalEntityManager.update(
+        ProblemJudgeInfoEntity,
+        {
+          id: problem.id
+        },
+        {
+          judgeInfo: this.problemTypeFactoryService.type(type).getDefaultJudgeInfo()
+        }
+      );
+    });
+    return true;
+  }
 }
