@@ -21,8 +21,8 @@ export interface SubmissionTestcaseResultTraditional extends SubmissionTestcaseR
   testcaseInfo: {
     timeLimit: number;
     memoryLimit: number;
-    inputFilename: string;
-    outputFilename: string;
+    inputFile: string;
+    outputFile: string;
   };
   status: SubmissionTestcaseStatusTraditional;
   score: number;

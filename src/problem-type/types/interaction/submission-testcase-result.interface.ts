@@ -22,8 +22,8 @@ export interface SubmissionTestcaseResultInteraction extends SubmissionTestcaseR
   testcaseInfo: {
     timeLimit: number;
     memoryLimit: number;
-    inputFilename: string;
-    outputFilename: string;
+    inputFile: string;
+    outputFile: string;
   };
   status: SubmissionTestcaseStatusInteraction;
   score: number;
