@@ -4,12 +4,10 @@ import { SubmissionTestcaseResult } from "@/submission/submission-result.interfa
 export enum SubmissionTestcaseStatusInteraction {
   SystemError = "SystemError",
 
-  FileError = "FileError",
   RuntimeError = "RuntimeError",
   TimeLimitExceeded = "TimeLimitExceeded",
   MemoryLimitExceeded = "MemoryLimitExceeded",
   OutputLimitExceeded = "OutputLimitExceeded",
-  InvalidInteraction = "InvalidInteraction",
 
   PartiallyCorrect = "PartiallyCorrect",
   WrongAnswer = "WrongAnswer",
@@ -23,7 +21,6 @@ export interface SubmissionTestcaseResultInteraction extends SubmissionTestcaseR
     timeLimit: number;
     memoryLimit: number;
     inputFile: string;
-    outputFile: string;
   };
   status: SubmissionTestcaseStatusInteraction;
   score: number;
@@ -33,6 +30,6 @@ export interface SubmissionTestcaseResultInteraction extends SubmissionTestcaseR
   output?: string;
   userOutput?: string;
   userError?: string;
-  checkerMessage?: string;
+  interactorMessage?: string;
   systemMessage?: string;
 }
