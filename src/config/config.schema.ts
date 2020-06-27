@@ -98,6 +98,10 @@ export class PreferenceConfig {
 
   @IsBoolean()
   @ApiProperty()
+  readonly allowNonAdminEditPublicProblem: boolean;
+
+  @IsBoolean()
+  @ApiProperty()
   readonly allowOwnerManageProblemPermission: boolean;
 
   @IsBoolean()

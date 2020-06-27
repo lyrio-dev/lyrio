@@ -35,6 +35,7 @@
     "preference": {
         "allowUserChangeUsername": true,
         "allowEveryoneCreateProblem": true,
+        "allowNonAdminEditPublicProblem": true,
         "allowOwnerManageProblemPermission": false,
         "allowOwnerDeleteProblem": true
     },

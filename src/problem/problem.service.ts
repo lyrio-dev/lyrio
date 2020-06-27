@@ -136,22 +136,29 @@ export class ProblemService {
       // Owner, admins and those who has write permission can modify a problem
       case ProblemPermissionType.MODIFY:
         if (!user) return false;
-        else if (user.id === problem.ownerId) return true;
+        else if (user.id === problem.ownerId && this.configService.config.preference.allowNonAdminEditPublicProblem)
+          return true;
         else if (user.isAdmin) return true;
         else if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM)) return true;
         else
-          return await this.permissionService.userOrItsGroupsHavePermission(
-            user,
-            problem.id,
-            PermissionObjectType.PROBLEM,
-            ProblemPermissionLevel.WRITE
+          return (
+            (await this.permissionService.userOrItsGroupsHavePermission(
+              user,
+              problem.id,
+              PermissionObjectType.PROBLEM,
+              ProblemPermissionLevel.WRITE
+            )) && this.configService.config.preference.allowNonAdminEditPublicProblem
           );
 
       // Admins can manage a problem's permission
       // Controlled by the application preference, the owner may have the permission
       case ProblemPermissionType.MANAGE_PERMISSION:
         if (!user) return false;
-        else if (user.id === problem.ownerId && this.configService.config.preference.allowOwnerManageProblemPermission)
+        else if (
+          user.id === problem.ownerId &&
+          this.configService.config.preference.allowOwnerManageProblemPermission &&
+          this.configService.config.preference.allowNonAdminEditPublicProblem
+        )
           return true;
         else if (user.isAdmin) return true;
         else if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM)) return true;
@@ -168,7 +175,11 @@ export class ProblemService {
       // Controlled by the application preference, the owner may have the permission
       case ProblemPermissionType.DELETE:
         if (!user) return false;
-        else if (user.id === problem.ownerId && this.configService.config.preference.allowOwnerDeleteProblem)
+        else if (
+          user.id === problem.ownerId &&
+          this.configService.config.preference.allowOwnerDeleteProblem &&
+          this.configService.config.preference.allowNonAdminEditPublicProblem
+        )
           return true;
         else if (user.isAdmin) return true;
         else if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM)) return true;
