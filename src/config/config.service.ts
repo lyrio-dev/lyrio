@@ -1,4 +1,5 @@
 import * as fs from "fs";
+import yaml = require("js-yaml");
 import { validateSync } from "class-validator";
 import { plainToClass } from "class-transformer";
 import { AppConfig } from "./config.schema";
@@ -12,11 +13,11 @@ export class ConfigService {
       throw new Error("Please specify configuration file with environment variable SYZOJ_NG_CONFIG_FILE");
     }
 
-    const config: object = JSON.parse(fs.readFileSync(filePath).toString());
+    const config = yaml.safeLoad(fs.readFileSync(filePath).toString());
     this.config = this.validateInput(config);
   }
 
-  private validateInput(inputConfig: object): AppConfig {
+  private validateInput(inputConfig: any): AppConfig {
     const appConfig: AppConfig = plainToClass(AppConfig, inputConfig);
     const errors: object[] = validateSync(appConfig, {
       validationError: {

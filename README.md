@@ -19,10 +19,10 @@ $ cd syzoj-ng
 $ yarn
 ```
 
-Create a `config.json` file based on `config-example.json`:
+Create a `config.yaml` file based on `config-example.yaml`:
 
 ```bash
-$ cp config-example.json config.json
+$ cp config-example.yaml config.yaml
 ```
 
 ## Database
@@ -66,13 +66,13 @@ Then fill the MinIO server information in the config file. Notice that the endpo
 By default this app listens on `127.0.0.1:2002`. You can change this in the configuration file. You can use nginx as reversed proxy to access the app with a domain name like `syzoj-ng.test`.
 
 ```bash
-$ SYZOJ_NG_CONFIG_FILE=./config.json yarn start
+$ SYZOJ_NG_CONFIG_FILE=./config.yaml yarn start
 ```
 
 Add `SYZOJ_NG_LOG_SQL` to enable TypeORM logging:
 
 ```bash
-$ SYZOJ_NG_LOG_SQL=1 SYZOJ_NG_CONFIG_FILE=./config.json yarn start
+$ SYZOJ_NG_LOG_SQL=1 SYZOJ_NG_CONFIG_FILE=./config.yaml yarn start
 ```
 
 Refer to [syzoj-ng-app](https://github.com/syzoj/syzoj-ng-app) for the guide of the front-end app server.  
