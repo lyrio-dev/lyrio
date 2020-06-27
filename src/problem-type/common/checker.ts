@@ -25,6 +25,8 @@ interface CheckerTypeCustom {
   language: CodeLanguage;
   languageOptions: unknown;
   filename: string;
+  timeLimit?: number;
+  memoryLimit?: number;
 }
 
 // integers: check the equivalent of each integer in user's output and answer
@@ -46,10 +48,16 @@ interface JudgeInfoWithChecker {
   checker: Checker;
 }
 
+interface ValidateCheckerOptions {
+  validateLanguageOptions: (codeLanguage: CodeLanguage, langaugeOptions: unknown) => boolean;
+  hardTimeLimit?: number;
+  hardMemoryLimit?: number;
+}
+
 export function validateChecker(
   judgeInfo: JudgeInfoWithChecker,
   testData: ProblemFileEntity[],
-  onValidateLanguageOptions: (codeLanguage: CodeLanguage, langaugeOptions: unknown) => boolean
+  options: ValidateCheckerOptions
 ) {
   if (!judgeInfo.checker || !["integers", "floats", "lines", "binary", "custom"].includes(judgeInfo.checker.type)) {
     throw ["INVALID_CHECKER_TYPE"];
@@ -68,8 +76,20 @@ export function validateChecker(
         throw ["INVALID_CHECKER_INTERFACE"];
       if (!Object.values(CodeLanguage).includes(checker.language)) throw ["INVALID_CHECKER_LANGUAGE"];
       if (!testData.some(file => file.filename === checker.filename)) throw ["NO_SUCH_CHECKER_FILE", checker.filename];
-      if (!onValidateLanguageOptions(checker.language, checker.languageOptions))
+      if (!options.validateLanguageOptions(checker.language, checker.languageOptions))
         throw ["INVALID_CHECKER_LANGUAGE_OPTIONS"];
+
+      const timeLimit = judgeInfo.checker.timeLimit == null ? judgeInfo["timeLimit"] : judgeInfo.checker.timeLimit;
+      if (!Number.isSafeInteger(timeLimit) || timeLimit <= 0) throw [`INVALID_TIME_LIMIT_CHECKER`];
+      if (options.hardTimeLimit != null && timeLimit > options.hardTimeLimit)
+        throw [`TIME_LIMIT_TOO_LARGE_CHECKER`, timeLimit];
+
+      const memoryLimit =
+        judgeInfo.checker.memoryLimit == null ? judgeInfo["memoryLimit"] : judgeInfo.checker.memoryLimit;
+      if (!Number.isSafeInteger(memoryLimit) || memoryLimit <= 0) throw [`INVALID_MEMORY_LIMIT_CHECKER`];
+      if (options.hardMemoryLimit != null && memoryLimit > options.hardMemoryLimit)
+        throw [`MEMORY_LIMIT_TOO_LARGE_CHECKER`, memoryLimit];
+
       break;
   }
 }

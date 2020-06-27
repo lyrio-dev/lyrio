@@ -59,13 +59,16 @@ export class ProblemTypeInteractionService
     testData: ProblemFileEntity[],
     ignoreLimits: boolean
   ): void {
+    const hardTimeLimit = ignoreLimits ? null : this.configService.config.resourceLimit.problemTimeLimit;
+    const hardMemoryLimit = ignoreLimits ? null : this.configService.config.resourceLimit.problemMemoryLimit;
+
     validateMetaAndSubtasks(judgeInfo, testData, {
       enableTimeMemoryLimit: true,
       enableFileIo: true,
       enableInputFile: true,
       enableOutputFile: true,
-      hardTimeLimit: ignoreLimits ? null : this.configService.config.resourceLimit.problemTimeLimit,
-      hardMemoryLimit: ignoreLimits ? null : this.configService.config.resourceLimit.problemMemoryLimit
+      hardTimeLimit: hardTimeLimit,
+      hardMemoryLimit: hardMemoryLimit
     });
 
     const interactor = judgeInfo.interactor;
@@ -84,6 +87,16 @@ export class ProblemTypeInteractionService
     if (!Object.values(CodeLanguage).includes(interactor.language)) throw ["INVALID_INTERACTOR_LANGUAGE"];
     if (!testData.some(file => file.filename === interactor.filename))
       throw ["NO_SUCH_INTERACTOR_FILE", interactor.filename];
+
+    const timeLimit = judgeInfo.interactor.timeLimit == null ? judgeInfo["timeLimit"] : judgeInfo.interactor.timeLimit;
+    if (!Number.isSafeInteger(timeLimit) || timeLimit <= 0) throw [`INVALID_TIME_LIMIT_INTERACTOR`];
+    if (hardTimeLimit != null && timeLimit > hardTimeLimit) throw [`TIME_LIMIT_TOO_LARGE_INTERACTOR`, timeLimit];
+
+    const memoryLimit =
+      judgeInfo.interactor.memoryLimit == null ? judgeInfo["memoryLimit"] : judgeInfo.interactor.memoryLimit;
+    if (!Number.isSafeInteger(memoryLimit) || memoryLimit <= 0) throw [`INVALID_MEMORY_LIMIT_INTERACTOR`];
+    if (hardMemoryLimit != null && memoryLimit > hardMemoryLimit)
+      throw [`MEMORY_LIMIT_TOO_LARGE_INTERACTOR`, memoryLimit];
 
     validateExtraSourceFiles(judgeInfo, testData);
   }

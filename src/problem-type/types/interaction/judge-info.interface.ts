@@ -64,6 +64,8 @@ export interface ProblemJudgeInfoInteraction extends ProblemJudgeInfo {
     language: CodeLanguage;
     languageOptions: unknown;
     filename: string;
+    timeLimit?: number;
+    memoryLimit?: number;
   };
 
   // The map of files to be copied to the source code directory when compileing for each code language

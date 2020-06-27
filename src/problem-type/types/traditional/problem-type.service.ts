@@ -64,12 +64,12 @@ export class ProblemTypeTraditionalService
       hardMemoryLimit: ignoreLimits ? null : this.configService.config.resourceLimit.problemMemoryLimit
     });
 
-    validateChecker(
-      judgeInfo,
-      testData,
-      (language, languageOptions) =>
-        this.codeLanguageService.validateLanguageOptions(language, languageOptions).length === 0
-    );
+    validateChecker(judgeInfo, testData, {
+      validateLanguageOptions: (language, languageOptions) =>
+        this.codeLanguageService.validateLanguageOptions(language, languageOptions).length === 0,
+      hardTimeLimit: ignoreLimits ? null : this.configService.config.resourceLimit.problemTimeLimit,
+      hardMemoryLimit: ignoreLimits ? null : this.configService.config.resourceLimit.problemMemoryLimit
+    });
 
     validateExtraSourceFiles(judgeInfo, testData);
   }
