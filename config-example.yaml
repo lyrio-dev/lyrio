@@ -17,6 +17,17 @@ services:
     secretKey: minioadmin
     bucket: syzoj-ng-files
   redis: redis://127.0.0.1:6379
+  mail:
+    address: no-reply@syzoj-ng.test
+    smtp:
+      host: syzoj-ng-smtp.test
+      port: 25
+      secure: false
+      auth:
+        user: username
+        pass: password
+      tls:
+        rejectUnauthorized: false
 security:
   crossOrigin:
     enabled: true
@@ -25,6 +36,7 @@ security:
   sessionSecret: don't leak this
   maintainceKey: also don't leak this
 preference:
+  requireEmailVerification: false
   allowUserChangeUsername: true
   allowEveryoneCreateProblem: true
   allowNonAdminEditPublicProblem: true

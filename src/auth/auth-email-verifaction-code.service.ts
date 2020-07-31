@@ -1,0 +1,47 @@
+import { Injectable, Inject, forwardRef } from "@nestjs/common";
+import { Redis } from "ioredis";
+import randomstring = require("randomstring");
+
+import { RedisService } from "@/redis/redis.service";
+
+const RATE_LIMIT = 60;
+const CODE_VALID_TIME = 60 * 15;
+
+const REDIS_KEY_EMAIL_VERIFICATION_CODE_RATE_LIMIT = "emailVerifactionCodeRateLimit_";
+const REDIS_KEY_EMAIL_VERIFICATION_CODE = "emailVerifactionCode_";
+
+@Injectable()
+export class AuthEmailVerifactionCodeService {
+  private readonly redis: Redis;
+
+  constructor(
+    @Inject(forwardRef(() => RedisService))
+    private readonly redisService: RedisService
+  ) {
+    this.redis = this.redisService.getClient();
+  }
+
+  async generate(email: string): Promise<string> {
+    // If rate limit key already exists it will fail
+    if (!(await this.redis.set(REDIS_KEY_EMAIL_VERIFICATION_CODE_RATE_LIMIT + email, "1", "EX", RATE_LIMIT, "NX"))) {
+      return null;
+    }
+
+    const code = randomstring.generate({
+      charset: "1234567890",
+      length: 6
+    });
+
+    await this.redis.set(REDIS_KEY_EMAIL_VERIFICATION_CODE + email + "_" + code, "1", "EX", CODE_VALID_TIME);
+
+    return code;
+  }
+
+  async verify(email: string, code: string): Promise<boolean> {
+    return !!(await this.redis.get(REDIS_KEY_EMAIL_VERIFICATION_CODE + email + "_" + code));
+  }
+
+  async revoke(email: string, code: string): Promise<void> {
+    await this.redis.del(REDIS_KEY_EMAIL_VERIFICATION_CODE + email + "_" + code);
+  }
+}

@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { ValidateNested, IsIP, IsString, IsIn, IsBoolean, IsInt, Min } from "class-validator";
+import { ValidateNested, IsIP, IsString, IsIn, IsBoolean, IsInt, Min, IsObject, IsEmail } from "class-validator";
 import { Type } from "class-transformer";
 import { IsPortNumber } from "@/common/validators";
 
@@ -51,6 +51,14 @@ class MinioConfig {
   readonly bucket: string;
 }
 
+class MailConfig {
+  @IsEmail()
+  readonly address: string;
+
+  @IsObject()
+  readonly smtp: object;
+}
+
 class ServicesConfig {
   @ValidateNested()
   @Type(() => DatabaseConfig)
@@ -62,6 +70,10 @@ class ServicesConfig {
 
   @IsString()
   readonly redis: string;
+
+  @ValidateNested()
+  @Type(() => MailConfig)
+  readonly mail: MailConfig;
 }
 
 class CrossOriginConfig {
@@ -88,6 +100,10 @@ class SecurityConfig {
 
 // This config items will be sent to client
 export class PreferenceConfig {
+  @IsBoolean()
+  @ApiProperty()
+  readonly requireEmailVerification: boolean;
+
   @IsBoolean()
   @ApiProperty()
   readonly allowUserChangeUsername: boolean;

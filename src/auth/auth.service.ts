@@ -9,6 +9,8 @@ import { UserAuthEntity } from "./user-auth.entity";
 import { UserService } from "@/user/user.service";
 import { UserInformationEntity } from "@/user/user-information.entity";
 import { UserPreferenceEntity } from "@/user/user-preference.entity";
+import { ConfigService } from "@/config/config.service";
+import { AuthEmailVerifactionCodeService } from "./auth-email-verifaction-code.service";
 
 @Injectable()
 export class AuthService {
@@ -18,7 +20,11 @@ export class AuthService {
     @InjectRepository(UserAuthEntity)
     private readonly userAuthRepository: Repository<UserAuthEntity>,
     @Inject(forwardRef(() => UserService))
-    private readonly userService: UserService
+    private readonly userService: UserService,
+    @Inject(forwardRef(() => AuthEmailVerifactionCodeService))
+    private readonly authEmailVerifactionCodeService: AuthEmailVerifactionCodeService,
+    @Inject(forwardRef(() => ConfigService))
+    private readonly configService: ConfigService
   ) {}
 
   private async hashPassword(password: string): Promise<string> {
@@ -31,9 +37,20 @@ export class AuthService {
     });
   }
 
-  async register(username: string, email: string, password: string): Promise<[RegisterResponseError, UserEntity]> {
+  async register(
+    username: string,
+    email: string,
+    emailVerificationCode: string,
+    password: string
+  ): Promise<[RegisterResponseError, UserEntity]> {
     // There's a race condition on user inserting. If we do checking before inserting,
     // inserting will still fail if another with same username is inserted after we check
+
+    if (this.configService.config.preference.requireEmailVerification) {
+      if (!(await this.authEmailVerifactionCodeService.verify(email, emailVerificationCode)))
+        return [RegisterResponseError.INVALID_EMAIL_VERIFICATION_CODE, null];
+    }
+
     try {
       let user: UserEntity;
       await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
@@ -69,6 +86,10 @@ export class AuthService {
         userPreference.preference = {};
         await transactionalEntityManager.save(userPreference);
       });
+
+      if (this.configService.config.preference.requireEmailVerification) {
+        await this.authEmailVerifactionCodeService.revoke(email, emailVerificationCode);
+      }
 
       return [null, user];
     } catch (e) {

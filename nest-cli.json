@@ -9,6 +9,9 @@
           "classValidatorShim": true
         }
       }
+    ],
+    "assets": [
+      "**/*.ejs"
     ]
   }
 }

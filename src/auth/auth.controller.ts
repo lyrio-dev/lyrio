@@ -10,6 +10,9 @@ import {
   LoginResponseError,
   CheckAvailabilityRequestDto,
   CheckAvailabilityResponseDto,
+  SendEmailVerificationCodeRequestDto,
+  SendEmailVerificationCodeResponseDto,
+  SendEmailVerificationCodeResponseError,
   RegisterResponseDto,
   RegisterResponseError
 } from "./dto";
@@ -20,6 +23,8 @@ import { CurrentUser } from "@/common/user.decorator";
 import { UserEntity } from "@/user/user.entity";
 import { UserPrivilegeService } from "@/user/user-privilege.service";
 import { GroupService } from "@/group/group.service";
+import { AuthEmailVerifactionCodeService } from "./auth-email-verifaction-code.service";
+import { MailService, MailTemplate } from "@/mail/mail.service";
 
 @ApiTags("Auth")
 @Controller("auth")
@@ -29,7 +34,9 @@ export class AuthController {
     private readonly userService: UserService,
     private readonly userPrivilegeService: UserPrivilegeService,
     private readonly authService: AuthService,
-    private readonly groupService: GroupService
+    private readonly groupService: GroupService,
+    private readonly authEmailVerifactionCodeService: AuthEmailVerifactionCodeService,
+    private readonly mailService: MailService
   ) {}
 
   @Get("getCurrentUserAndPreference")
@@ -104,6 +111,55 @@ export class AuthController {
     return result;
   }
 
+  @Post("sendEmailVerifactionCode")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Send email verifaction code for register"
+  })
+  async sendEmailVerifactionCode(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: SendEmailVerificationCodeRequestDto
+  ): Promise<SendEmailVerificationCodeResponseDto> {
+    if (currentUser)
+      return {
+        error: SendEmailVerificationCodeResponseError.ALREADY_LOGGEDIN
+      };
+
+    if (!this.configService.config.preference.requireEmailVerification)
+      return {
+        error: SendEmailVerificationCodeResponseError.FAILED_TO_SEND,
+        errorMessage: "Register verification code disabled."
+      };
+
+    if (!(await this.userService.checkEmailAvailability(request.email)))
+      return {
+        error: SendEmailVerificationCodeResponseError.DUPLICATE_EMAIL
+      };
+
+    const code = await this.authEmailVerifactionCodeService.generate(request.email);
+    if (!code)
+      return {
+        error: SendEmailVerificationCodeResponseError.RATE_LIMITED
+      };
+
+    const sendMailErrorMessage = await this.mailService.sendMail(
+      MailTemplate.RegisterVerificationCode,
+      request.locale,
+      {
+        code: code
+      },
+      request.email
+    );
+
+    if (sendMailErrorMessage)
+      return {
+        error: SendEmailVerificationCodeResponseError.FAILED_TO_SEND,
+        errorMessage: sendMailErrorMessage
+      };
+
+    return {};
+  }
+
   @Post("register")
   @ApiBearerAuth()
   @ApiOperation({
@@ -119,7 +175,12 @@ export class AuthController {
         error: RegisterResponseError.ALREADY_LOGGEDIN
       };
 
-    const [error, user] = await this.authService.register(request.username, request.email, request.password);
+    const [error, user] = await this.authService.register(
+      request.username,
+      request.email,
+      request.emailVerificationCode,
+      request.password
+    );
 
     if (error)
       return {
