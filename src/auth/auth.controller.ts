@@ -1,6 +1,5 @@
 import { Controller, Get, Post, Body, Query } from "@nestjs/common";
 import { ApiOperation, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import * as jwt from "jsonwebtoken";
 
 import {
   LoginRequestDto,
@@ -25,6 +24,7 @@ import { UserPrivilegeService } from "@/user/user-privilege.service";
 import { GroupService } from "@/group/group.service";
 import { AuthEmailVerifactionCodeService } from "./auth-email-verifaction-code.service";
 import { MailService, MailTemplate } from "@/mail/mail.service";
+import { AuthSessionService } from "./auth-session.service";
 
 @ApiTags("Auth")
 @Controller("auth")
@@ -36,7 +36,8 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly groupService: GroupService,
     private readonly authEmailVerifactionCodeService: AuthEmailVerifactionCodeService,
-    private readonly mailService: MailService
+    private readonly mailService: MailService,
+    private readonly authSessionService: AuthSessionService
   ) {}
 
   @Get("getCurrentUserAndPreference")
@@ -80,7 +81,7 @@ export class AuthController {
       };
 
     return {
-      token: jwt.sign(user.id.toString(), this.configService.config.security.sessionSecret)
+      token: await this.authSessionService.generateSessionToken(user)
     };
   }
 
@@ -188,7 +189,7 @@ export class AuthController {
       };
 
     return {
-      token: jwt.sign(user.id.toString(), this.configService.config.security.sessionSecret)
+      token: await this.authSessionService.generateSessionToken(user)
     };
   }
 }

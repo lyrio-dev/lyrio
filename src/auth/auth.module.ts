@@ -9,6 +9,7 @@ import { UserModule } from "@/user/user.module";
 import { GroupModule } from "@/group/group.module";
 import { RedisModule } from "@/redis/redis.module";
 import { AuthEmailVerifactionCodeService } from "./auth-email-verifaction-code.service";
+import { AuthSessionService } from "./auth-session.service";
 import { MailModule } from "@/mail/mail.module";
 
 @Module({
@@ -20,8 +21,8 @@ import { MailModule } from "@/mail/mail.module";
     forwardRef(() => RedisModule),
     forwardRef(() => MailModule)
   ],
-  providers: [AuthService, AuthEmailVerifactionCodeService],
+  providers: [AuthService, AuthEmailVerifactionCodeService, AuthSessionService],
   controllers: [AuthController],
-  exports: [AuthService]
+  exports: [AuthService, AuthSessionService]
 })
 export class AuthModule {}
