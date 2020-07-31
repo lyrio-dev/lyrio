@@ -100,6 +100,10 @@ class SecurityConfig {
 
 // This config items will be sent to client
 export class PreferenceConfig {
+  @IsString()
+  @ApiProperty()
+  readonly siteName: string;
+
   @IsBoolean()
   @ApiProperty()
   readonly requireEmailVerification: boolean;

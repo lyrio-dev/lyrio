@@ -34,7 +34,7 @@ export class MailService {
     const renderResult = (
       await ejs.renderFile(this.resolveTemplate(template, locale), {
         ...data,
-        siteName: "SYZOJ" // TODO
+        siteName: this.configService.config.preference.siteName
       })
     ).trim();
 
@@ -43,7 +43,7 @@ export class MailService {
 
     try {
       await this.transporter.sendMail({
-        from: this.configService.config.services.mail.address, // TODO
+        from: `${this.configService.config.preference.siteName} <${this.configService.config.services.mail.address}>`,
         to: recipient,
         subject: subject,
         html: content

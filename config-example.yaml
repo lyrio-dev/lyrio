@@ -36,6 +36,7 @@ security:
   sessionSecret: don't leak this
   maintainceKey: also don't leak this
 preference:
+  siteName: SYZOJ NG
   requireEmailVerification: false
   allowUserChangeUsername: true
   allowEveryoneCreateProblem: true
