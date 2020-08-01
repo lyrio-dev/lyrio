@@ -15,7 +15,7 @@ export class MailService {
   private readonly transporter: nodemailer.Transporter;
 
   constructor(private readonly configService: ConfigService) {
-    this.transporter = nodemailer.createTransport(this.configService.config.services.mail.smtp);
+    this.transporter = nodemailer.createTransport(this.configService.config.services.mail.transport);
   }
 
   private resolveTemplate(template: string, locale: string): string {

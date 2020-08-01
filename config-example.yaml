@@ -19,15 +19,7 @@ services:
   redis: redis://127.0.0.1:6379
   mail:
     address: no-reply@syzoj-ng.test
-    smtp:
-      host: syzoj-ng-smtp.test
-      port: 25
-      secure: false
-      auth:
-        user: username
-        pass: password
-      tls:
-        rejectUnauthorized: false
+    transport: smtp://username:password@syzoj-ng-smtp.test:25
 security:
   crossOrigin:
     enabled: true
@@ -37,7 +29,7 @@ security:
   maintainceKey: also don't leak this
 preference:
   siteName: SYZOJ NG
-  requireEmailVerification: false
+  requireEmailVerification: true
   allowUserChangeUsername: true
   allowEveryoneCreateProblem: true
   allowNonAdminEditPublicProblem: true

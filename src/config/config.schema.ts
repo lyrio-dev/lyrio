@@ -55,8 +55,7 @@ class MailConfig {
   @IsEmail()
   readonly address: string;
 
-  @IsObject()
-  readonly smtp: object;
+  readonly transport: object | string;
 }
 
 class ServicesConfig {
