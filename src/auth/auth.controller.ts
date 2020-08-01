@@ -1,10 +1,9 @@
-import { Controller, Get, Post, Body, Query } from "@nestjs/common";
+import { Controller, Get, Post, Body, Query, Res } from "@nestjs/common";
 import { ApiOperation, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import {
   LoginRequestDto,
   RegisterRequestDto,
-  GetCurrentUserAndPreferenceResponseDto,
   LoginResponseDto,
   LoginResponseError,
   CheckAvailabilityRequestDto,
@@ -13,18 +12,20 @@ import {
   SendEmailVerificationCodeResponseDto,
   SendEmailVerificationCodeResponseError,
   RegisterResponseDto,
-  RegisterResponseError
+  RegisterResponseError,
+  GetSessionInfoRequestDto,
+  GetSessionInfoResponseDto
 } from "./dto";
 import { ConfigService } from "@/config/config.service";
 import { UserService } from "@/user/user.service";
 import { AuthService } from "./auth.service";
 import { CurrentUser } from "@/common/user.decorator";
 import { UserEntity } from "@/user/user.entity";
-import { UserPrivilegeService } from "@/user/user-privilege.service";
-import { GroupService } from "@/group/group.service";
 import { AuthEmailVerifactionCodeService } from "./auth-email-verifaction-code.service";
 import { MailService, MailTemplate } from "@/mail/mail.service";
 import { AuthSessionService } from "./auth-session.service";
+import { UserPrivilegeService } from "@/user/user-privilege.service";
+import { GroupService } from "@/group/group.service";
 
 @ApiTags("Auth")
 @Controller("auth")
@@ -40,25 +41,29 @@ export class AuthController {
     private readonly authSessionService: AuthSessionService
   ) {}
 
-  @Get("getCurrentUserAndPreference")
-  @ApiBearerAuth()
+  @Get("getSessionInfo")
   @ApiOperation({
-    summary: "Get the logged-in user's meta and preference and the server's preference."
+    summary: "A (JSONP or JSON) request to get current user's info and server preference.",
+    description: "In order to support JSONP, this API doesn't use HTTP Authorization header."
   })
-  async getCurrentUserAndPreference(
-    @CurrentUser() currentUser: UserEntity
-  ): Promise<GetCurrentUserAndPreferenceResponseDto> {
-    const result: GetCurrentUserAndPreferenceResponseDto = new GetCurrentUserAndPreferenceResponseDto();
-    if (currentUser) {
-      result.userMeta = await this.userService.getUserMeta(currentUser, currentUser);
-      result.joinedGroupsCount = await this.groupService.getUserJoinedGroupsCount(currentUser);
-      result.userPrivileges = await this.userPrivilegeService.getUserPrivileges(currentUser.id);
-      result.userPreference = await this.userService.getUserPreference(currentUser);
+  async getSessionInfo(@Query() request: GetSessionInfoRequestDto): Promise<GetSessionInfoResponseDto> {
+    const user = await this.authSessionService.getSessionUser(request.token);
+
+    const result: GetSessionInfoResponseDto = {};
+    if (user) {
+      result.userMeta = await this.userService.getUserMeta(user, user);
+      result.joinedGroupsCount = await this.groupService.getUserJoinedGroupsCount(user);
+      result.userPrivileges = await this.userPrivilegeService.getUserPrivileges(user.id);
+      result.userPreference = await this.userService.getUserPreference(user);
     }
 
     result.serverPreference = this.configService.config.preference;
 
-    return result;
+    if (request.jsonp)
+      return `(window.getSessionInfoCallback || (function (sessionInfo) { window.sessionInfo = sessionInfo; }))(${JSON.stringify(
+        result
+      )});` as any;
+    else return result;
   }
 
   @Post("login")
