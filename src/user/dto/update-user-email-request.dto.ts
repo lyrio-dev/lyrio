@@ -1,7 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsInt, IsEmail } from "class-validator";
+import { IsInt, IsEmail, IsString, IsOptional } from "class-validator";
 
-// TODO: add email verify
 export class UpdateUserEmailRequestDto {
   @ApiProperty()
   @IsInt()
@@ -10,4 +9,9 @@ export class UpdateUserEmailRequestDto {
   @ApiProperty()
   @IsEmail()
   readonly email: string;
+
+  @ApiProperty()
+  @IsOptional()
+  @IsString()
+  readonly emailVerificationCode?: string;
 }

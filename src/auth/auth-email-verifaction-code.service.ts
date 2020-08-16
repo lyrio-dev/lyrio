@@ -10,6 +10,11 @@ const CODE_VALID_TIME = 60 * 15;
 const REDIS_KEY_EMAIL_VERIFICATION_CODE_RATE_LIMIT = "emailVerifactionCodeRateLimit_";
 const REDIS_KEY_EMAIL_VERIFICATION_CODE = "emailVerifactionCode_";
 
+export enum EmailVerifactionCodeType {
+  Register = "Register",
+  ChangeEmail = "ChangeEmail"
+}
+
 @Injectable()
 export class AuthEmailVerifactionCodeService {
   private readonly redis: Redis;

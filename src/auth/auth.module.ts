@@ -23,6 +23,6 @@ import { MailModule } from "@/mail/mail.module";
   ],
   providers: [AuthService, AuthEmailVerifactionCodeService, AuthSessionService],
   controllers: [AuthController],
-  exports: [AuthService, AuthSessionService]
+  exports: [AuthService, AuthSessionService, AuthEmailVerifactionCodeService]
 })
 export class AuthModule {}

@@ -4,8 +4,13 @@ import { Repository, Connection, Like, MoreThan, EntityManager } from "typeorm";
 import crypto = require("crypto");
 
 import { UserEntity } from "./user.entity";
-import { AuthService } from "@/auth/auth.service";
-import { UpdateUserProfileResponseError, UserMetaDto, UserAvatarDto, UserAvatarType } from "./dto";
+import {
+  UpdateUserProfileResponseError,
+  UserMetaDto,
+  UserAvatarDto,
+  UserAvatarType,
+  UpdateUserEmailResponseError
+} from "./dto";
 import { escapeLike } from "@/database/database.utils";
 import { UserPrivilegeService, UserPrivilegeType } from "./user-privilege.service";
 import { UserInformationDto } from "./dto/user-information.dto";
@@ -16,6 +21,8 @@ import { RedisService } from "@/redis/redis.service";
 import { SubmissionService } from "@/submission/submission.service";
 import { SubmissionEntity } from "@/submission/submission.entity";
 import { SubmissionStatus } from "@/submission/submission-status.enum";
+import { ConfigService } from "@/config/config.service";
+import { AuthEmailVerifactionCodeService } from "@/auth/auth-email-verifaction-code.service";
 
 @Injectable()
 export class UserService {
@@ -28,8 +35,12 @@ export class UserService {
     private readonly userInformationRepository: Repository<UserInformationEntity>,
     @InjectRepository(UserPreferenceEntity)
     private readonly userPreferenceRepository: Repository<UserPreferenceEntity>,
+    @Inject(forwardRef(() => AuthEmailVerifactionCodeService))
+    private readonly authEmailVerifactionCodeService: AuthEmailVerifactionCodeService,
     @Inject(forwardRef(() => RedisService))
     private readonly redisService: RedisService,
+    @Inject(forwardRef(() => ConfigService))
+    private readonly configService: ConfigService,
     @Inject(forwardRef(() => SubmissionService))
     private readonly submissionService: SubmissionService,
     @Inject(forwardRef(() => UserPrivilegeService))
@@ -148,7 +159,7 @@ export class UserService {
     information: UserInformationDto
   ): Promise<UpdateUserProfileResponseError> {
     const changingUsername = username != null;
-    const changingEmail = email != null;
+    const changingEmail = email != null && !this.configService.config.preference.requireEmailVerification;
 
     try {
       if (changingUsername) user.username = username;
@@ -183,15 +194,29 @@ export class UserService {
     return null;
   }
 
-  async updateUserEmail(user: UserEntity, email: string): Promise<boolean> {
+  async updateUserEmail(
+    user: UserEntity,
+    email: string,
+    emailVerificationCode: string
+  ): Promise<UpdateUserEmailResponseError> {
+    if (this.configService.config.preference.requireEmailVerification) {
+      if (!(await this.authEmailVerifactionCodeService.verify(email, emailVerificationCode)))
+        return UpdateUserEmailResponseError.INVALID_EMAIL_VERIFICATION_CODE;
+    }
+
     try {
       user.email = email;
       await this.userRepository.save(user);
     } catch (e) {
-      if (!(await this.checkEmailAvailability(email))) return false;
+      if (!(await this.checkEmailAvailability(email))) return UpdateUserEmailResponseError.DUPLICATE_EMAIL;
       throw e;
     }
-    return true;
+
+    if (this.configService.config.preference.requireEmailVerification) {
+      await this.authEmailVerifactionCodeService.revoke(email, emailVerificationCode);
+    }
+
+    return null;
   }
 
   async searchUser(query: string, wildcard: "START" | "END" | "BOTH", maxTakeCount: number): Promise<UserEntity[]> {

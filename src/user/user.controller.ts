@@ -473,12 +473,12 @@ export class UserController {
         error: UpdateUserEmailResponseError.PERMISSION_DENIED
       };
 
-    const success = await this.userService.updateUserEmail(user, request.email);
+    const error = await this.userService.updateUserEmail(user, request.email, request.emailVerificationCode);
 
-    if (success) return {};
+    if (!error) return {};
     else
       return {
-        error: UpdateUserEmailResponseError.DUPLICATE_EMAIL
+        error: error
       };
   }
 }

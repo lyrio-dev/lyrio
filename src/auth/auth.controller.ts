@@ -21,7 +21,7 @@ import { UserService } from "@/user/user.service";
 import { AuthService } from "./auth.service";
 import { CurrentUser } from "@/common/user.decorator";
 import { UserEntity } from "@/user/user.entity";
-import { AuthEmailVerifactionCodeService } from "./auth-email-verifaction-code.service";
+import { AuthEmailVerifactionCodeService, EmailVerifactionCodeType } from "./auth-email-verifaction-code.service";
 import { MailService, MailTemplate } from "@/mail/mail.service";
 import { AuthSessionService } from "./auth-session.service";
 import { UserPrivilegeService } from "@/user/user-privilege.service";
@@ -120,21 +120,31 @@ export class AuthController {
   @Post("sendEmailVerifactionCode")
   @ApiBearerAuth()
   @ApiOperation({
-    summary: "Send email verifaction code for register"
+    summary: "Send email verifaction code for registering or changing email"
   })
   async sendEmailVerifactionCode(
     @CurrentUser() currentUser: UserEntity,
     @Body() request: SendEmailVerificationCodeRequestDto
   ): Promise<SendEmailVerificationCodeResponseDto> {
-    if (currentUser)
-      return {
-        error: SendEmailVerificationCodeResponseError.ALREADY_LOGGEDIN
-      };
+    if (request.type === EmailVerifactionCodeType.Register) {
+      if (currentUser)
+        return {
+          error: SendEmailVerificationCodeResponseError.ALREADY_LOGGEDIN
+        };
+    } else if (request.type === EmailVerifactionCodeType.ChangeEmail) {
+      if (!currentUser) {
+        return {
+          error: SendEmailVerificationCodeResponseError.PERMISSION_DENIED
+        };
+      }
+
+      // No need to check old email === new email
+    }
 
     if (!this.configService.config.preference.requireEmailVerification)
       return {
         error: SendEmailVerificationCodeResponseError.FAILED_TO_SEND,
-        errorMessage: "Register verification code disabled."
+        errorMessage: "Email verification code disabled."
       };
 
     if (!(await this.userService.checkEmailAvailability(request.email)))
@@ -149,7 +159,10 @@ export class AuthController {
       };
 
     const sendMailErrorMessage = await this.mailService.sendMail(
-      MailTemplate.RegisterVerificationCode,
+      {
+        [EmailVerifactionCodeType.Register]: MailTemplate.RegisterVerificationCode,
+        [EmailVerifactionCodeType.ChangeEmail]: MailTemplate.ChangeEmailVerificationCode
+      }[request.type],
       request.locale,
       {
         code: code
