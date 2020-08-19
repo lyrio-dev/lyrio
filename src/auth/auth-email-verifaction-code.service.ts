@@ -12,7 +12,8 @@ const REDIS_KEY_EMAIL_VERIFICATION_CODE = "emailVerifactionCode_";
 
 export enum EmailVerifactionCodeType {
   Register = "Register",
-  ChangeEmail = "ChangeEmail"
+  ChangeEmail = "ChangeEmail",
+  ResetPassword = "ResetPassword"
 }
 
 @Injectable()

@@ -1,5 +1,16 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { ValidateNested, IsIP, IsString, IsIn, IsBoolean, IsInt, Min, IsObject, IsEmail, IsOptional } from "class-validator";
+import {
+  ValidateNested,
+  IsIP,
+  IsString,
+  IsIn,
+  IsBoolean,
+  IsInt,
+  Min,
+  IsObject,
+  IsEmail,
+  IsOptional
+} from "class-validator";
 import { Type } from "class-transformer";
 import { IsPortNumber } from "@/common/validators";
 

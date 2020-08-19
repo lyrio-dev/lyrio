@@ -73,6 +73,12 @@ export class UserService {
     });
   }
 
+  async findUserByEmail(email: string): Promise<UserEntity> {
+    return await this.userRepository.findOne({
+      email: email
+    });
+  }
+
   private getUserAvatar(user: UserEntity): UserAvatarDto {
     const type = user.avatarInfo.substr(0, user.avatarInfo.indexOf(":"));
     const plainKey = user.avatarInfo.slice(user.avatarInfo.indexOf(":") + 1);

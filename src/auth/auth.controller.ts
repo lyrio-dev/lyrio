@@ -14,7 +14,10 @@ import {
   RegisterResponseDto,
   RegisterResponseError,
   GetSessionInfoRequestDto,
-  GetSessionInfoResponseDto
+  GetSessionInfoResponseDto,
+  ResetPasswordRequestDto,
+  ResetPasswordResponseDto,
+  ResetPasswordResponseError
 } from "./dto";
 import { ConfigService } from "@/config/config.service";
 import { UserService } from "@/user/user.service";
@@ -131,25 +134,39 @@ export class AuthController {
         return {
           error: SendEmailVerificationCodeResponseError.ALREADY_LOGGEDIN
         };
+
+      if (!(await this.userService.checkEmailAvailability(request.email)))
+        return {
+          error: SendEmailVerificationCodeResponseError.DUPLICATE_EMAIL
+        };
     } else if (request.type === EmailVerifactionCodeType.ChangeEmail) {
-      if (!currentUser) {
+      if (!currentUser)
         return {
           error: SendEmailVerificationCodeResponseError.PERMISSION_DENIED
         };
-      }
+
+      if (!(await this.userService.checkEmailAvailability(request.email)))
+        return {
+          error: SendEmailVerificationCodeResponseError.DUPLICATE_EMAIL
+        };
 
       // No need to check old email === new email
+    } else if (request.type === EmailVerifactionCodeType.ResetPassword) {
+      if (currentUser)
+        return {
+          error: SendEmailVerificationCodeResponseError.ALREADY_LOGGEDIN
+        };
+
+      if (await this.userService.checkEmailAvailability(request.email))
+        return {
+          error: SendEmailVerificationCodeResponseError.PERMISSION_DENIED
+        };
     }
 
     if (!this.configService.config.preference.requireEmailVerification)
       return {
         error: SendEmailVerificationCodeResponseError.FAILED_TO_SEND,
         errorMessage: "Email verification code disabled."
-      };
-
-    if (!(await this.userService.checkEmailAvailability(request.email)))
-      return {
-        error: SendEmailVerificationCodeResponseError.DUPLICATE_EMAIL
       };
 
     const code = await this.authEmailVerifactionCodeService.generate(request.email);
@@ -161,7 +178,8 @@ export class AuthController {
     const sendMailErrorMessage = await this.mailService.sendMail(
       {
         [EmailVerifactionCodeType.Register]: MailTemplate.RegisterVerificationCode,
-        [EmailVerifactionCodeType.ChangeEmail]: MailTemplate.ChangeEmailVerificationCode
+        [EmailVerifactionCodeType.ChangeEmail]: MailTemplate.ChangeEmailVerificationCode,
+        [EmailVerifactionCodeType.ResetPassword]: MailTemplate.ResetPasswordVerificationCode
       }[request.type],
       request.locale,
       {
@@ -205,6 +223,40 @@ export class AuthController {
       return {
         error: error
       };
+
+    return {
+      token: await this.authSessionService.generateSessionToken(user)
+    };
+  }
+
+  @Post("resetPassword")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Reset a user's password with email verification code and then login."
+  })
+  async resetPassword(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: ResetPasswordRequestDto
+  ): Promise<ResetPasswordResponseDto> {
+    if (currentUser)
+      return {
+        error: ResetPasswordResponseError.ALREADY_LOGGEDIN
+      };
+
+    const user = await this.userService.findUserByEmail(request.email);
+    if (!user)
+      return {
+        error: ResetPasswordResponseError.NO_SUCH_USER
+      };
+
+    const userAuth = await this.authService.findUserAuthByUserId(user.id);
+    if (!(await this.authEmailVerifactionCodeService.verify(request.email, request.emailVerificationCode)))
+      return {
+        error: ResetPasswordResponseError.INVALID_EMAIL_VERIFICATION_CODE
+      };
+
+    await this.authService.changePassword(userAuth, request.newPassword);
+    await this.authEmailVerifactionCodeService.revoke(request.email, request.emailVerificationCode);
 
     return {
       token: await this.authSessionService.generateSessionToken(user)
