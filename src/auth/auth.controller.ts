@@ -159,7 +159,7 @@ export class AuthController {
 
       if (await this.userService.checkEmailAvailability(request.email))
         return {
-          error: SendEmailVerificationCodeResponseError.PERMISSION_DENIED
+          error: SendEmailVerificationCodeResponseError.NO_SUCH_USER
         };
     }
 
