@@ -3,7 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { FileService } from "./file/file.service";
 import { RedisService } from "./redis/redis.service";
 
-const REDIS_LOCK_MAINTAINCE_TASKS = "maintainceTasks";
+const REDIS_LOCK_MAINTAINCE_TASKS = "maintaince-tasks";
 
 @Injectable()
 export class AppService {

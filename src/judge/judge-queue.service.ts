@@ -50,7 +50,7 @@ export class JudgeTask<ExtraInfo extends JudgeTaskExtraInfo> implements JudgeTas
   }
 }
 
-const REDIS_KEY_JUDGE_QUEUE = "judgeQueue";
+const REDIS_KEY_JUDGE_QUEUE = "judge-queue";
 const REDIS_CONSUME_TIMEOUT = 10;
 
 @Injectable()

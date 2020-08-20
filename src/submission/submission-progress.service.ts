@@ -11,8 +11,8 @@ export enum SubmissionEventType {
   Deleted
 }
 
-const REDIS_KEY_SUBMISSION_PROGRESS = "submissionProgress_";
-const REDIS_CHANNEL_SUBMISSION_EVENT = "submissionEvent";
+const REDIS_KEY_SUBMISSION_PROGRESS = "submission-progress:%d";
+const REDIS_CHANNEL_SUBMISSION_EVENT = "submission-event";
 
 // The process for after a progress received:
 // 1. If its type is "Finished", it's converted to a "result" and stored to the database,
@@ -54,9 +54,9 @@ export class SubmissionProgressService {
   ): Promise<void> {
     Logger.log(`Progress for submission ${submissionId} received, pushing to Redis`);
     if (type === SubmissionEventType.Progress && progress.progressType !== SubmissionProgressType.Finished) {
-      await this.redis.set(REDIS_KEY_SUBMISSION_PROGRESS + submissionId, JSON.stringify(progress));
+      await this.redis.set(REDIS_KEY_SUBMISSION_PROGRESS.format(submissionId), JSON.stringify(progress));
     } else {
-      await this.redis.del(REDIS_KEY_SUBMISSION_PROGRESS + submissionId);
+      await this.redis.del(REDIS_KEY_SUBMISSION_PROGRESS.format(submissionId));
     }
 
     // This will call this.onSubmissionEvent
@@ -71,7 +71,7 @@ export class SubmissionProgressService {
   }
 
   public async getSubmissionProgress(submissionId: number): Promise<SubmissionProgress> {
-    const str = await this.redis.get(REDIS_KEY_SUBMISSION_PROGRESS + submissionId);
+    const str = await this.redis.get(REDIS_KEY_SUBMISSION_PROGRESS.format(submissionId));
     try {
       return JSON.parse(str);
     } catch (e) {

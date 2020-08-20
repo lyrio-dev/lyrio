@@ -2,12 +2,17 @@ import { NestFactory } from "@nestjs/core";
 import { Logger } from "@nestjs/common";
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
 import { ValidationPipe } from "@nestjs/common";
+import { format } from "util";
 
 import * as getGitRepoInfo from "git-repo-info";
 import * as moment from "moment";
 
 import { AppModule } from "./app.module";
 import { ConfigService } from "./config/config.service";
+
+String.prototype.format = function () {
+  return format.apply(null, [this, ...arguments]);
+};
 
 async function bootstrap() {
   // Get package info

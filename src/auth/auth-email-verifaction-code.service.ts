@@ -7,8 +7,8 @@ import { RedisService } from "@/redis/redis.service";
 const RATE_LIMIT = 60;
 const CODE_VALID_TIME = 60 * 15;
 
-const REDIS_KEY_EMAIL_VERIFICATION_CODE_RATE_LIMIT = "emailVerifactionCodeRateLimit_";
-const REDIS_KEY_EMAIL_VERIFICATION_CODE = "emailVerifactionCode_";
+const REDIS_KEY_EMAIL_VERIFICATION_CODE_RATE_LIMIT = "email-verifaction-code-rate-limit:%s";
+const REDIS_KEY_EMAIL_VERIFICATION_CODE = "email-verifaction-code:%s:%s";
 
 export enum EmailVerifactionCodeType {
   Register = "Register",
@@ -29,7 +29,9 @@ export class AuthEmailVerifactionCodeService {
 
   async generate(email: string): Promise<string> {
     // If rate limit key already exists it will fail
-    if (!(await this.redis.set(REDIS_KEY_EMAIL_VERIFICATION_CODE_RATE_LIMIT + email, "1", "EX", RATE_LIMIT, "NX"))) {
+    if (
+      !(await this.redis.set(REDIS_KEY_EMAIL_VERIFICATION_CODE_RATE_LIMIT.format(email), "1", "EX", RATE_LIMIT, "NX"))
+    ) {
       return null;
     }
 
@@ -38,16 +40,16 @@ export class AuthEmailVerifactionCodeService {
       length: 6
     });
 
-    await this.redis.set(REDIS_KEY_EMAIL_VERIFICATION_CODE + email + "_" + code, "1", "EX", CODE_VALID_TIME);
+    await this.redis.set(REDIS_KEY_EMAIL_VERIFICATION_CODE.format(email, code), "1", "EX", CODE_VALID_TIME);
 
     return code;
   }
 
   async verify(email: string, code: string): Promise<boolean> {
-    return !!(await this.redis.get(REDIS_KEY_EMAIL_VERIFICATION_CODE + email + "_" + code));
+    return !!(await this.redis.get(REDIS_KEY_EMAIL_VERIFICATION_CODE.format(email, code)));
   }
 
   async revoke(email: string, code: string): Promise<void> {
-    await this.redis.del(REDIS_KEY_EMAIL_VERIFICATION_CODE + email + "_" + code);
+    await this.redis.del(REDIS_KEY_EMAIL_VERIFICATION_CODE.format(email, code));
   }
 }
