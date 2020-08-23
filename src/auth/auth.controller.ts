@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Body, Query, Res } from "@nestjs/common";
+import { Controller, Get, Post, Body, Query, Req } from "@nestjs/common";
 import { ApiOperation, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { Request } from "express";
 
 import {
   LoginRequestDto,
@@ -50,7 +51,7 @@ export class AuthController {
     description: "In order to support JSONP, this API doesn't use HTTP Authorization header."
   })
   async getSessionInfo(@Query() request: GetSessionInfoRequestDto): Promise<GetSessionInfoResponseDto> {
-    const user = await this.authSessionService.getSessionUser(request.token);
+    const user = await this.authSessionService.accessSession(request.token);
 
     const result: GetSessionInfoResponseDto = {};
     if (user) {
@@ -75,7 +76,11 @@ export class AuthController {
     summary: "Login with given credentials.",
     description: "Return session token if success."
   })
-  async login(@CurrentUser() currentUser: UserEntity, @Body() request: LoginRequestDto): Promise<LoginResponseDto> {
+  async login(
+    @Req() req: Request,
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: LoginRequestDto
+  ): Promise<LoginResponseDto> {
     if (currentUser)
       return {
         error: LoginResponseError.ALREADY_LOGGEDIN
@@ -89,7 +94,8 @@ export class AuthController {
       };
 
     return {
-      token: await this.authSessionService.generateSessionToken(user)
+      // TODO: extract real IP address from headers rather than using reverse proxy's IP
+      token: await this.authSessionService.newSession(user, req.connection.remoteAddress, req.headers["user-agent"])
     };
   }
 
@@ -98,7 +104,12 @@ export class AuthController {
   @ApiOperation({
     summary: "Logout the current session."
   })
-  async logout(): Promise<object> {
+  async logout(@Req() req: Request): Promise<object> {
+    const sessionKey = req["sessionKey"];
+    if (sessionKey) {
+      await this.authSessionService.endSession(sessionKey);
+    }
+
     return {};
   }
 
@@ -204,6 +215,7 @@ export class AuthController {
     description: "Return the session token if success."
   })
   async register(
+    @Req() req: Request,
     @CurrentUser() currentUser: UserEntity,
     @Body() request: RegisterRequestDto
   ): Promise<RegisterResponseDto> {
@@ -225,7 +237,7 @@ export class AuthController {
       };
 
     return {
-      token: await this.authSessionService.generateSessionToken(user)
+      token: await this.authSessionService.newSession(user, req.connection.remoteAddress, req.headers["user-agent"])
     };
   }
 
@@ -235,6 +247,7 @@ export class AuthController {
     summary: "Reset a user's password with email verification code and then login."
   })
   async resetPassword(
+    @Req() req: Request,
     @CurrentUser() currentUser: UserEntity,
     @Body() request: ResetPasswordRequestDto
   ): Promise<ResetPasswordResponseDto> {
@@ -259,7 +272,7 @@ export class AuthController {
     await this.authEmailVerifactionCodeService.revoke(request.email, request.emailVerificationCode);
 
     return {
-      token: await this.authSessionService.generateSessionToken(user)
+      token: await this.authSessionService.newSession(user, req.connection.remoteAddress, req.headers["user-agent"])
     };
   }
 }
