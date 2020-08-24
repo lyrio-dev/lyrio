@@ -280,6 +280,9 @@ export class AuthController {
     await this.authService.changePassword(userAuth, request.newPassword);
     await this.authEmailVerifactionCodeService.revoke(request.email, request.emailVerificationCode);
 
+    // Revoke ALL previous sessions
+    await this.authSessionService.revokeAllSessionsExcept(user.id, null);
+
     return {
       token: await this.authSessionService.newSession(user, req.ip, req.headers["user-agent"])
     };
