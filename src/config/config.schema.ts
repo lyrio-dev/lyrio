@@ -20,6 +20,9 @@ class ServerConfig {
 
   @IsPortNumber()
   readonly port: number;
+
+  @IsString()
+  readonly trustProxy: string;
 }
 
 class DatabaseConfig {

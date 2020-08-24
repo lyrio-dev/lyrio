@@ -1,4 +1,5 @@
 import { NestFactory } from "@nestjs/core";
+import { NestExpressApplication } from "@nestjs/platform-express";
 import { Logger } from "@nestjs/common";
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
 import { ValidationPipe } from "@nestjs/common";
@@ -28,10 +29,11 @@ async function bootstrap() {
   Logger.log(`Starting ${packageInfo.name} version ${appVersion}${gitRepoVersion}`, "Bootstrap");
 
   // Create nestjs app
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const configService: ConfigService = app.get(ConfigService);
   app.setGlobalPrefix("api");
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
+  app.set("trust proxy", configService.config.server.trustProxy);
 
   // Configure swagger
   Logger.log(`Setting up Swagger API document builder`, "Bootstrap");
