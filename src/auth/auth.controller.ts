@@ -18,7 +18,13 @@ import {
   GetSessionInfoResponseDto,
   ResetPasswordRequestDto,
   ResetPasswordResponseDto,
-  ResetPasswordResponseError
+  ResetPasswordResponseError,
+  ListUserSessionsRequestDto,
+  ListUserSessionsResponseDto,
+  ListUserSessionsResponseError,
+  RevokeUserSessionRequestDto,
+  RevokeUserSessionResponseDto,
+  RevokeUserSessionResponseError
 } from "./dto";
 import { ConfigService } from "@/config/config.service";
 import { UserService } from "@/user/user.service";
@@ -28,8 +34,11 @@ import { UserEntity } from "@/user/user.entity";
 import { AuthEmailVerifactionCodeService, EmailVerifactionCodeType } from "./auth-email-verifaction-code.service";
 import { MailService, MailTemplate } from "@/mail/mail.service";
 import { AuthSessionService } from "./auth-session.service";
-import { UserPrivilegeService } from "@/user/user-privilege.service";
+import { AuthIpLocationService } from "./auth-ip-location.service";
+import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.service";
 import { GroupService } from "@/group/group.service";
+
+// Refer to auth.middleware.ts for req.session
 
 @ApiTags("Auth")
 @Controller("auth")
@@ -42,7 +51,8 @@ export class AuthController {
     private readonly groupService: GroupService,
     private readonly authEmailVerifactionCodeService: AuthEmailVerifactionCodeService,
     private readonly mailService: MailService,
-    private readonly authSessionService: AuthSessionService
+    private readonly authSessionService: AuthSessionService,
+    private readonly authIpLocationService: AuthIpLocationService
   ) {}
 
   @Get("getSessionInfo")
@@ -51,7 +61,7 @@ export class AuthController {
     description: "In order to support JSONP, this API doesn't use HTTP Authorization header."
   })
   async getSessionInfo(@Query() request: GetSessionInfoRequestDto): Promise<GetSessionInfoResponseDto> {
-    const user = await this.authSessionService.accessSession(request.token);
+    const [sessionId, user] = await this.authSessionService.accessSession(request.token);
 
     const result: GetSessionInfoResponseDto = {};
     if (user) {
@@ -274,5 +284,68 @@ export class AuthController {
     return {
       token: await this.authSessionService.newSession(user, req.connection.remoteAddress, req.headers["user-agent"])
     };
+  }
+
+  @Post("listUserSessions")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "List a user's current logged-in sessions."
+  })
+  async listUserSessions(
+    @Req() req: Request,
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: ListUserSessionsRequestDto
+  ): Promise<ListUserSessionsResponseDto> {
+    if (
+      !(
+        (currentUser && currentUser.id === request.userId) ||
+        (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER))
+      )
+    )
+      return {
+        error: ListUserSessionsResponseError.PERMISSION_DENIED
+      };
+
+    const sessions = await this.authSessionService.listUserSessions(request.userId);
+
+    return {
+      sessions: sessions.map(sessionInfo => ({
+        ...sessionInfo,
+        loginIpLocation: this.authIpLocationService.query(sessionInfo.loginIp)
+      })),
+      currentSessionId: request.userId === currentUser.id ? req["session"].sessionId : null
+    };
+  }
+
+  @Post("revokeUserSession")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Revoke a user's one session or sessions."
+  })
+  async revokeUserSession(
+    @Req() req: Request,
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: RevokeUserSessionRequestDto
+  ): Promise<RevokeUserSessionResponseDto> {
+    if (
+      !(
+        (currentUser && currentUser.id === request.userId) ||
+        (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER))
+      )
+    )
+      return {
+        error: RevokeUserSessionResponseError.PERMISSION_DENIED
+      };
+
+    if (request.sessionId) {
+      await this.authSessionService.revokeSession(request.userId, request.sessionId);
+    } else {
+      await this.authSessionService.revokeAllSessionsExcept(
+        request.userId,
+        request.userId === currentUser.id ? req["session"].sessionId : null
+      );
+    }
+
+    return {};
   }
 }

@@ -11,8 +11,14 @@ export class AuthMiddleware implements NestMiddleware {
     const authHeader = req.headers.authorization,
       sessionKey = authHeader && authHeader.split(" ")[1];
     if (sessionKey) {
-      req["sessionKey"] = sessionKey;
-      req["user"] = await this.authSessionService.accessSession(sessionKey);
+      const [sessionId, user] = await this.authSessionService.accessSession(sessionKey);
+      if (user) {
+        req["session"] = {
+          sessionKey: sessionKey,
+          sessionId: sessionId,
+          user: user
+        };
+      }
     }
     next();
   }

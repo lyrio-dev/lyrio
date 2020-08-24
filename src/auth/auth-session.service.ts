@@ -14,10 +14,15 @@ interface RedisWithSessionManager extends Redis {
   callSessionManager(...args: ValueType[]): Promise<any>;
 }
 
-interface SessionInfo {
+interface SessionInfoInternal {
   loginIp: string;
   userAgent: string;
   loginTime: number;
+}
+
+export interface SessionInfo extends SessionInfoInternal {
+  sessionId: number;
+  lastAccessTime: number;
 }
 
 @Injectable()
@@ -38,7 +43,7 @@ export class AuthSessionService {
 
   async newSession(user: UserEntity, loginIp: string, userAgent: string): Promise<string> {
     const timeStamp = +new Date();
-    const sessionInfo: SessionInfo = {
+    const sessionInfo: SessionInfoInternal = {
       loginIp: loginIp,
       userAgent: userAgent,
       loginTime: timeStamp
@@ -54,23 +59,42 @@ export class AuthSessionService {
     return jwtString.split(" ").map(s => parseInt(s)) as [number, number];
   }
 
+  async revokeSession(userId: number, sessionId: number): Promise<void> {
+    await this.redis.callSessionManager("revoke", userId, sessionId);
+  }
+
+  async revokeAllSessionsExcept(userId: number, sessionId: number): Promise<void> {
+    await this.redis.callSessionManager("revoke_all_except", userId, sessionId);
+  }
+
   async endSession(sessionKey: string): Promise<void> {
     try {
       const [userId, sessionId] = this.decodeSessionKey(sessionKey);
-      await this.redis.callSessionManager("end", userId, sessionId);
+      await this.revokeSession(userId, sessionId);
     } catch (e) {}
   }
 
-  async accessSession(sessionKey: string): Promise<UserEntity> {
+  async accessSession(sessionKey: string): Promise<[number, UserEntity]> {
     try {
       const [userId, sessionId] = this.decodeSessionKey(sessionKey);
 
       const success = await this.redis.callSessionManager("access", +new Date(), userId, sessionId);
-      if (!success) return null;
+      if (!success) return [null, null];
 
-      return this.userService.findUserById(userId);
+      return [sessionId, await this.userService.findUserById(userId)];
     } catch (e) {
-      return null;
+      return [null, null];
     }
+  }
+
+  async listUserSessions(userId: number): Promise<SessionInfo[]> {
+    const result: [string, string, string][] = await this.redis.callSessionManager("list", userId);
+    return result.map(
+      ([sessionId, lastAccessTime, sessionInfo]): SessionInfo => ({
+        sessionId: parseInt(sessionId),
+        lastAccessTime: parseInt(lastAccessTime),
+        ...JSON.parse(sessionInfo)
+      })
+    );
   }
 }
