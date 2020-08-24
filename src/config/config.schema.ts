@@ -196,6 +196,12 @@ class QueryLimitConfig {
   readonly userListUsersTake: number;
 }
 
+class VendorConfig {
+  @IsString()
+  @IsOptional()
+  readonly ip2region: string;
+}
+
 export class AppConfig {
   @ValidateNested()
   @Type(() => ServerConfig)
@@ -220,4 +226,8 @@ export class AppConfig {
   @ValidateNested()
   @Type(() => QueryLimitConfig)
   readonly queryLimit: QueryLimitConfig;
+
+  @ValidateNested()
+  @Type(() => VendorConfig)
+  readonly vendor: VendorConfig;
 }

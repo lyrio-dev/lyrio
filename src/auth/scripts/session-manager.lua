@@ -59,11 +59,70 @@ local function access_session(timestamp, user_id, session_id)
 end
 
 -- Delete a session manmully (when user logout)
--- Returns nothing
-local function end_session(user_id, session_id)
+-- Returns success or not
+local function revoke_session(user_id, session_id)
   local session_list_key = string.format(REDIS_KEY_USER_SESSION_LIST, user_id)
-  redis.call("zrem", session_list_key, session_id)
-  redis.call("hdel", REDIS_KEY_USER_SESSION_INFO_MAP, session_id)
+
+  -- To prevent a user sends revoke request with a session ID not owned by itself
+  -- We must check if the session ID is actually in the user's session list
+  if redis.call("zrem", session_list_key, session_id) == 1 then
+    redis.call("hdel", REDIS_KEY_USER_SESSION_INFO_MAP, session_id)
+    return true
+  end
+
+  return false
+end
+
+-- Delete a user's ALL sessions except one
+-- Returns nothing
+local function revoke_all_sessions_except(user_id, except_session_id)
+  local session_list_key = string.format(REDIS_KEY_USER_SESSION_LIST, user_id)
+
+  -- Remember the timestamp of the except session ID
+  -- If the except session ID doesn't exist, it will be nil
+  local except_session_id_timestamp = nil
+
+  while true do
+    local session_item = redis.call("zpopmin", session_list_key)
+
+    -- No items left
+    if (next(session_item) == nil) then
+      break
+    end
+
+    local session_id = session_item[1]
+
+    -- If we found the except session ID, save its timestamp and don't delete it
+    if session_id == except_session_id then
+      except_session_id_timestamp = session_item[2]
+    else
+      redis.call("hdel", REDIS_KEY_USER_SESSION_INFO_MAP, session_id)
+    end
+  end
+
+  -- If we found the except session ID, add it back
+  if except_session_id_timestamp ~= nil then
+    redis.call("zadd", session_list_key, except_session_id_timestamp, except_session_id)
+  end
+end
+
+-- Get a list of sessions of a user
+-- Returns a table of sessions, each is {session_id, timestamp, session_info}
+local function list_sessions(user_id)
+  local result = {}
+
+  local session_list_key = string.format(REDIS_KEY_USER_SESSION_LIST, user_id)
+  local session_list = redis.call("zrange", session_list_key, 0, -1, "withscores")
+  local session_count = #session_list / 2
+  for i = 1, session_count do
+    local session_id = session_list[i * 2 - 1]
+    local timestamp = session_list[i * 2]
+    local session_info = redis.call("hget", REDIS_KEY_USER_SESSION_INFO_MAP, session_id)
+
+    table.insert(result, {session_id, timestamp, session_info})
+  end
+
+  return result
 end
 
 -- Handle commands from Redis client
@@ -71,6 +130,10 @@ if ARGV[1] == "new" then
   return new_session(ARGV[2], ARGV[3], ARGV[4])
 elseif ARGV[1] == "access" then
   return access_session(ARGV[2], ARGV[3], ARGV[4])
-elseif ARGV[1] == "end" then
-  return end_session(ARGV[2], ARGV[3])
+elseif ARGV[1] == "revoke" then
+  return revoke_session(ARGV[2], ARGV[3])
+elseif ARGV[1] == "revoke_all_except" then
+  return revoke_all_sessions_except(ARGV[2], ARGV[3])
+elseif ARGV[1] == "list" then
+  return list_sessions(ARGV[2])
 end
