@@ -104,8 +104,7 @@ export class AuthController {
       };
 
     return {
-      // TODO: extract real IP address from headers rather than using reverse proxy's IP
-      token: await this.authSessionService.newSession(user, req.connection.remoteAddress, req.headers["user-agent"])
+      token: await this.authSessionService.newSession(user, req.ip, req.headers["user-agent"])
     };
   }
 
@@ -247,7 +246,7 @@ export class AuthController {
       };
 
     return {
-      token: await this.authSessionService.newSession(user, req.connection.remoteAddress, req.headers["user-agent"])
+      token: await this.authSessionService.newSession(user, req.ip, req.headers["user-agent"])
     };
   }
 
@@ -282,7 +281,7 @@ export class AuthController {
     await this.authEmailVerifactionCodeService.revoke(request.email, request.emailVerificationCode);
 
     return {
-      token: await this.authSessionService.newSession(user, req.connection.remoteAddress, req.headers["user-agent"])
+      token: await this.authSessionService.newSession(user, req.ip, req.headers["user-agent"])
     };
   }
 
