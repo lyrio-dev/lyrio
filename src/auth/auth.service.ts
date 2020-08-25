@@ -42,7 +42,7 @@ export class AuthService {
     email: string,
     emailVerificationCode: string,
     password: string
-  ): Promise<[RegisterResponseError, UserEntity]> {
+  ): Promise<[error: RegisterResponseError, user: UserEntity]> {
     // There's a race condition on user inserting. If we do checking before inserting,
     // inserting will still fail if another with same username is inserted after we check
 

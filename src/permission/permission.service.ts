@@ -262,7 +262,7 @@ export class PermissionService {
     objectId: number,
     objectType: PermissionObjectType,
     permissionLevel: PermissionLevel
-  ): Promise<[number[], number[]]> {
+  ): Promise<[userIds: number[], groupIds: number[]]> {
     return [
       await this.getUsersWithExactPermissionLevel(objectId, objectType, permissionLevel),
       await this.getGroupsWithExactPermissionLevel(objectId, objectType, permissionLevel)
@@ -272,7 +272,7 @@ export class PermissionService {
   async getUserPermissionListOfObject<PermissionLevel extends number>(
     objectId: number,
     objectType: PermissionObjectType
-  ): Promise<[number, PermissionLevel][]> {
+  ): Promise<[userId: number, permissionLevel: PermissionLevel][]> {
     return (
       await this.permissionForUserRepository.find({
         objectId: objectId,
@@ -284,7 +284,7 @@ export class PermissionService {
   async getGroupPermissionListOfObject<PermissionLevel extends number>(
     objectId: number,
     objectType: PermissionObjectType
-  ): Promise<[number, PermissionLevel][]> {
+  ): Promise<[groupId: number, permissionLevel: PermissionLevel][]> {
     return (
       await this.permissionForGroupRepository.find({
         objectId: objectId,
@@ -296,7 +296,9 @@ export class PermissionService {
   async getUserAndGroupPermissionListOfObject<PermissionLevel extends number>(
     objectId: number,
     objectType: PermissionObjectType
-  ): Promise<[[number, PermissionLevel][], [number, PermissionLevel][]]> {
+  ): Promise<
+    [[userId: number, permissionLevel: PermissionLevel][], [groupId: number, permissionLevel: PermissionLevel][]]
+  > {
     return [
       await this.getUserPermissionListOfObject(objectId, objectType),
       await this.getGroupPermissionListOfObject(objectId, objectType)

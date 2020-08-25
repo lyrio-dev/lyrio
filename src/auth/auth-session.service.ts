@@ -54,9 +54,9 @@ export class AuthSessionService {
     return jwt.sign(user.id.toString() + " " + sessionId, this.configService.config.security.sessionSecret);
   }
 
-  private decodeSessionKey(sessionKey: string): [number, number] {
+  private decodeSessionKey(sessionKey: string): [userId: number, sessionId: number] {
     const jwtString = jwt.verify(sessionKey, this.configService.config.security.sessionSecret) as string;
-    return jwtString.split(" ").map(s => parseInt(s)) as [number, number];
+    return jwtString.split(" ").map(s => parseInt(s)) as [userId: number, sessionId: number];
   }
 
   async revokeSession(userId: number, sessionId: number): Promise<void> {
@@ -74,7 +74,7 @@ export class AuthSessionService {
     } catch (e) {}
   }
 
-  async accessSession(sessionKey: string): Promise<[number, UserEntity]> {
+  async accessSession(sessionKey: string): Promise<[sessionId: number, user: UserEntity]> {
     try {
       const [userId, sessionId] = this.decodeSessionKey(sessionKey);
 

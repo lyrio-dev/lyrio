@@ -209,7 +209,7 @@ export class ProblemService {
     nonpublic: boolean,
     skipCount: number,
     takeCount: number
-  ): Promise<[ProblemEntity[], number]> {
+  ): Promise<[problems: ProblemEntity[], count: number]> {
     const queryBuilder = this.problemRepository.createQueryBuilder("problem").select("problem.id", "id");
     if (tagIds && tagIds.length > 0) {
       queryBuilder
@@ -439,7 +439,12 @@ export class ProblemService {
 
   async getProblemPermissions(
     problem: ProblemEntity
-  ): Promise<[[UserEntity, ProblemPermissionLevel][], [GroupEntity, ProblemPermissionLevel][]]> {
+  ): Promise<
+    [
+      [user: UserEntity, permission: ProblemPermissionLevel][],
+      [group: GroupEntity, permission: ProblemPermissionLevel][]
+    ]
+  > {
     const [
       userPermissionList,
       groupPermissionList
@@ -450,7 +455,7 @@ export class ProblemService {
     return [
       await Promise.all(
         userPermissionList.map(
-          async ([userId, permission]): Promise<[UserEntity, ProblemPermissionLevel]> => [
+          async ([userId, permission]): Promise<[user: UserEntity, permission: ProblemPermissionLevel]> => [
             await this.userService.findUserById(userId),
             permission
           ]
@@ -458,7 +463,7 @@ export class ProblemService {
       ),
       await Promise.all(
         groupPermissionList.map(
-          async ([groupId, permission]): Promise<[GroupEntity, ProblemPermissionLevel]> => [
+          async ([groupId, permission]): Promise<[group: GroupEntity, problem: ProblemPermissionLevel]> => [
             await this.groupService.findGroupById(groupId),
             permission
           ]

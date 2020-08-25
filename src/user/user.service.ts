@@ -245,7 +245,7 @@ export class UserService {
     sortBy: "acceptedProblemCount" | "rating",
     skipCount: number,
     takeCount: number
-  ): Promise<[UserEntity[], number]> {
+  ): Promise<[users: UserEntity[], count: number]> {
     return await this.userRepository.findAndCount({
       order: {
         [sortBy]: "DESC"

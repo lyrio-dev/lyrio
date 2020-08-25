@@ -78,7 +78,7 @@ export class GroupService {
     ).map(memberShip => memberShip.groupId);
   }
 
-  async createGroup(name: string): Promise<[CreateGroupResponseError, GroupEntity]> {
+  async createGroup(name: string): Promise<[error: CreateGroupResponseError, group: GroupEntity]> {
     try {
       let group: GroupEntity;
       await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
@@ -191,7 +191,7 @@ export class GroupService {
     });
   }
 
-  async getUserJoinedGroups(user: UserEntity): Promise<[GroupEntity[], number[]]> {
+  async getUserJoinedGroups(user: UserEntity): Promise<[groups: GroupEntity[], groupsWithAdminPermission: number[]]> {
     const groupMemberships = await this.groupMembershipRepository.find({
       userId: user.id
     });

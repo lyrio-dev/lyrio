@@ -79,7 +79,7 @@ export class SubmissionStatisticsService {
     statisticsType: SubmissionStatisticsType,
     skipCount: number,
     takeCount: number
-  ): Promise<[SubmissionEntity[], number]> {
+  ): Promise<[submissions: SubmissionEntity[], count: number]> {
     const { field, sort } = submissionStatisticsFields[statisticsType];
 
     const key = REDIS_KEY_SUBMISSION_SCORE_STATISTICS.format(problem.id, statisticsType);

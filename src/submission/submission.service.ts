@@ -175,7 +175,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     submitter: UserEntity,
     problem: ProblemEntity,
     content: SubmissionContent
-  ): Promise<[ValidationError[], SubmissionEntity]> {
+  ): Promise<[errors: ValidationError[], submission: SubmissionEntity]> {
     const validationError = await this.problemTypeFactoryService.type(problem.type).validateSubmissionContent(content);
     if (validationError && validationError.length > 0) return [validationError, null];
 

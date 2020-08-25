@@ -94,7 +94,7 @@ export class LocalizedContentService {
     return result;
   }
 
-  async getOfAnyLocale(objectId: number, type: LocalizedContentType): Promise<[Locale, string]> {
+  async getOfAnyLocale(objectId: number, type: LocalizedContentType): Promise<[locale: Locale, content: string]> {
     const localizedContent = await this.localizedContentRepository.findOne({
       objectId: objectId,
       type: type
