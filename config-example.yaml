@@ -1,7 +1,8 @@
 server:
   hostname: 127.0.0.1
   port: 2002
-  trustProxy: loopback
+  trustProxy:
+    - loopback
 services:
   database:
     type: mariadb

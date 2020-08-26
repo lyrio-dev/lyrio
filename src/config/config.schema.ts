@@ -9,7 +9,8 @@ import {
   Min,
   IsObject,
   IsEmail,
-  IsOptional
+  IsOptional,
+  IsArray
 } from "class-validator";
 import { Type } from "class-transformer";
 import { IsPortNumber } from "@/common/validators";
@@ -21,7 +22,8 @@ class ServerConfig {
   @IsPortNumber()
   readonly port: number;
 
-  @IsString()
+  @IsArray()
+  @IsString({ each: true })
   readonly trustProxy: string;
 }
 
