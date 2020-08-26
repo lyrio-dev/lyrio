@@ -114,7 +114,7 @@ export class AuthController {
     summary: "Logout the current session."
   })
   async logout(@Req() req: Request): Promise<object> {
-    const sessionKey = req["sessionKey"];
+    const sessionKey = req["session"] && req["session"]["sessionKey"];
     if (sessionKey) {
       await this.authSessionService.endSession(sessionKey);
     }
