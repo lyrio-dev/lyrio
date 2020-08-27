@@ -1,6 +1,5 @@
 import { Controller, Get, Post, Body, Query, Req } from "@nestjs/common";
 import { ApiOperation, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { Request } from "express";
 
 import {
   LoginRequestDto,
@@ -37,6 +36,7 @@ import { AuthSessionService } from "./auth-session.service";
 import { AuthIpLocationService } from "./auth-ip-location.service";
 import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.service";
 import { GroupService } from "@/group/group.service";
+import { RequestWithSession } from "./auth.middleware";
 
 // Refer to auth.middleware.ts for req.session
 
@@ -87,7 +87,7 @@ export class AuthController {
     description: "Return session token if success."
   })
   async login(
-    @Req() req: Request,
+    @Req() req: RequestWithSession,
     @CurrentUser() currentUser: UserEntity,
     @Body() request: LoginRequestDto
   ): Promise<LoginResponseDto> {
@@ -113,8 +113,8 @@ export class AuthController {
   @ApiOperation({
     summary: "Logout the current session."
   })
-  async logout(@Req() req: Request): Promise<object> {
-    const sessionKey = req["session"] && req["session"]["sessionKey"];
+  async logout(@Req() req: RequestWithSession): Promise<object> {
+    const sessionKey = req?.session.sessionKey;
     if (sessionKey) {
       await this.authSessionService.endSession(sessionKey);
     }
@@ -224,7 +224,7 @@ export class AuthController {
     description: "Return the session token if success."
   })
   async register(
-    @Req() req: Request,
+    @Req() req: RequestWithSession,
     @CurrentUser() currentUser: UserEntity,
     @Body() request: RegisterRequestDto
   ): Promise<RegisterResponseDto> {
@@ -256,7 +256,7 @@ export class AuthController {
     summary: "Reset a user's password with email verification code and then login."
   })
   async resetPassword(
-    @Req() req: Request,
+    @Req() req: RequestWithSession,
     @CurrentUser() currentUser: UserEntity,
     @Body() request: ResetPasswordRequestDto
   ): Promise<ResetPasswordResponseDto> {
@@ -294,7 +294,7 @@ export class AuthController {
     summary: "List a user's current logged-in sessions."
   })
   async listUserSessions(
-    @Req() req: Request,
+    @Req() req: RequestWithSession,
     @CurrentUser() currentUser: UserEntity,
     @Body() request: ListUserSessionsRequestDto
   ): Promise<ListUserSessionsResponseDto> {
@@ -315,7 +315,7 @@ export class AuthController {
         ...sessionInfo,
         loginIpLocation: this.authIpLocationService.query(sessionInfo.loginIp)
       })),
-      currentSessionId: request.userId === currentUser.id ? req["session"].sessionId : null
+      currentSessionId: request.userId === currentUser.id ? req.session.sessionId : null
     };
   }
 
@@ -325,7 +325,7 @@ export class AuthController {
     summary: "Revoke a user's one session or sessions."
   })
   async revokeUserSession(
-    @Req() req: Request,
+    @Req() req: RequestWithSession,
     @CurrentUser() currentUser: UserEntity,
     @Body() request: RevokeUserSessionRequestDto
   ): Promise<RevokeUserSessionResponseDto> {
@@ -344,7 +344,7 @@ export class AuthController {
     } else {
       await this.authSessionService.revokeAllSessionsExcept(
         request.userId,
-        request.userId === currentUser.id ? req["session"].sessionId : null
+        request.userId === currentUser.id ? req.session.sessionId : null
       );
     }
 
