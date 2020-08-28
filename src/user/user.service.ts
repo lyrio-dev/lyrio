@@ -23,6 +23,7 @@ import { SubmissionEntity } from "@/submission/submission.entity";
 import { SubmissionStatus } from "@/submission/submission-status.enum";
 import { ConfigService } from "@/config/config.service";
 import { AuthEmailVerifactionCodeService } from "@/auth/auth-email-verifaction-code.service";
+import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
 
 @Injectable()
 export class UserService {
@@ -44,8 +45,14 @@ export class UserService {
     @Inject(forwardRef(() => SubmissionService))
     private readonly submissionService: SubmissionService,
     @Inject(forwardRef(() => UserPrivilegeService))
-    private readonly userPrivilegeService: UserPrivilegeService
-  ) {}
+    private readonly userPrivilegeService: UserPrivilegeService,
+    private readonly auditService: AuditService
+  ) {
+    this.auditService.registerObjectTypeQueryHandler(
+      AuditLogObjectType.User,
+      async (userId, locale, currentUser) => await this.getUserMeta(await this.findUserById(userId), currentUser)
+    );
+  }
 
   async findUserById(id: number): Promise<UserEntity> {
     return await this.userRepository.findOne({

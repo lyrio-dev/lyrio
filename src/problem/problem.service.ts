@@ -34,6 +34,7 @@ import { ConfigService } from "@/config/config.service";
 import { FileUploadInfoDto } from "@/file/dto";
 import { RedisService } from "@/redis/redis.service";
 import { SubmissionService } from "@/submission/submission.service";
+import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
 
 export enum ProblemPermissionType {
   VIEW = "VIEW",
@@ -76,8 +77,20 @@ export class ProblemService {
     @Inject(forwardRef(() => SubmissionService))
     private readonly submissionService: SubmissionService,
     private readonly configService: ConfigService,
-    private readonly redisService: RedisService
-  ) {}
+    private readonly redisService: RedisService,
+    private readonly auditService: AuditService
+  ) {
+    this.auditService.registerObjectTypeQueryHandler(AuditLogObjectType.Problem, async (problemId, locale) => {
+      const problem = await this.findProblemById(problemId);
+      return await Promise.all([this.getProblemMeta(problem), this.getProblemLocalizedTitle(problem, locale)]);
+    });
+
+    this.auditService.registerObjectTypeQueryHandler(
+      AuditLogObjectType.ProblemTag,
+      async (problemTagId, locale) =>
+        await this.getProblemTagLocalized(await this.findProblemTagById(problemTagId), locale)
+    );
+  }
 
   async findProblemById(id: number): Promise<ProblemEntity> {
     return await this.problemRepository.findOne(id);
@@ -432,6 +445,17 @@ export class ProblemService {
     );
   }
 
+  async getProblemPermissionsWithId(
+    problem: ProblemEntity
+  ): Promise<
+    [[userId: number, permission: ProblemPermissionLevel][], [groupId: number, permission: ProblemPermissionLevel][]]
+  > {
+    return await this.permissionService.getUserAndGroupPermissionListOfObject<ProblemPermissionLevel>(
+      problem.id,
+      PermissionObjectType.PROBLEM
+    );
+  }
+
   async getProblemPermissions(
     problem: ProblemEntity
   ): Promise<
@@ -440,13 +464,7 @@ export class ProblemService {
       [group: GroupEntity, permission: ProblemPermissionLevel][]
     ]
   > {
-    const [
-      userPermissionList,
-      groupPermissionList
-    ] = await this.permissionService.getUserAndGroupPermissionListOfObject<ProblemPermissionLevel>(
-      problem.id,
-      PermissionObjectType.PROBLEM
-    );
+    const [userPermissionList, groupPermissionList] = await this.getProblemPermissionsWithId(problem);
     return [
       await Promise.all(
         userPermissionList.map(
@@ -488,8 +506,6 @@ export class ProblemService {
   }
 
   async setProblemPublic(problem: ProblemEntity, isPublic: boolean): Promise<void> {
-    if (problem.isPublic === isPublic) return;
-
     problem.isPublic = isPublic;
     await this.problemRepository.save(problem);
   }
@@ -819,12 +835,16 @@ export class ProblemService {
       .execute();
   }
 
-  async getProblemTagsByProblem(problem: ProblemEntity): Promise<ProblemTagEntity[]> {
+  async getProblemTagIdsByProblem(problem: ProblemEntity): Promise<number[]> {
     const problemTagMaps = await this.problemTagMapRepository.find({
       problemId: problem.id
     });
 
-    return await this.findProblemTagsByExistingIds(problemTagMaps.map(problemTagMap => problemTagMap.problemTagId));
+    return problemTagMaps.map(problemTagMap => problemTagMap.problemTagId);
+  }
+
+  async getProblemTagsByProblem(problem: ProblemEntity): Promise<ProblemTagEntity[]> {
+    return await this.findProblemTagsByExistingIds(await this.getProblemTagIdsByProblem(problem));
   }
 
   /**

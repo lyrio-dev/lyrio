@@ -36,6 +36,7 @@ import { CurrentUser } from "@/common/user.decorator";
 import { UserEntity } from "@/user/user.entity";
 import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.service";
 import { UserService } from "@/user/user.service";
+import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
 
 @ApiTags("Group")
 @Controller("group")
@@ -44,7 +45,8 @@ export class GroupController {
     private readonly configService: ConfigService,
     private readonly groupService: GroupService,
     private readonly userService: UserService,
-    private readonly userPrivilegeService: UserPrivilegeService
+    private readonly userPrivilegeService: UserPrivilegeService,
+    private readonly auditService: AuditService
   ) {}
 
   // TODO: Find an elegant way to validate GET's input data
@@ -106,6 +108,10 @@ export class GroupController {
         error: error
       };
 
+    await this.auditService.log("group.create", AuditLogObjectType.Group, group.id, {
+      groupName: request.groupName
+    });
+
     return {
       groupId: group.id
     };
@@ -139,6 +145,10 @@ export class GroupController {
 
     await this.groupService.deleteGroup(group);
 
+    await this.auditService.log("group.delete", AuditLogObjectType.Group, group.id, {
+      groupName: group.name
+    });
+
     return {};
   }
 
@@ -167,12 +177,20 @@ export class GroupController {
         error: RenameGroupResponseError.NO_SUCH_GROUP
       };
 
+    const oldName = group.name;
+    if (oldName === request.name) return {};
+
     const success = await this.groupService.renameGroup(group, request.name);
 
     if (!success)
       return {
         error: RenameGroupResponseError.DUPLICATE_GROUP_NAME
       };
+
+    await this.auditService.log("group.rename", AuditLogObjectType.Group, group.id, {
+      oldName: oldName,
+      newName: request.name
+    });
 
     return {};
   }
@@ -213,6 +231,14 @@ export class GroupController {
         error: error
       };
 
+    await this.auditService.log(
+      "group.add_member",
+      AuditLogObjectType.Group,
+      group.id,
+      AuditLogObjectType.User,
+      request.userId
+    );
+
     return {};
   }
 
@@ -252,6 +278,14 @@ export class GroupController {
         error: error
       };
 
+    await this.auditService.log(
+      "group.remove_member",
+      AuditLogObjectType.Group,
+      group.id,
+      AuditLogObjectType.User,
+      request.userId
+    );
+
     return {};
   }
 
@@ -285,6 +319,14 @@ export class GroupController {
       return {
         error: error
       };
+
+    await this.auditService.log(
+      request.isGroupAdmin ? "group.grant_admin" : "group.revoke_admin",
+      AuditLogObjectType.Group,
+      group.id,
+      AuditLogObjectType.User,
+      request.userId
+    );
 
     return {};
   }

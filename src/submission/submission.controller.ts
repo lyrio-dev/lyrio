@@ -41,6 +41,7 @@ import { ProblemEntity } from "@/problem/problem.entity";
 import { SubmissionStatus } from "./submission-status.enum";
 import { SubmissionStatisticsService } from "./submission-statistics.service";
 import { ProblemTypeFactoryService } from "@/problem-type/problem-type-factory.service";
+import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
 
 @ApiTags("Submission")
 @Controller("submission")
@@ -54,7 +55,8 @@ export class SubmissionController {
     private readonly configService: ConfigService,
     private readonly submissionProgressGateway: SubmissionProgressGateway,
     private readonly submissionProgressService: SubmissionProgressService,
-    private readonly submissionStatisticsService: SubmissionStatisticsService
+    private readonly submissionStatisticsService: SubmissionStatisticsService,
+    private readonly auditService: AuditService
   ) {}
 
   @ApiOperation({
@@ -358,7 +360,17 @@ export class SubmissionController {
         error: RejudgeSubmissionResponseError.PERMISSION_DENIED
       };
 
+    const isPreviouslyPending = !!submission.taskId;
+    const previousStatus = submission.status;
+    const previousScore = submission.score;
+
     await this.submissionService.rejudgeSubmission(submission);
+
+    await this.auditService.log("submission.rejudge", AuditLogObjectType.Submission, submission.id, {
+      isPreviouslyPending: isPreviouslyPending,
+      previousStatus: previousStatus,
+      previousScore: previousScore
+    });
 
     return {};
   }
@@ -393,7 +405,13 @@ export class SubmissionController {
         };
     }
 
+    const taskId = submission.taskId;
+
     await this.submissionService.cancelSubmission(submission);
+
+    await this.auditService.log("submission.cancel", AuditLogObjectType.Submission, submission.id, {
+      taskId: taskId
+    });
 
     return {};
   }
@@ -425,7 +443,14 @@ export class SubmissionController {
         error: SetSubmissionPublicResponseError.PERMISSION_DENIED
       };
 
+    if (submission.isPublic === request.isPublic) return {};
     await this.submissionService.setSubmissionPublic(submission, request.isPublic);
+
+    await this.auditService.log(
+      request.isPublic ? "submission.set_public" : "submission.set_non_public",
+      AuditLogObjectType.Submission,
+      submission.id
+    );
 
     return {};
   }
@@ -457,7 +482,15 @@ export class SubmissionController {
         error: DeleteSubmissionResponseError.PERMISSION_DENIED
       };
 
+    const submissionDetail = await this.submissionService.getSubmissionDetail(submission);
+
     await this.submissionService.deleteSubmission(submission);
+
+    await this.auditService.log("submission.delete", AuditLogObjectType.Submission, submission.id, {
+      problemId: submission.problemId,
+      submitterId: submission.submitterId,
+      submissionContent: submissionDetail.content
+    });
 
     return {};
   }

@@ -15,6 +15,7 @@ import { GroupEntity } from "./group.entity";
 import { GroupMembershipEntity } from "./group-membership.entity";
 import { escapeLike } from "@/database/database.utils";
 import { UserEntity } from "@/user/user.entity";
+import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
 
 @Injectable()
 export class GroupService {
@@ -26,8 +27,14 @@ export class GroupService {
     @InjectRepository(GroupMembershipEntity)
     private readonly groupMembershipRepository: Repository<GroupMembershipEntity>,
     @Inject(forwardRef(() => UserService))
-    private readonly userService: UserService
-  ) {}
+    private readonly userService: UserService,
+    private readonly auditService: AuditService
+  ) {
+    this.auditService.registerObjectTypeQueryHandler(
+      AuditLogObjectType.Group,
+      async groupId => await this.getGroupMeta(await this.findGroupById(groupId))
+    );
+  }
 
   async groupExists(id: number): Promise<boolean> {
     return (await this.groupRepository.count({ id: id })) != 0;

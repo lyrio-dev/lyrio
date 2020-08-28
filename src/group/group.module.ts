@@ -7,13 +7,15 @@ import { GroupEntity } from "./group.entity";
 import { GroupMembershipEntity } from "./group-membership.entity";
 import { UserModule } from "@/user/user.module";
 import { ConfigModule } from "@/config/config.module";
+import { AuditModule } from "@/audit/audit.module";
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([GroupEntity]),
     TypeOrmModule.forFeature([GroupMembershipEntity]),
     forwardRef(() => UserModule),
-    forwardRef(() => ConfigModule)
+    forwardRef(() => ConfigModule),
+    forwardRef(() => AuditModule)
   ],
   providers: [GroupService],
   controllers: [GroupController],

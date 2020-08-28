@@ -12,6 +12,7 @@ import { AuthEmailVerifactionCodeService } from "./auth-email-verifaction-code.s
 import { AuthSessionService } from "./auth-session.service";
 import { AuthIpLocationService } from "./auth-ip-location.service";
 import { MailModule } from "@/mail/mail.module";
+import { AuditModule } from "@/audit/audit.module";
 
 @Module({
   imports: [
@@ -20,7 +21,8 @@ import { MailModule } from "@/mail/mail.module";
     forwardRef(() => UserModule),
     forwardRef(() => GroupModule),
     forwardRef(() => RedisModule),
-    forwardRef(() => MailModule)
+    forwardRef(() => MailModule),
+    forwardRef(() => AuditModule)
   ],
   providers: [AuthService, AuthEmailVerifactionCodeService, AuthSessionService, AuthIpLocationService],
   controllers: [AuthController],

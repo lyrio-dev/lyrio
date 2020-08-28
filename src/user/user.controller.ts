@@ -46,6 +46,7 @@ import { UserPrivilegeType } from "./user-privilege.entity";
 import { AuthService } from "@/auth/auth.service";
 import { ConfigService } from "@/config/config.service";
 import { SubmissionService } from "@/submission/submission.service";
+import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
 
 @ApiTags("User")
 @Controller("user")
@@ -56,7 +57,8 @@ export class UserController {
     private readonly configService: ConfigService,
     private readonly userPrivilegeService: UserPrivilegeService,
     @Inject(forwardRef(() => SubmissionService))
-    private readonly submissionService: SubmissionService
+    private readonly submissionService: SubmissionService,
+    private readonly auditService: AuditService
   ) {}
 
   @Get("searchUser")
@@ -125,8 +127,17 @@ export class UserController {
         error: SetUserPrivilegesResponseError.PERMISSION_DENIED
       };
 
+    const oldPrivileges = await this.userPrivilegeService.getUserPrivileges(request.userId);
+
+    const error = await this.userPrivilegeService.setUserPrivileges(request.userId, request.privileges);
+
+    await this.auditService.log("user.set_privileges", AuditLogObjectType.User, request.userId, {
+      oldPrivileges: oldPrivileges,
+      newPrivileges: request.privileges
+    });
+
     return {
-      error: await this.userPrivilegeService.setUserPrivileges(request.userId, request.privileges)
+      error: error
     };
   }
 
@@ -179,16 +190,49 @@ export class UserController {
     //   }
     // }
 
+    const oldUsername = user.username;
+    const oldEmail = user.email;
+
+    const error = await this.userService.updateUserProfile(
+      user,
+      request.username,
+      request.email,
+      request.publicEmail,
+      request.avatarInfo,
+      request.bio,
+      request.information
+    );
+
+    if (oldUsername !== request.username) {
+      if (user.id === currentUser.id) {
+        await this.auditService.log("user.change_username", {
+          oldUsername: oldUsername,
+          newUsername: request.username
+        });
+      } else {
+        await this.auditService.log("user.change_others_username", AuditLogObjectType.User, user.id, {
+          oldUsername: oldUsername,
+          newUsername: request.username
+        });
+      }
+    }
+
+    if (oldEmail !== request.email) {
+      if (user.id === currentUser.id) {
+        await this.auditService.log("user.change_email", {
+          oldEmail: oldEmail,
+          newEmail: request.email
+        });
+      } else {
+        await this.auditService.log("user.change_others_email", AuditLogObjectType.User, user.id, {
+          oldEmail: oldEmail,
+          newEmail: request.email
+        });
+      }
+    }
+
     return {
-      error: await this.userService.updateUserProfile(
-        user,
-        request.username,
-        request.email,
-        request.publicEmail,
-        request.avatarInfo,
-        request.bio,
-        request.information
-      )
+      error: error
     };
   }
 
@@ -442,6 +486,12 @@ export class UserController {
 
     await this.authService.changePassword(userAuth, request.password);
 
+    if (request.userId === user.id) {
+      await this.auditService.log("auth.change_password");
+    } else {
+      await this.auditService.log("auth.change_others_password", AuditLogObjectType.User, user.id);
+    }
+
     return {};
   }
 
@@ -459,7 +509,16 @@ export class UserController {
         error: UpdateUserSelfEmailResponseError.PERMISSION_DENIED
       };
 
+    const oldEmail = currentUser.email;
+
     const error = await this.userService.updateUserSelfEmail(currentUser, request.email, request.emailVerificationCode);
+
+    if (oldEmail !== request.email) {
+      await this.auditService.log("auth.change_email", {
+        oldEmail: oldEmail,
+        newEmail: request.email
+      });
+    }
 
     if (!error) return {};
     else

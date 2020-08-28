@@ -37,6 +37,7 @@ import { AuthIpLocationService } from "./auth-ip-location.service";
 import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.service";
 import { GroupService } from "@/group/group.service";
 import { RequestWithSession } from "./auth.middleware";
+import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
 
 // Refer to auth.middleware.ts for req.session
 
@@ -52,7 +53,8 @@ export class AuthController {
     private readonly authEmailVerifactionCodeService: AuthEmailVerifactionCodeService,
     private readonly mailService: MailService,
     private readonly authSessionService: AuthSessionService,
-    private readonly authIpLocationService: AuthIpLocationService
+    private readonly authIpLocationService: AuthIpLocationService,
+    private readonly auditService: AuditService
   ) {}
 
   @Get("getSessionInfo")
@@ -98,10 +100,17 @@ export class AuthController {
 
     const [error, user] = await this.authService.login(request.username, request.password);
 
-    if (error)
+    if (error) {
+      if (user && error === LoginResponseError.WRONG_PASSWORD) {
+        await this.auditService.log(user.id, "auth.login_failed.wrong_password");
+      }
+
       return {
         error: error
       };
+    }
+
+    await this.auditService.log(user.id, "auth.login");
 
     return {
       token: await this.authSessionService.newSession(user, req.ip, req.headers["user-agent"])
@@ -113,11 +122,13 @@ export class AuthController {
   @ApiOperation({
     summary: "Logout the current session."
   })
-  async logout(@Req() req: RequestWithSession): Promise<object> {
+  async logout(@CurrentUser() currentUser: UserEntity, @Req() req: RequestWithSession): Promise<object> {
     const sessionKey = req?.session.sessionKey;
     if (sessionKey) {
       await this.authSessionService.endSession(sessionKey);
     }
+
+    if (currentUser) await this.auditService.log("auth.logout");
 
     return {};
   }
@@ -245,6 +256,11 @@ export class AuthController {
         error: error
       };
 
+    await this.auditService.log(user.id, "auth.register", {
+      username: request.username,
+      email: request.email
+    });
+
     return {
       token: await this.authSessionService.newSession(user, req.ip, req.headers["user-agent"])
     };
@@ -282,6 +298,8 @@ export class AuthController {
 
     // Revoke ALL previous sessions
     await this.authSessionService.revokeAllSessionsExcept(user.id, null);
+
+    await this.auditService.log(user.id, "auth.reset_password");
 
     return {
       token: await this.authSessionService.newSession(user, req.ip, req.headers["user-agent"])
@@ -347,11 +365,17 @@ export class AuthController {
 
     if (request.sessionId) {
       await this.authSessionService.revokeSession(request.userId, request.sessionId);
+
+      if (request.userId === currentUser.id) await this.auditService.log("auth.session.revoke");
+      else await this.auditService.log("auth.session.revoke_others", AuditLogObjectType.User, request.userId);
     } else {
-      await this.authSessionService.revokeAllSessionsExcept(
-        request.userId,
-        request.userId === currentUser.id ? req.session.sessionId : null
-      );
+      if (request.userId === currentUser.id) {
+        await this.authSessionService.revokeAllSessionsExcept(request.userId, req.session.sessionId);
+        await this.auditService.log("auth.session.revoke_all_except_current");
+      } else {
+        await this.authSessionService.revokeAllSessionsExcept(request.userId, null);
+        await this.auditService.log("auth.session.revoke_others_all", AuditLogObjectType.User, request.userId);
+      }
     }
 
     return {};

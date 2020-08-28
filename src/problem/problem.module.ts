@@ -18,6 +18,7 @@ import { FileModule } from "@/file/file.module";
 import { RedisModule } from "@/redis/redis.module";
 import { SubmissionModule } from "@/submission/submission.module";
 import { ProblemTypeModule } from "@/problem-type/problem-type.module";
+import { AuditModule } from "@/audit/audit.module";
 
 @Module({
   imports: [
@@ -35,7 +36,8 @@ import { ProblemTypeModule } from "@/problem-type/problem-type.module";
     forwardRef(() => FileModule),
     forwardRef(() => RedisModule),
     forwardRef(() => SubmissionModule),
-    forwardRef(() => ProblemTypeModule)
+    forwardRef(() => ProblemTypeModule),
+    forwardRef(() => AuditModule)
   ],
   providers: [ProblemService],
   controllers: [ProblemController],

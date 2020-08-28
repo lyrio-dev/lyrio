@@ -77,6 +77,7 @@ import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.s
 import { Locale } from "@/common/locale.type";
 import { SubmissionService } from "@/submission/submission.service";
 import { SubmissionStatus } from "@/submission/submission-status.enum";
+import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
 
 @ApiTags("Problem")
 @Controller("problem")
@@ -88,7 +89,8 @@ export class ProblemController {
     private readonly userPrivilegeService: UserPrivilegeService,
     private readonly groupService: GroupService,
     private readonly fileService: FileService,
-    private readonly submissionService: SubmissionService
+    private readonly submissionService: SubmissionService,
+    private readonly auditService: AuditService
   ) {}
 
   @Post("queryProblemSet")
@@ -200,6 +202,11 @@ export class ProblemController {
         error: CreateProblemResponseError.FAILED
       };
 
+    await this.auditService.log("problem.create", AuditLogObjectType.Problem, problem.id, {
+      type: request.type,
+      statement: request.statement
+    });
+
     return {
       id: problem.id
     };
@@ -231,12 +238,28 @@ export class ProblemController {
         error: UpdateProblemStatementResponseError.NO_SUCH_PROBLEM_TAG
       };
 
+    // For audit logging
+    const oldStatement = {
+      localizedContents: await this.problemService.getProblemAllLocalizedContents(problem),
+      problemTagIds: await this.problemService.getProblemTagIdsByProblem(problem),
+      samples: await this.problemService.getProblemSamples(problem)
+    };
+
     const success = await this.problemService.updateProblemStatement(problem, request, problemTags);
 
     if (!success)
       return {
         error: UpdateProblemStatementResponseError.FAILED
       };
+
+    await this.auditService.log("problem.update_statement", AuditLogObjectType.Problem, problem.id, {
+      oldStatement: oldStatement,
+      newStatement: {
+        localizedContents: request.localizedContents,
+        problemTagIds: request.problemTagIds,
+        samples: request.samples
+      }
+    });
 
     return {};
   }
@@ -435,7 +458,26 @@ export class ProblemController {
           groupPermissions.push([groups[i], permissionLevel]);
         }
 
+        const oldPermissions = await this.problemService.getProblemPermissionsWithId(problem);
+
         await this.problemService.setProblemPermissions(problem, userPermissions, groupPermissions);
+
+        await this.auditService.log("problem.set_permissions", AuditLogObjectType.Problem, problem.id, {
+          oldPermissions: {
+            userPermissions: oldPermissions[0].map(([userId, permissionLevel]) => ({
+              userId: userId,
+              permissionLevel: permissionLevel
+            })),
+            groupPermissions: oldPermissions[1].map(([groupId, permissionLevel]) => ({
+              groupId: groupId,
+              permissionLevel: permissionLevel
+            }))
+          },
+          newPermissions: {
+            userPermissions: request.userPermissions,
+            groupPermissions: request.groupPermissions
+          }
+        });
 
         return {};
       }
@@ -469,10 +511,18 @@ export class ProblemController {
       };
     }
 
+    const oldDisplayId = problem.displayId;
+    if (oldDisplayId === request.displayId) return {};
+
     if (!(await this.problemService.setProblemDisplayId(problem, request.displayId)))
       return {
         error: SetProblemDisplayIdResponseError.DUPLICATE_DISPLAY_ID
       };
+
+    await this.auditService.log("problem.set_display_id", AuditLogObjectType.Problem, problem.id, {
+      oldDisplayId: oldDisplayId,
+      newDisplayId: request.displayId
+    });
 
     return {};
   }
@@ -503,7 +553,15 @@ export class ProblemController {
         error: SetProblemPublicResponseError.PERMISSION_DENIED
       };
 
+    if (problem.isPublic === request.isPublic) return {};
+
     await this.problemService.setProblemPublic(problem, request.isPublic);
+
+    await this.auditService.log(
+      request.isPublic ? "problem.set_public" : "problem.set_non_public",
+      AuditLogObjectType.Problem,
+      problem.id
+    );
 
     return {};
   }
@@ -549,6 +607,13 @@ export class ProblemController {
         uploadInfo: result
       };
 
+    await this.auditService.log("problem.upload_file", AuditLogObjectType.Problem, problem.id, {
+      type: request.type,
+      uuid: request.uuid,
+      size: request.size,
+      filename: request.filename
+    });
+
     return {};
   }
 
@@ -573,6 +638,11 @@ export class ProblemController {
       };
 
     await this.problemService.removeProblemFiles(problem, request.type, request.filenames);
+
+    await this.auditService.log("problem.remove_files", AuditLogObjectType.Problem, problem.id, {
+      type: request.type,
+      filenames: request.filenames
+    });
 
     return {};
   }
@@ -637,6 +707,13 @@ export class ProblemController {
         error: RenameProblemFileResponseError.NO_SUCH_FILE
       };
 
+    if (request.filename !== request.newFilename)
+      await this.auditService.log("problem.rename_file", AuditLogObjectType.Problem, problem.id, {
+        type: request.type,
+        oldFilename: request.filename,
+        newFilename: request.newFilename
+      });
+
     return {};
   }
 
@@ -669,12 +746,19 @@ export class ProblemController {
         error: UpdateProblemJudgeInfoResponseError.PERMISSION_DENIED
       };
 
+    const oldJudgeInfo = await this.problemService.getProblemJudgeInfo(problem);
+
     const judgeInfoError = await this.problemService.updateProblemJudgeInfo(problem, request.judgeInfo, hasPrivilege);
     if (judgeInfoError)
       return {
         error: UpdateProblemJudgeInfoResponseError.INVALID_JUDGE_INFO,
         judgeInfoError: judgeInfoError
       };
+
+    await this.auditService.log("problem.update_judge_info", AuditLogObjectType.Problem, problem.id, {
+      oldJudgeInfo: oldJudgeInfo,
+      newJudgeInfo: request.judgeInfo
+    });
 
     return {};
   }
@@ -714,6 +798,8 @@ export class ProblemController {
       request.localizedNames.map(({ locale, name }) => [locale, name]),
       request.color
     );
+
+    await this.auditService.log("problem_tag.create", AuditLogObjectType.ProblemTag, problemTag.id);
 
     return {
       id: problemTag.id
@@ -763,11 +849,18 @@ export class ProblemController {
         error: UpdateProblemTagResponseError.NO_SUCH_PROBLEM_TAG
       };
 
-    await this.problemService.updateProblemTag(
-      problemTag,
-      request.localizedNames.map(({ locale, name }) => [locale, name]),
-      request.color
-    );
+    const oldLocalizedNames = await this.problemService.getProblemTagAllLocalizedNames(problemTag);
+    const oldColor = problemTag.color;
+
+    const localizedNameTuples: [Locale, string][] = request.localizedNames.map(({ locale, name }) => [locale, name]);
+    await this.problemService.updateProblemTag(problemTag, localizedNameTuples, request.color);
+
+    await this.auditService.log("problem_tag.update", AuditLogObjectType.ProblemTag, problemTag.id, {
+      oldLocalizedNames: oldLocalizedNames,
+      oldColor: oldColor,
+      newLocalizedNames: Object.fromEntries(localizedNameTuples),
+      newColor: request.color
+    });
 
     return {};
   }
@@ -792,7 +885,14 @@ export class ProblemController {
         error: DeleteProblemTagResponseError.NO_SUCH_PROBLEM_TAG
       };
 
+    const localizedNames = await this.problemService.getProblemTagAllLocalizedNames(problemTag);
+
     await this.problemService.deleteProblemTag(problemTag);
+
+    await this.auditService.log("problem_tag.delete", AuditLogObjectType.ProblemTag, problemTag.id, {
+      localizedNames: localizedNames,
+      color: problemTag.color
+    });
 
     return {};
   }
@@ -861,7 +961,20 @@ export class ProblemController {
             error: DeleteProblemResponseError.NO_SUCH_PROBLEM
           };
 
+        const statement = {
+          judgeInfo: await this.problemService.getProblemJudgeInfo(problem),
+          localizedContents: await this.problemService.getProblemAllLocalizedContents(problem),
+          samples: await this.problemService.getProblemSamples(problem)
+        };
+
         await this.problemService.deleteProblem(problem);
+
+        await this.auditService.log("problem.delete", AuditLogObjectType.Problem, problem.id, {
+          type: problem.type,
+          isPublic: problem.isPublic,
+          displayId: problem.displayId,
+          statement: statement
+        });
 
         return {};
       }
@@ -899,10 +1012,18 @@ export class ProblemController {
             error: ChangeProblemTypeResponseError.NO_SUCH_PROBLEM
           };
 
+        const oldType = problem.type;
+        const oldJudgeInfo = await this.problemService.getProblemJudgeInfo(problem);
+
         if (!(await this.problemService.changeProblemType(problem, request.type)))
           return {
             error: ChangeProblemTypeResponseError.PROBLEM_HAS_SUBMISSION
           };
+
+        await this.auditService.log("problem.change_type", AuditLogObjectType.Problem, problem.id, {
+          oldType: oldType,
+          oldJudgeInfo: oldJudgeInfo
+        });
 
         return {};
       }

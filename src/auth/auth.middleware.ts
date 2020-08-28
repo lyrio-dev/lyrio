@@ -1,8 +1,11 @@
 import { NestMiddleware, Injectable } from "@nestjs/common";
 import { Request, Response } from "express";
+import { AsyncLocalStorage } from "async_hooks";
 
 import { AuthSessionService } from "./auth-session.service";
 import { UserEntity } from "@/user/user.entity";
+
+const asyncLocalStorage = new AsyncLocalStorage();
 
 export interface Session {
   sessionKey?: string;
@@ -31,6 +34,15 @@ export class AuthMiddleware implements NestMiddleware {
         };
       }
     }
-    next();
+
+    asyncLocalStorage.run(req, () => next());
   }
 }
+
+/**
+ * Get the current request object from async local storage.
+ *
+ * Calling it in a EventEmitter's callback may be not working since EventEmitter's callbacks
+ * run in different contexts.
+ */
+export const getCurrentRequest = () => asyncLocalStorage.getStore() as RequestWithSession;

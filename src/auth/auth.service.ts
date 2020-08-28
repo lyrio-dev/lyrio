@@ -124,7 +124,7 @@ export class AuthService {
     if (!user) return [LoginResponseError.NO_SUCH_USER, null];
 
     const userAuth: UserAuthEntity = await user.userAuth;
-    if (!(await this.checkPassword(userAuth, password))) return [LoginResponseError.WRONG_PASSWORD, null];
+    if (!(await this.checkPassword(userAuth, password))) return [LoginResponseError.WRONG_PASSWORD, user];
 
     return [null, user];
   }

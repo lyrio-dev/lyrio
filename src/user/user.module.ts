@@ -12,6 +12,7 @@ import { UserController } from "./user.controller";
 import { AuthModule } from "@/auth/auth.module";
 import { SubmissionModule } from "@/submission/submission.module";
 import { RedisModule } from "@/redis/redis.module";
+import { AuditModule } from "@/audit/audit.module";
 
 @Module({
   imports: [
@@ -22,7 +23,8 @@ import { RedisModule } from "@/redis/redis.module";
     forwardRef(() => ConfigModule),
     forwardRef(() => AuthModule),
     forwardRef(() => SubmissionModule),
-    forwardRef(() => RedisModule)
+    forwardRef(() => RedisModule),
+    forwardRef(() => AuditModule)
   ],
   providers: [UserService, UserPrivilegeService],
   controllers: [UserController],

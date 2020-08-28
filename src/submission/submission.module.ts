@@ -14,6 +14,7 @@ import { SubmissionController } from "./submission.controller";
 import { SubmissionProgressService } from "./submission-progress.service";
 import { SubmissionProgressGateway } from "./submission-progress.gateway";
 import { SubmissionStatisticsService } from "./submission-statistics.service";
+import { AuditModule } from "@/audit/audit.module";
 
 @Module({
   imports: [
@@ -24,7 +25,8 @@ import { SubmissionStatisticsService } from "./submission-statistics.service";
     forwardRef(() => ProblemModule),
     forwardRef(() => ProblemTypeModule),
     forwardRef(() => JudgeModule),
-    forwardRef(() => UserModule)
+    forwardRef(() => UserModule),
+    forwardRef(() => AuditModule)
   ],
   providers: [SubmissionService, SubmissionProgressService, SubmissionProgressGateway, SubmissionStatisticsService],
   controllers: [SubmissionController],
