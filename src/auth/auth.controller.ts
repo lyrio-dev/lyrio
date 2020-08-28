@@ -339,6 +339,12 @@ export class AuthController {
         error: RevokeUserSessionResponseError.PERMISSION_DENIED
       };
 
+    const user = request.userId === currentUser.id ? currentUser : await this.userService.findUserById(request.userId);
+    if (!user)
+      return {
+        error: RevokeUserSessionResponseError.NO_SUCH_USER
+      };
+
     if (request.sessionId) {
       await this.authSessionService.revokeSession(request.userId, request.sessionId);
     } else {
