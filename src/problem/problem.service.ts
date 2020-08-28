@@ -412,12 +412,12 @@ export class ProblemService {
   }
 
   async getProblemSamples(problem: ProblemEntity): Promise<ProblemSampleData> {
-    const problemSample = await problem.sample;
+    const problemSample = await this.problemSampleRepository.findOne({ problemId: problem.id });
     return problemSample.data;
   }
 
   async getProblemJudgeInfo(problem: ProblemEntity): Promise<ProblemJudgeInfo> {
-    const problemJudgeInfo = await problem.judgeInfo;
+    const problemJudgeInfo = await this.problemJudgeInfoRepository.findOne({ problemId: problem.id });
     return problemJudgeInfo.judgeInfo;
   }
 
