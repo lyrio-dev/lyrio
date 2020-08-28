@@ -1,11 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsInt, IsEmail, IsString, IsOptional } from "class-validator";
+import { IsEmail, IsString, IsOptional } from "class-validator";
 
-export class UpdateUserEmailRequestDto {
-  @ApiProperty()
-  @IsInt()
-  readonly userId: number;
-
+export class UpdateUserSelfEmailRequestDto {
   @ApiProperty()
   @IsEmail()
   readonly email: string;

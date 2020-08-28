@@ -9,7 +9,7 @@ import {
   UserMetaDto,
   UserAvatarDto,
   UserAvatarType,
-  UpdateUserEmailResponseError
+  UpdateUserSelfEmailResponseError
 } from "./dto";
 import { escapeLike } from "@/database/database.utils";
 import { UserPrivilegeService, UserPrivilegeType } from "./user-privilege.service";
@@ -200,21 +200,21 @@ export class UserService {
     return null;
   }
 
-  async updateUserEmail(
+  async updateUserSelfEmail(
     user: UserEntity,
     email: string,
     emailVerificationCode: string
-  ): Promise<UpdateUserEmailResponseError> {
+  ): Promise<UpdateUserSelfEmailResponseError> {
     if (this.configService.config.preference.requireEmailVerification) {
       if (!(await this.authEmailVerifactionCodeService.verify(email, emailVerificationCode)))
-        return UpdateUserEmailResponseError.INVALID_EMAIL_VERIFICATION_CODE;
+        return UpdateUserSelfEmailResponseError.INVALID_EMAIL_VERIFICATION_CODE;
     }
 
     try {
       user.email = email;
       await this.userRepository.save(user);
     } catch (e) {
-      if (!(await this.checkEmailAvailability(email))) return UpdateUserEmailResponseError.DUPLICATE_EMAIL;
+      if (!(await this.checkEmailAvailability(email))) return UpdateUserSelfEmailResponseError.DUPLICATE_EMAIL;
       throw e;
     }
 

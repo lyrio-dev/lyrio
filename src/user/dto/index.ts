@@ -36,5 +36,5 @@ export * from "./get-user-security-settings-response.dto";
 export * from "./update-user-password-request.dto";
 export * from "./update-user-password-response.dto";
 
-export * from "./update-user-email-request.dto";
-export * from "./update-user-email-response.dto";
+export * from "./update-user-self-email-request.dto";
+export * from "./update-user-self-email-response.dto";

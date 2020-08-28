@@ -38,9 +38,9 @@ import {
   UpdateUserPasswordRequestDto,
   UpdateUserPasswordResponseDto,
   UpdateUserPasswordResponseError,
-  UpdateUserEmailRequestDto,
-  UpdateUserEmailResponseDto,
-  UpdateUserEmailResponseError
+  UpdateUserSelfEmailRequestDto,
+  UpdateUserSelfEmailResponseDto,
+  UpdateUserSelfEmailResponseError
 } from "./dto";
 import { UserPrivilegeType } from "./user-privilege.entity";
 import { AuthService } from "@/auth/auth.service";
@@ -445,35 +445,21 @@ export class UserController {
     return {};
   }
 
-  @Post("updateUserEmail")
+  @Post("updateUserSelfEmail")
   @ApiBearerAuth()
   @ApiOperation({
-    summary: "Change a user's email."
+    summary: "Change the current user itself's email."
   })
-  async updateUserEmail(
+  async updateUserSelfEmail(
     @CurrentUser() currentUser: UserEntity,
-    @Body() request: UpdateUserEmailRequestDto
-  ): Promise<UpdateUserEmailResponseDto> {
-    const user = await this.userService.findUserById(request.userId);
-    if (!user)
-      return {
-        error: UpdateUserEmailResponseError.NO_SUCH_USER
-      };
-
+    @Body() request: UpdateUserSelfEmailRequestDto
+  ): Promise<UpdateUserSelfEmailResponseDto> {
     if (!currentUser)
       return {
-        error: UpdateUserEmailResponseError.PERMISSION_DENIED
+        error: UpdateUserSelfEmailResponseError.PERMISSION_DENIED
       };
 
-    const isUserSelf = currentUser.id === user.id;
-    const hasPrivilege = await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER);
-
-    if (!(isUserSelf || hasPrivilege))
-      return {
-        error: UpdateUserEmailResponseError.PERMISSION_DENIED
-      };
-
-    const error = await this.userService.updateUserEmail(user, request.email, request.emailVerificationCode);
+    const error = await this.userService.updateUserSelfEmail(currentUser, request.email, request.emailVerificationCode);
 
     if (!error) return {};
     else
