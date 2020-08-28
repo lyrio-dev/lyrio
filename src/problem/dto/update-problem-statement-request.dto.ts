@@ -21,20 +21,18 @@ export class UpdateProblemRequestUpdatingLocalizedContentDto {
   @IsEnum(Locale)
   readonly locale: Locale;
 
-  // Update if not null
   @ApiProperty()
   @IsString()
   @Length(1, 120)
   @IsOptional()
-  readonly title?: string;
+  readonly title: string;
 
-  // Update if not null
   @ApiProperty({ type: ProblemContentSectionDto, isArray: true })
   @ValidateNested({ each: true })
   @IsArray()
   @ArrayMaxSize(20)
   @IsOptional()
-  readonly contentSections?: ProblemContentSectionDto[];
+  readonly contentSections: ProblemContentSectionDto[];
 }
 
 export class UpdateProblemStatementRequestDto {
@@ -63,7 +61,7 @@ export class UpdateProblemStatementRequestDto {
   @ValidateNested({ each: true })
   @IsArray()
   @IsOptional()
-  readonly samples?: ProblemSampleDataMemberDto[];
+  readonly samples: ProblemSampleDataMemberDto[];
 
   @ApiProperty({ type: [Number] })
   @IsInt({ each: true })

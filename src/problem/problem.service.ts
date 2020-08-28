@@ -311,13 +311,11 @@ export class ProblemService {
     tags: ProblemTagEntity[]
   ): Promise<boolean> {
     await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
-      if (request.samples != null) {
-        const problemSample = await transactionalEntityManager.findOne(ProblemSampleEntity, {
-          problemId: problem.id
-        });
-        problemSample.data = request.samples;
-        await transactionalEntityManager.save(problemSample);
-      }
+      const problemSample = await transactionalEntityManager.findOne(ProblemSampleEntity, {
+        problemId: problem.id
+      });
+      problemSample.data = request.samples;
+      await transactionalEntityManager.save(problemSample);
 
       const newLocales = request.localizedContents.map(localizedContent => localizedContent.locale);
 
@@ -340,21 +338,18 @@ export class ProblemService {
       problem.locales = newLocales;
 
       for (const localizedContent of request.localizedContents) {
-        // Update if not null
-        if (localizedContent.title != null)
-          await this.localizedContentService.createOrUpdate(
-            problem.id,
-            LocalizedContentType.PROBLEM_TITLE,
-            localizedContent.locale,
-            localizedContent.title
-          );
-        if (localizedContent.contentSections != null)
-          await this.localizedContentService.createOrUpdate(
-            problem.id,
-            LocalizedContentType.PROBLEM_CONTENT,
-            localizedContent.locale,
-            JSON.stringify(localizedContent.contentSections)
-          );
+        await this.localizedContentService.createOrUpdate(
+          problem.id,
+          LocalizedContentType.PROBLEM_TITLE,
+          localizedContent.locale,
+          localizedContent.title
+        );
+        await this.localizedContentService.createOrUpdate(
+          problem.id,
+          LocalizedContentType.PROBLEM_CONTENT,
+          localizedContent.locale,
+          JSON.stringify(localizedContent.contentSections)
+        );
       }
 
       await this.setProblemTags(problem, tags, transactionalEntityManager);
