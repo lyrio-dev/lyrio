@@ -8,7 +8,7 @@ export class ConfigService {
   public readonly config: AppConfig;
 
   constructor() {
-    const filePath: string = process.env["SYZOJ_NG_CONFIG_FILE"];
+    const filePath = process.env["SYZOJ_NG_CONFIG_FILE"];
     if (!filePath) {
       throw new Error("Please specify configuration file with environment variable SYZOJ_NG_CONFIG_FILE");
     }
@@ -18,8 +18,8 @@ export class ConfigService {
   }
 
   private validateInput(inputConfig: any): AppConfig {
-    const appConfig: AppConfig = plainToClass(AppConfig, inputConfig);
-    const errors: object[] = validateSync(appConfig, {
+    const appConfig = plainToClass(AppConfig, inputConfig);
+    const errors = validateSync(appConfig, {
       validationError: {
         target: false
       }

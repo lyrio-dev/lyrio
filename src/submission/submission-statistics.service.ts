@@ -71,7 +71,9 @@ export class SubmissionStatisticsService {
     const str = await this.redis.get(key);
     try {
       return JSON.parse(str);
-    } catch (e) {}
+    } catch (e) {
+      return null;
+    }
   }
 
   public async querySubmissionStatisticsAndCount(
@@ -190,15 +192,13 @@ export class SubmissionStatisticsService {
           if (!submission || submission.status !== SubmissionStatus.Accepted) return false;
 
           // If the new submission is Accepted, check if it's better than the submitter's best
-          const submitterBestValue = tuples.find(
-            ([submissionId, submitterId]) => submitterId === oldSubmission.submitterId
-          )[2];
+          const submitterBestValue = tuples.find(([, submitterId]) => submitterId === oldSubmission.submitterId)[2];
           if (submitterBestValue != null) {
             return newValue != null && isFirstBetter(newValue, submitterBestValue);
           }
 
           // If the new value is better than the last of the ranklist
-          const [lastId, lastSubmitterId, lastValue] = tuples[tuples.length - 1];
+          const [, , lastValue] = tuples[tuples.length - 1];
           return newValue != null && isFirstBetter(newValue, lastValue);
         }
       };

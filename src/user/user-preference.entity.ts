@@ -5,7 +5,7 @@ import { UserPreference } from "./user-preference.interface";
 
 @Entity("user_preference")
 export class UserPreferenceEntity {
-  @OneToOne(type => UserEntity)
+  @OneToOne(() => UserEntity)
   @JoinColumn()
   user: Promise<UserEntity>;
 

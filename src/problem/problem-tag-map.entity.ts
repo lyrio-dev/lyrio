@@ -9,7 +9,7 @@ export class ProblemTagMapEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(type => ProblemEntity, {
+  @ManyToOne(() => ProblemEntity, {
     onDelete: "CASCADE"
   })
   @JoinColumn()
@@ -19,7 +19,7 @@ export class ProblemTagMapEntity {
   @Index()
   problemId: number;
 
-  @ManyToOne(type => ProblemTagEntity, {
+  @ManyToOne(() => ProblemTagEntity, {
     onDelete: "CASCADE"
   })
   @JoinColumn()

@@ -15,7 +15,7 @@ export class AuditLogEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(type => UserEntity, {
+  @ManyToOne(() => UserEntity, {
     onDelete: "CASCADE"
   })
   @JoinColumn()

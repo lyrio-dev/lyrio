@@ -10,7 +10,7 @@ export class GroupMembershipEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(type => UserEntity, {
+  @ManyToOne(() => UserEntity, {
     onDelete: "CASCADE"
   })
   @JoinColumn()
@@ -20,7 +20,7 @@ export class GroupMembershipEntity {
   @Index()
   userId: number;
 
-  @ManyToOne(type => GroupEntity, {
+  @ManyToOne(() => GroupEntity, {
     onDelete: "CASCADE"
   })
   @JoinColumn()

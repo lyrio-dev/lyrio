@@ -71,7 +71,7 @@ class MailConfig {
   @IsOptional()
   readonly address: string;
 
-  readonly transport: object | string;
+  readonly transport: unknown;
 }
 
 class ServicesConfig {

@@ -6,7 +6,7 @@ import { SubmissionEntity } from "./submission.entity";
 
 @Entity("submission_detail")
 export class SubmissionDetailEntity {
-  @OneToOne(type => SubmissionEntity, { onDelete: "CASCADE" })
+  @OneToOne(() => SubmissionEntity, { onDelete: "CASCADE" })
   @JoinColumn()
   submission: Promise<SubmissionEntity>;
 
@@ -14,7 +14,7 @@ export class SubmissionDetailEntity {
   submissionId: number;
 
   @Column({ type: "json" })
-  content: object;
+  content: unknown;
 
   @Column({ type: "json", nullable: true })
   result: SubmissionResult;

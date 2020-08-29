@@ -16,7 +16,7 @@ export class PermissionForGroupEntity {
   @Index()
   groupId: number;
 
-  @ManyToOne(type => GroupEntity, { onDelete: "CASCADE" })
+  @ManyToOne(() => GroupEntity, { onDelete: "CASCADE" })
   group: GroupEntity;
 
   // A number, larger means higher permission e.g. 1 for RO and 2 for RW

@@ -71,7 +71,9 @@ export class AuthSessionService {
     try {
       const [userId, sessionId] = this.decodeSessionKey(sessionKey);
       await this.revokeSession(userId, sessionId);
-    } catch (e) {}
+    } catch (e) {
+      // Do nothing if we can't decide the session key.
+    }
   }
 
   async accessSession(sessionKey: string): Promise<[sessionId: number, user: UserEntity]> {

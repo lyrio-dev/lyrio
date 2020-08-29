@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Query } from "@nestjs/common";
+import { Controller, Post, Body } from "@nestjs/common";
 import { ApiOperation, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import { ConfigService } from "@/config/config.service";
@@ -62,7 +62,6 @@ import {
   GetProblemTagDetailRequestDto,
   GetProblemTagDetailResponseDto,
   GetProblemTagDetailResponseError,
-  GetAllProblemTagsOfAllLocalesRequestDto,
   GetAllProblemTagsOfAllLocalesResponseDto,
   GetAllProblemTagsOfAllLocalesResponseError,
   DeleteProblemRequestDto,
@@ -903,8 +902,7 @@ export class ProblemController {
     summary: "Get the meta and all localized names of all problem tags."
   })
   async getAllProblemTagsOfAllLocales(
-    @CurrentUser() currentUser: UserEntity,
-    @Body() request: GetAllProblemTagsOfAllLocalesRequestDto
+    @CurrentUser() currentUser: UserEntity
   ): Promise<GetAllProblemTagsOfAllLocalesResponseDto> {
     if (!(await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_PROBLEM)))
       return {

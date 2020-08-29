@@ -16,7 +16,7 @@ export class PermissionForUserEntity {
   @Index()
   userId: number;
 
-  @ManyToOne(type => UserEntity, { onDelete: "CASCADE" })
+  @ManyToOne(() => UserEntity, { onDelete: "CASCADE" })
   user: UserEntity;
 
   // A number, larger means higher permission e.g. 1 for RO and 2 for RW

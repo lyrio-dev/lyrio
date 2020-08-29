@@ -736,7 +736,7 @@ export class ProblemService {
     return await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
       const problemTag = new ProblemTagEntity();
       problemTag.color = color;
-      problemTag.locales = localizedNames.map(([locale, name]) => locale);
+      problemTag.locales = localizedNames.map(([locale]) => locale);
       await transactionalEntityManager.save(problemTag);
 
       for (const [locale, name] of localizedNames) {
@@ -760,7 +760,7 @@ export class ProblemService {
   ): Promise<void> {
     await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
       problemTag.color = color;
-      problemTag.locales = localizedNames.map(([locale, name]) => locale);
+      problemTag.locales = localizedNames.map(([locale]) => locale);
       await transactionalEntityManager.save(problemTag);
 
       await this.localizedContentService.delete(

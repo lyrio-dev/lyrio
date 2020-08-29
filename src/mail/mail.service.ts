@@ -32,7 +32,12 @@ export class MailService {
    * @param recipient The recipient email address
    * @returns The error message. Falsy on success.
    */
-  async sendMail(template: MailTemplate, locale: Locale, data: object, recipient: string): Promise<string> {
+  async sendMail(
+    template: MailTemplate,
+    locale: Locale,
+    data: Record<string, unknown>,
+    recipient: string
+  ): Promise<string> {
     const renderResult = (
       await ejs.renderFile(this.resolveTemplate(template, locale), {
         ...data,

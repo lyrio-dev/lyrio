@@ -34,7 +34,7 @@ export class ProblemEntity {
   @Column({ type: "boolean" })
   isPublic: boolean;
 
-  @ManyToOne(type => UserEntity)
+  @ManyToOne(() => UserEntity)
   @JoinColumn()
   owner: Promise<UserEntity>;
 
@@ -51,9 +51,9 @@ export class ProblemEntity {
   @Column({ type: "integer" })
   acceptedSubmissionCount: number;
 
-  @OneToOne(type => ProblemSampleEntity, problemSample => problemSample.problem)
+  @OneToOne(() => ProblemSampleEntity, problemSample => problemSample.problem)
   sample: Promise<ProblemSampleEntity>;
 
-  @OneToOne(type => ProblemJudgeInfoEntity, problemJudgeInfo => problemJudgeInfo.problem)
+  @OneToOne(() => ProblemJudgeInfoEntity, problemJudgeInfo => problemJudgeInfo.problem)
   judgeInfo: Promise<ProblemJudgeInfoEntity>;
 }

@@ -1,6 +1,6 @@
 import { Injectable, Inject, forwardRef } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
-import { Repository, Connection, In } from "typeorm";
+import { Repository, Connection } from "typeorm";
 
 import { UserEntity } from "./user.entity";
 import { UserPrivilegeEntity, UserPrivilegeType } from "./user-privilege.entity";

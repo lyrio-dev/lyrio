@@ -30,6 +30,7 @@ export interface JudgeTaskMeta {
   type: JudgeTaskType;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface JudgeTaskExtraInfo {}
 
 // Extra info is also send to judge client while ONLY meta is used to identity the task
@@ -110,7 +111,7 @@ export class JudgeQueueService {
       return null;
     }
 
-    const [combinedPriority, taskJson] = redisResponse;
+    const [, taskJson] = redisResponse;
     const taskMeta: JudgeTaskMeta = JSON.parse(taskJson);
     const task = await this.taskServices.get(taskMeta.type).getTaskToBeSentToJudgeByTaskId(taskMeta.taskId);
     if (!task) {

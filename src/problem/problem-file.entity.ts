@@ -1,4 +1,4 @@
-import { Entity, PrimaryColumn, ManyToOne, Column, JoinColumn, Index } from "typeorm";
+import { Entity, PrimaryColumn, ManyToOne, Column, JoinColumn } from "typeorm";
 
 import { ProblemEntity } from "@/problem/problem.entity";
 
@@ -9,7 +9,7 @@ export enum ProblemFileType {
 
 @Entity("problem_file")
 export class ProblemFileEntity {
-  @ManyToOne(type => ProblemEntity, { onDelete: "RESTRICT" })
+  @ManyToOne(() => ProblemEntity, { onDelete: "RESTRICT" })
   @JoinColumn()
   problem: Promise<ProblemEntity>;
 
