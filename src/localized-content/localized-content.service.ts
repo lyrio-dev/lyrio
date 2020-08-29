@@ -89,7 +89,7 @@ export class LocalizedContentService {
       type: type
     });
 
-    let result: Partial<Record<Locale, string>> = {};
+    const result: Partial<Record<Locale, string>> = {};
     for (const localizedContent of localizedContents) result[localizedContent.locale] = localizedContent.data;
     return result;
   }

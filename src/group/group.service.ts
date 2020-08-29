@@ -206,7 +206,7 @@ export class GroupService {
     return [
       groups,
       groupMemberships
-        .filter((groupMembership, i) => groupMembership.isGroupAdmin)
+        .filter(groupMembership => groupMembership.isGroupAdmin)
         .map(groupMembership => groupMembership.groupId)
     ];
   }

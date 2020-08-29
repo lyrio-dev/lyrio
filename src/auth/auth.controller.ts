@@ -63,7 +63,7 @@ export class AuthController {
     description: "In order to support JSONP, this API doesn't use HTTP Authorization header."
   })
   async getSessionInfo(@Query() request: GetSessionInfoRequestDto): Promise<GetSessionInfoResponseDto> {
-    const [sessionId, user] = await this.authSessionService.accessSession(request.token);
+    const [, user] = await this.authSessionService.accessSession(request.token);
 
     const result: GetSessionInfoResponseDto = {};
     if (user) {
@@ -122,7 +122,10 @@ export class AuthController {
   @ApiOperation({
     summary: "Logout the current session."
   })
-  async logout(@CurrentUser() currentUser: UserEntity, @Req() req: RequestWithSession): Promise<object> {
+  async logout(
+    @CurrentUser() currentUser: UserEntity,
+    @Req() req: RequestWithSession
+  ): Promise<Record<string, unknown>> {
     const sessionKey = req?.session.sessionKey;
     if (sessionKey) {
       await this.authSessionService.endSession(sessionKey);

@@ -73,18 +73,16 @@ export class AuditService {
     details?: unknown
   ): Promise<void>;
 
-  async log(): Promise<void> {
-    const argumentsArray = Array.from(arguments);
-
-    let userId: number = typeof argumentsArray[0] === "number" ? argumentsArray.shift() : null,
-      details: unknown = argumentsArray.length % 2 === 0 ? argumentsArray.pop() : null,
-      action: string,
-      firstObjectType: AuditLogObjectType,
-      firstObjectId: number,
-      secondObjectType: AuditLogObjectType,
-      secondObjectId: number;
-
-    [action, firstObjectType, firstObjectId, secondObjectType, secondObjectId] = argumentsArray;
+  async log(...argumentsArray: any[]): Promise<void> {
+    let userId: number = typeof argumentsArray[0] === "number" ? argumentsArray.shift() : null;
+    const details: unknown = argumentsArray.length % 2 === 0 ? argumentsArray.pop() : null;
+    const [action, firstObjectType, firstObjectId, secondObjectType, secondObjectId] = argumentsArray as [
+      string,
+      AuditLogObjectType,
+      number,
+      AuditLogObjectType,
+      number
+    ];
 
     const req = getCurrentRequest();
     if (!req.session) {

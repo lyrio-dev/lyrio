@@ -11,8 +11,8 @@ import * as moment from "moment";
 import { AppModule } from "./app.module";
 import { ConfigService } from "./config/config.service";
 
-String.prototype.format = function () {
-  return format.apply(null, [this, ...arguments]);
+String.prototype.format = function (...args) {
+  return format.call(this, ...args);
 };
 
 async function bootstrap() {

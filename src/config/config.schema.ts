@@ -7,7 +7,6 @@ import {
   IsBoolean,
   IsInt,
   Min,
-  IsObject,
   IsEmail,
   IsOptional,
   IsArray
