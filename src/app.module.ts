@@ -40,7 +40,7 @@ import { JudgeModule } from "./judge/judge.module";
   providers: [AppService]
 })
 export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
+  configure(consumer: MiddlewareConsumer): void {
     consumer.apply(AuthMiddleware).forRoutes({
       path: "*",
       method: RequestMethod.ALL

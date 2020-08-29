@@ -58,7 +58,7 @@ export function validateChecker(
   judgeInfo: JudgeInfoWithChecker,
   testData: ProblemFileEntity[],
   options: ValidateCheckerOptions
-) {
+): void {
   if (!judgeInfo.checker || !["integers", "floats", "lines", "binary", "custom"].includes(judgeInfo.checker.type)) {
     throw ["INVALID_CHECKER_TYPE"];
   }
@@ -70,7 +70,7 @@ export function validateChecker(
     case "lines":
       if (typeof judgeInfo.checker.caseSensitive !== "boolean") throw ["INVALID_CHECKER_OPTIONS"];
       break;
-    case "custom":
+    case "custom": {
       const checker = judgeInfo.checker;
       if (!["testlib", "legacy", "lemon", "hustoj", "qduoj", "domjudge"].includes(checker.interface))
         throw ["INVALID_CHECKER_INTERFACE"];
@@ -91,5 +91,6 @@ export function validateChecker(
         throw [`MEMORY_LIMIT_TOO_LARGE_CHECKER`, memoryLimit];
 
       break;
+    }
   }
 }

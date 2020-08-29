@@ -5,8 +5,8 @@ import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
 import { ValidationPipe } from "@nestjs/common";
 import { format } from "util";
 
-import * as getGitRepoInfo from "git-repo-info";
-import * as moment from "moment";
+import getGitRepoInfo = require("git-repo-info");
+import moment = require("moment");
 
 import { AppModule } from "./app.module";
 import { ConfigService } from "./config/config.service";
@@ -17,7 +17,7 @@ String.prototype.format = function (...args) {
 
 async function bootstrap() {
   // Get package info
-  const packageInfo = require("../package.json");
+  const packageInfo = require("../package.json"); // eslint-disable-line @typescript-eslint/no-var-requires
   const gitRepoInfo = getGitRepoInfo();
   const appVersion = "v" + packageInfo.version;
   const gitRepoVersion = gitRepoInfo.sha

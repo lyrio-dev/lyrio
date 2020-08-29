@@ -46,7 +46,7 @@ export function validateMetaAndSubtasks(
   judgeInfo: JudgeInfoWithMetaAndSubtasks,
   testData: ProblemFileEntity[],
   options: ValidateMetaAndSubtasksOptions
-) {
+): void {
   const validateTimeLimit = (
     timeLimit: number,
     scope: "TASK" | "SUBTASK" | "TESTCASE",
