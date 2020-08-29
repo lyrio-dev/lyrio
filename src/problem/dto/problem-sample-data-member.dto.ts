@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsString } from "class-validator";
+import { IsString, IsBoolean } from "class-validator";
 import { ProblemSampleDataMember } from "../problem-sample-data.interface";
 
 export class ProblemSampleDataMemberDto implements ProblemSampleDataMember {

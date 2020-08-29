@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsInt, IsString, Length, IsEnum, IsOptional, IsPositive } from "class-validator";
+import { IsInt, Min, Max, IsString, Length, IsEnum, IsOptional, IsPositive } from "class-validator";
 import { IsUsername } from "@/common/validators";
 
 import { SubmissionStatus } from "../submission-status.enum";

@@ -7,6 +7,7 @@
   "scripts": {
     "prebuild": "rimraf dist",
     "build": "nest build",
+    "format": "prettier --write \"src/**/*.ts\"",
     "lint": "eslint src --ext ts --cache",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -79,6 +80,7 @@
     "eslint-config-airbnb-base": "^14.2.0",
     "eslint-import-resolver-typescript": "^2.2.1",
     "eslint-plugin-import": "^2.21.2",
+    "prettier": "^2.1.0",
     "ts-loader": "^8.0.3",
     "ts-node": "^9.0.0",
     "tsconfig-paths": "^3.9.0",
