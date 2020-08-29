@@ -8,5 +8,5 @@ export class SubmitRequestDto {
 
   @ApiProperty()
   @IsObject()
-  readonly content: object;
+  readonly content: unknown;
 }

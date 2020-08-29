@@ -83,6 +83,7 @@ export class ProblemTypeTraditionalService
     );
   }
 
+  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   async getCodeLanguageAndAnswerSizeFromSubmissionContent(submissionContent: SubmissionContentTraditional) {
     return {
       language: submissionContent.language,
@@ -93,6 +94,7 @@ export class ProblemTypeTraditionalService
     };
   }
 
+  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   getTimeAndMemoryUsedFromSubmissionResult(submissionResult: SubmissionResult<SubmissionTestcaseResultTraditional>) {
     const result = {
       timeUsed: 0,
