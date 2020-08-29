@@ -195,13 +195,14 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
             resultMeta: basicMeta
           });
           break;
-        case SubmissionProgressSubscriptionType.Detail:
+        case SubmissionProgressSubscriptionType.Detail: {
           const submissionDetail = await this.submissionService.getSubmissionDetail(submission);
           this.sendMessage(client, submissionId, {
             resultMeta: basicMeta,
             resultDetail: submissionDetail.result
           });
           break;
+        }
       }
     }
   }
