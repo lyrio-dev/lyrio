@@ -658,11 +658,7 @@ export class ProblemService {
     return problemFiles;
   }
 
-  async listProblemFiles(
-    problem: ProblemEntity,
-    type: ProblemFileType,
-    withSize: boolean = false
-  ): Promise<ProblemFileDto[]> {
+  async listProblemFiles(problem: ProblemEntity, type: ProblemFileType, withSize = false): Promise<ProblemFileDto[]> {
     const problemFiles = await this.getProblemFiles(problem, type);
 
     if (withSize) {

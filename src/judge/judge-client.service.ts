@@ -42,10 +42,7 @@ export class JudgeClientService {
     return await this.judgeClientRepository.find();
   }
 
-  public async getJudgeClientInfo(
-    judgeClient: JudgeClientEntity,
-    showSensitive: boolean = false
-  ): Promise<JudgeClientInfoDto> {
+  public async getJudgeClientInfo(judgeClient: JudgeClientEntity, showSensitive = false): Promise<JudgeClientInfoDto> {
     return {
       id: judgeClient.id,
       name: judgeClient.name,

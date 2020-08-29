@@ -80,7 +80,7 @@ export class JudgeQueueService {
     type: JudgeTaskType,
     priority: JudgeTaskPriority,
     priorityId: number,
-    repush: boolean = false
+    repush = false
   ): Promise<void> {
     if (repush)
       Logger.verbose(
