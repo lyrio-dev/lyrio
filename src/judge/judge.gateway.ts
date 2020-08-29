@@ -40,7 +40,7 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly fileService: FileService
   ) {}
 
-  cancelTask(taskId: string) {
+  cancelTask(taskId: string): void {
     const client = this.mapTaskIdToSocket.get(taskId);
     if (!client) {
       Logger.warn(
@@ -63,7 +63,7 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
     return true;
   }
 
-  async handleConnection(client: Socket) {
+  async handleConnection(client: Socket): Promise<void> {
     const key = client.handshake.query["key"].split(" ").pop();
     const judgeClient = await this.judgeClientService.findJudgeClientByKey(key);
 
@@ -93,7 +93,7 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
     Logger.log(`Judge client ${client.id} (${judgeClient.name}) initialized.`);
   }
 
-  async handleDisconnect(client: Socket) {
+  async handleDisconnect(client: Socket): Promise<void> {
     const state = this.mapSessionIdToJudgeClient.get(client.id);
     if (!state) {
       Logger.log(`Judge client ${client.id} disconnected before initialized, ignoring`);

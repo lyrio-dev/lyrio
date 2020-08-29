@@ -21,7 +21,7 @@ export interface RequestWithSession extends Request {
 export class AuthMiddleware implements NestMiddleware {
   constructor(private readonly authSessionService: AuthSessionService) {}
 
-  async use(req: RequestWithSession, res: Response, next: () => void) {
+  async use(req: RequestWithSession, res: Response, next: () => void): Promise<void> {
     const authHeader = req.headers.authorization,
       sessionKey = authHeader && authHeader.split(" ")[1];
     if (sessionKey) {
@@ -45,4 +45,6 @@ export class AuthMiddleware implements NestMiddleware {
  * Calling it in a EventEmitter's callback may be not working since EventEmitter's callbacks
  * run in different contexts.
  */
-export const getCurrentRequest = () => asyncLocalStorage.getStore() as RequestWithSession;
+export function getCurrentRequest(): RequestWithSession {
+  return asyncLocalStorage.getStore() as RequestWithSession;
+}

@@ -91,7 +91,7 @@ export class RedisService implements OnModuleInit {
    * @param callback The function to execute while the lock is held.
    * @return The value returned in `callback`.
    */
-  public async lockReadWrite<T>(name: string, type: "READ" | "WRITE", callback: () => Promise<T>) {
+  public async lockReadWrite<T>(name: string, type: "READ" | "WRITE", callback: () => Promise<T>): Promise<T> {
     const lockRead = async () => {
       let unlock: () => Promise<void>;
       try {

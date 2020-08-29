@@ -71,7 +71,7 @@ export class JudgeQueueService {
   public registerTaskType<TaskProgress>(
     taskType: JudgeTaskType,
     service: JudgeTaskService<TaskProgress, JudgeTaskExtraInfo>
-  ) {
+  ): void {
     this.taskServices.set(taskType, service);
   }
 

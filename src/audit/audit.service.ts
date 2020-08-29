@@ -41,7 +41,7 @@ export class AuditService {
    * An object type query handler will be used to query the object meta when a audit log related to
    * that object is queried. The handler should return a meta object to be sent to the client dierctly.
    */
-  registerObjectTypeQueryHandler<T>(type: AuditLogObjectType, handler: AuditLogObjectTypeQueryHandler<T>) {
+  registerObjectTypeQueryHandler<T>(type: AuditLogObjectType, handler: AuditLogObjectTypeQueryHandler<T>): void {
     this.objectTypeQueryHandlers[type] = handler;
   }
 

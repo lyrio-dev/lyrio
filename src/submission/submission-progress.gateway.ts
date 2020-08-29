@@ -80,11 +80,11 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
     }
   }
 
-  getRoom(subscriptionType: SubmissionProgressSubscriptionType, submissionId: number) {
+  private getRoom(subscriptionType: SubmissionProgressSubscriptionType, submissionId: number) {
     return subscriptionType + "_" + submissionId;
   }
 
-  joinRoom(client: Socket, room: string) {
+  private joinRoom(client: Socket, room: string) {
     Logger.log(`Joining client ${client.id} to room ${room}`);
     const joinedRooms = this.clientJoinedRooms.get(client.id);
     if (!joinedRooms) {
@@ -97,7 +97,7 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
     this.rooms.get(room).add(client.id);
   }
 
-  leaveRoom(client: Socket, room: string) {
+  private leaveRoom(client: Socket, room: string) {
     Logger.log(`Leaving client ${client.id} from room ${room}`);
     const joinedRooms = this.clientJoinedRooms.get(client.id);
     if (!joinedRooms) {
@@ -117,7 +117,7 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
     if (joinedRooms.size === 0) client.disconnect(true);
   }
 
-  clearRoom(room: string) {
+  private clearRoom(room: string) {
     const roomClients = this.rooms.get(room);
     if (!roomClients) return;
     for (const client of roomClients) {
@@ -131,7 +131,7 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
   }
 
   // sendMessage: send a message to a client or a room of clients
-  sendMessage(to: Socket | string, submissionId: number, message: SubmissionProgressMessage) {
+  private sendMessage(to: Socket | string, submissionId: number, message: SubmissionProgressMessage) {
     // sendTo: calculate the message delta and send to a specfied client
     const sendTo = (clientId: string) => {
       const lastMessageBySubmissionId = this.clientLastMessages.get(clientId);
@@ -152,7 +152,7 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
     else for (const client of this.rooms.get(to) || []) sendTo(client);
   }
 
-  handleDisconnect(client: Socket) {
+  handleDisconnect(client: Socket): void {
     const rooms = this.clientJoinedRooms.get(client.id);
     if (rooms) {
       this.clientJoinedRooms.delete(client.id);
@@ -163,7 +163,7 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
     this.clientLastMessages.delete(client.id);
   }
 
-  async handleConnection(client: Socket) {
+  async handleConnection(client: Socket): Promise<void> {
     const subscription = this.decodeSubscription(client.handshake.query["subscriptionKey"]);
     if (!subscription) {
       client.disconnect(true);
@@ -206,7 +206,11 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
     }
   }
 
-  public async onSubmissionEvent(submissionId: number, type: SubmissionEventType, progress?: SubmissionProgress) {
+  public async onSubmissionEvent(
+    submissionId: number,
+    type: SubmissionEventType,
+    progress?: SubmissionProgress
+  ): Promise<void> {
     if (type === SubmissionEventType.Progress && progress.progressType !== SubmissionProgressType.Finished) {
       this.sendMessage(this.getRoom(SubmissionProgressSubscriptionType.Meta, submissionId), submissionId, {
         progressMeta: progress.progressType

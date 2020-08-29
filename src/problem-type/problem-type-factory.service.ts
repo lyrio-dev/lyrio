@@ -27,7 +27,9 @@ export class ProblemTypeFactoryService {
     };
   }
 
-  type(problemType: ProblemType) {
+  type(
+    problemType: ProblemType
+  ): ProblemTypeServiceInterface<ProblemJudgeInfo, SubmissionContent, SubmissionTestcaseResult> {
     return this.typeServices[problemType];
   }
 }

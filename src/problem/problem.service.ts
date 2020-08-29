@@ -866,7 +866,7 @@ export class ProblemService {
   /**
    * @param problem Must be locked by `ProblemService.lockProblemById(id, "WRITE")`.
    */
-  async deleteProblem(problem: ProblemEntity) {
+  async deleteProblem(problem: ProblemEntity): Promise<void> {
     let deleteFilesActually: () => void = null;
     await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
       // update user submission count and accepted problem count
