@@ -89,7 +89,7 @@ export class SubmissionStatisticsService {
 
     if (!tuples) {
       const aggregateFunction = sort === "ASC" ? "MIN" : "MAX";
-      const queryResult: { submissionId: number; submitterId: number; fieldValue: any }[] = await this.connection
+      const queryResult: { submissionId: number; submitterId: number; fieldValue: unknown }[] = await this.connection
         .createQueryBuilder()
         .select("submission.id", "submissionId")
         .addSelect("submission.submitterId", "submitterId")

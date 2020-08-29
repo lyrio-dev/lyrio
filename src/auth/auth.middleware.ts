@@ -21,7 +21,7 @@ export interface RequestWithSession extends Request {
 export class AuthMiddleware implements NestMiddleware {
   constructor(private readonly authSessionService: AuthSessionService) {}
 
-  async use(req: RequestWithSession, res: Response, next: () => any) {
+  async use(req: RequestWithSession, res: Response, next: () => void) {
     const authHeader = req.headers.authorization,
       sessionKey = authHeader && authHeader.split(" ")[1];
     if (sessionKey) {

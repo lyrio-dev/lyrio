@@ -102,6 +102,7 @@ export class JudgeQueueService {
     Logger.verbose("Consuming task queue");
 
     // ioredis's definition doesn't have bzpopmin method
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const redisResponse: [string, string] = await (this.redisForConsume as any).bzpopmin(
       REDIS_KEY_JUDGE_QUEUE,
       REDIS_CONSUME_TIMEOUT

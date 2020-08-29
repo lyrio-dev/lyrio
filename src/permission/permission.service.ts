@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
-import { Repository, EntityManager, Connection } from "typeorm";
+import { Repository, EntityManager, Connection, FindConditions } from "typeorm";
 
 import { PermissionForUserEntity } from "./permission-for-user.entity";
 import { PermissionForGroupEntity } from "./permission-for-group.entity";
@@ -79,7 +79,7 @@ export class PermissionService {
     objectType?: PermissionObjectType,
     transactionalEntityManager?: EntityManager
   ): Promise<void> {
-    const match: any = {};
+    const match: FindConditions<PermissionForUserEntity> = {};
     if (objectId) match.objectId = objectId;
     if (objectType) match.objectType = objectType;
     if (user) match.userId = user.id;
@@ -94,7 +94,7 @@ export class PermissionService {
     objectType?: PermissionObjectType,
     transactionalEntityManager?: EntityManager
   ): Promise<void> {
-    const match: any = {};
+    const match: FindConditions<PermissionForGroupEntity> = {};
     if (objectId) match.objectId = objectId;
     if (objectType) match.objectType = objectType;
     if (group) match.groupId = group.id;

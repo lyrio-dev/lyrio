@@ -6,7 +6,7 @@ import { ConfigService } from "@/config/config.service";
 
 @Injectable()
 export class AuthIpLocationService {
-  private readonly ip2region: any;
+  private readonly ip2region: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
   constructor(private configService: ConfigService) {
     this.ip2region = new IP2Region(

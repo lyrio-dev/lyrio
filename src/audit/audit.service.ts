@@ -73,8 +73,8 @@ export class AuditService {
     details?: unknown
   ): Promise<void>;
 
-  async log(...argumentsArray: any[]): Promise<void> {
-    let userId: number = typeof argumentsArray[0] === "number" ? argumentsArray.shift() : null;
+  async log(...argumentsArray: unknown[]): Promise<void> {
+    let userId: number = typeof argumentsArray[0] === "number" ? (argumentsArray.shift() as number) : null;
     const details: unknown = argumentsArray.length % 2 === 0 ? argumentsArray.pop() : null;
     const [action, firstObjectType, firstObjectId, secondObjectType, secondObjectId] = argumentsArray as [
       string,

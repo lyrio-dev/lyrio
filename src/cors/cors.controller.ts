@@ -5,13 +5,13 @@ import * as serialize from "serialize-javascript";
 
 import { ConfigService } from "@/config/config.service";
 
-const getXdomainProxyHtml = whiteList =>
+const getXdomainProxyHtml = (whiteList: string[]) =>
   `<!doctype html>
 <head>
   <title>xdomain proxy page</title>
   <script src="xdomain.min.js"></script>
   <script>
-    xdomain.masters(${serialize((Object as any).fromEntries(whiteList.map(origin => [origin, "*"])))});
+    xdomain.masters(${serialize(Object.fromEntries(whiteList.map(origin => [origin, "*"])))});
   </script>
 </head>`;
 

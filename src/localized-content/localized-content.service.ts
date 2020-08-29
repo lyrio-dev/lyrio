@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, EntityManager } from "typeorm";
+import { Repository, EntityManager, FindConditions } from "typeorm";
 import { Redis } from "ioredis";
 
 import { LocalizedContentEntity, LocalizedContentType } from "./localized-content.entity";
@@ -54,7 +54,7 @@ export class LocalizedContentService {
     locale?: Locale,
     transactionalEntityManager?: EntityManager
   ): Promise<void> {
-    const match: any = {
+    const match: FindConditions<LocalizedContentEntity> = {
       objectId: objectId,
       type: type
     };

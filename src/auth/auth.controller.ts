@@ -78,6 +78,7 @@ export class AuthController {
     if (request.jsonp)
       return `(window.getSessionInfoCallback || (function (sessionInfo) { window.sessionInfo = sessionInfo; }))(${JSON.stringify(
         result
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       )});` as any;
     else return result;
   }

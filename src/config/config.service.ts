@@ -17,7 +17,7 @@ export class ConfigService {
     this.config = this.validateInput(config);
   }
 
-  private validateInput(inputConfig: any): AppConfig {
+  private validateInput(inputConfig: unknown): AppConfig {
     const appConfig = plainToClass(AppConfig, inputConfig);
     const errors = validateSync(appConfig, {
       validationError: {

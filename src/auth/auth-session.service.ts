@@ -11,7 +11,7 @@ import { RedisService } from "@/redis/redis.service";
 
 // Refer to scripts/session-manager.lua for session management details
 interface RedisWithSessionManager extends Redis {
-  callSessionManager(...args: ValueType[]): Promise<any>;
+  callSessionManager(...args: ValueType[]): Promise<unknown>;
 }
 
 interface SessionInfoInternal {
@@ -90,7 +90,11 @@ export class AuthSessionService {
   }
 
   async listUserSessions(userId: number): Promise<SessionInfo[]> {
-    const result: [string, string, string][] = await this.redis.callSessionManager("list", userId);
+    const result = (await this.redis.callSessionManager("list", userId)) as [
+      sessionId: string,
+      lastAccessTime: string,
+      sessionInfo: string
+    ][];
     return result.map(
       ([sessionId, lastAccessTime, sessionInfo]): SessionInfo => ({
         sessionId: parseInt(sessionId),

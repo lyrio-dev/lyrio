@@ -1,6 +1,6 @@
 import { registerDecorator, ValidationOptions } from "class-validator";
 
-export function If<T = any>(callback: (value: T) => boolean, validationOptions?: ValidationOptions) {
+export function If<T>(callback: (value: T) => boolean, validationOptions?: ValidationOptions) {
   return function (object: unknown, propertyName: string) {
     registerDecorator({
       target: object.constructor,
