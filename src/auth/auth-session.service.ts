@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import * as jwt from "jsonwebtoken";
 import { Redis, ValueType } from "ioredis";
 import { join } from "path";
-import * as fs from "fs-extra";
+import fs = require("fs-extra");
 
 import { UserEntity } from "@/user/user.entity";
 import { ConfigService } from "@/config/config.service";

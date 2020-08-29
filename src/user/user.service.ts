@@ -1,7 +1,7 @@
 import { Injectable, forwardRef, Inject } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
 import { Repository, Connection, Like, MoreThan, EntityManager } from "typeorm";
-import * as crypto from "crypto";
+import crypto = require("crypto");
 
 import { UserEntity } from "./user.entity";
 import {

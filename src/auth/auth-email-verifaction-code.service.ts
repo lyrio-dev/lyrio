@@ -1,6 +1,6 @@
 import { Injectable, Inject, forwardRef } from "@nestjs/common";
 import { Redis } from "ioredis";
-import * as randomstring from "randomstring";
+import randomstring = require("randomstring");
 
 import { RedisService } from "@/redis/redis.service";
 

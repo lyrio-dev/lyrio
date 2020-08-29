@@ -2,7 +2,7 @@ import { Injectable, Logger, Inject, forwardRef } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
 import { Repository, Connection } from "typeorm";
 import { ValidationError } from "class-validator";
-import * as moment from "moment-timezone";
+import moment = require("moment-timezone");
 import { v4 as uuid } from "uuid";
 
 import { SubmissionEntity } from "./submission.entity";

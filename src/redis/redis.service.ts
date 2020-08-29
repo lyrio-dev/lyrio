@@ -1,6 +1,6 @@
 import { Injectable, OnModuleInit } from "@nestjs/common";
-import * as Redis from "ioredis";
-import * as Redlock from "redlock";
+import Redis = require("ioredis");
+import Redlock = require("redlock");
 
 import { ConfigService } from "@/config/config.service";
 
