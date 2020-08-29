@@ -23,8 +23,8 @@ export function autoMatchInputOutput(testData: ProblemFileEntity[]): Subtask[] {
           ),
           (input.filename.match(/\d+/g) || []).map(parseInt)
         ])
-        .filter(([, outputFile]) => outputFile)
-        .sort(([inputA, , numbersA], [inputB, , numbersB]) => {
+        .filter(([input, outputFile]) => outputFile)
+        .sort(([inputA, outputA, numbersA], [inputB, outputB, numbersB]) => {
           const firstNonEqualIndex = [...Array(Math.max(numbersA.length, numbersB.length)).keys()].findIndex(
             i => numbersA[i] !== numbersB[i]
           );
