@@ -95,7 +95,7 @@ export class RedisService implements OnModuleInit {
     const lockRead = async () => {
       let unlock: () => Promise<void>;
       try {
-        while (1) {
+        for (;;) {
           unlock = await this.lock(name);
           const numWritersWaiting = Number(await this.client.get(name + "_NUM_WRITERS_WAITING")) || 0;
           const writerActive = Number(await this.client.get(name + "_WRITER_ACTIVE")) || 0;
@@ -134,7 +134,7 @@ export class RedisService implements OnModuleInit {
       await this.client.set(name + "_NUM_WRITERS_WAITING", numWritersWaiting + 1);
 
       try {
-        while (1) {
+        for (;;) {
           const numReadersActive = Number(await this.client.get(name + "_NUM_READERS_ACTIVE")) || 0;
           const writerActive = Number(await this.client.get(name + "_WRITER_ACTIVE")) || 0;
 
