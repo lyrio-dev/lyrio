@@ -87,15 +87,19 @@ export class AuditService {
     [action, firstObjectType, firstObjectId, secondObjectType, secondObjectId] = argumentsArray;
 
     const req = getCurrentRequest();
-    if (!req.session) {
-      Logger.warn(
-        `Failed to get the current request object for audit logging { action: ${JSON.stringify(
-          action
-        )}, firstObject: <${firstObjectType} ${firstObjectId}>, secondObject: <${secondObjectType} ${secondObjectId}> }`
-      );
-    }
+    if (userId == null) {
+      if (!req.session) {
+        Logger.warn(
+          `Failed to get the current request session for audit logging { action: ${JSON.stringify(
+            action
+          )}, firstObject: <${firstObjectType} ${firstObjectId}>, secondObject: <${secondObjectType} ${secondObjectId}> }`
+        );
 
-    userId ??= req.session.user.id;
+        return;
+      }
+
+      userId = req.session.user.id;
+    }
 
     const auditLog = new AuditLogEntity();
     auditLog.userId = userId;
