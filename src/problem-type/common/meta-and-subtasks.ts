@@ -1,5 +1,5 @@
-import validFilename = require("valid-filename");
-import toposort = require("toposort");
+import validFilename from "valid-filename";
+import * as toposort from "toposort";
 
 import { ProblemFileEntity } from "@/problem/problem-file.entity";
 

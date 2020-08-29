@@ -1,4 +1,4 @@
-import validFilename = require("valid-filename");
+import validFilename from "valid-filename";
 
 import { CodeLanguage } from "@/code-language/code-language.type";
 import { ProblemFileEntity } from "@/problem/problem-file.entity";

@@ -1,7 +1,7 @@
 import { Injectable, OnModuleInit, Logger } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
 import { Repository, Connection, EntityManager, In } from "typeorm";
-import Minio = require("minio");
+import * as Minio from "minio";
 import { v4 as UUID } from "uuid";
 
 import { ConfigService } from "@/config/config.service";

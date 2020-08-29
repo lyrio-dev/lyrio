@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
-import fs = require("fs-extra");
-import IP2Region = require("ip2region");
+import * as fs from "fs-extra";
+import * as IP2Region from "ip2region";
 
 import { ConfigService } from "@/config/config.service";
 

@@ -1,5 +1,5 @@
 import * as fs from "fs";
-import yaml = require("js-yaml");
+import * as yaml from "js-yaml";
 import { validateSync } from "class-validator";
 import { plainToClass } from "class-transformer";
 import { AppConfig } from "./config.schema";
