@@ -1,15 +1,22 @@
-import { Controller, Post, Body, Get, Query } from "@nestjs/common";
+import { Controller, Post, Body } from "@nestjs/common";
 import { ApiOperation, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import { ConfigService } from "@/config/config.service";
 import { UserService } from "@/user/user.service";
 import { GroupService } from "@/group/group.service";
 import { FileService } from "@/file/file.service";
-import { ProblemService, ProblemPermissionType, ProblemPermissionLevel } from "./problem.service";
 import { CurrentUser } from "@/common/user.decorator";
 import { UserEntity } from "@/user/user.entity";
-import { ProblemEntity } from "./problem.entity";
+import { GroupEntity } from "@/group/group.entity";
+import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.service";
+import { Locale } from "@/common/locale.type";
+import { SubmissionService } from "@/submission/submission.service";
+import { SubmissionStatus } from "@/submission/submission-status.enum";
+import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
+
 import { ProblemFileType } from "./problem-file.entity";
+import { ProblemEntity } from "./problem.entity";
+import { ProblemService, ProblemPermissionType, ProblemPermissionLevel } from "./problem.service";
 
 import {
   CreateProblemRequestDto,
@@ -62,7 +69,6 @@ import {
   GetProblemTagDetailRequestDto,
   GetProblemTagDetailResponseDto,
   GetProblemTagDetailResponseError,
-  GetAllProblemTagsOfAllLocalesRequestDto,
   GetAllProblemTagsOfAllLocalesResponseDto,
   GetAllProblemTagsOfAllLocalesResponseError,
   DeleteProblemRequestDto,
@@ -72,12 +78,6 @@ import {
   ChangeProblemTypeResponseDto,
   ChangeProblemTypeResponseError
 } from "./dto";
-import { GroupEntity } from "@/group/group.entity";
-import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.service";
-import { Locale } from "@/common/locale.type";
-import { SubmissionService } from "@/submission/submission.service";
-import { SubmissionStatus } from "@/submission/submission-status.enum";
-import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
 
 @ApiTags("Problem")
 @Controller("problem")
@@ -143,7 +143,7 @@ export class ProblemController {
       ));
 
     return {
-      count: count,
+      count,
       result: await Promise.all(
         problems.map(async problem => {
           const titleLocale = problem.locales.includes(request.locale) ? request.locale : problem.locales[0];
@@ -151,7 +151,7 @@ export class ProblemController {
           const problemTags = await this.problemService.getProblemTagsByProblem(problem);
           return {
             meta: await this.problemService.getProblemMeta(problem, true),
-            title: title,
+            title,
             tags: await Promise.all(
               problemTags.map(problemTag => this.problemService.getProblemTagLocalized(problemTag, request.locale))
             ),
@@ -253,7 +253,7 @@ export class ProblemController {
       };
 
     await this.auditService.log("problem.update_statement", AuditLogObjectType.Problem, problem.id, {
-      oldStatement: oldStatement,
+      oldStatement,
       newStatement: {
         localizedContents: request.localizedContents,
         problemTagIds: request.problemTagIds,
@@ -306,8 +306,8 @@ export class ProblemController {
       const contentSections = await this.problemService.getProblemLocalizedContent(problem, resultLocale);
       result.localizedContentsOfLocale = {
         locale: resultLocale,
-        title: title,
-        contentSections: contentSections
+        title,
+        contentSections
       };
     }
 
@@ -344,13 +344,15 @@ export class ProblemController {
 
     if (request.permissionOfCurrentUser) {
       result.permissionOfCurrentUser = {};
-      for (const permissionType of request.permissionOfCurrentUser) {
-        result.permissionOfCurrentUser[permissionType] = await this.problemService.userHasPermission(
-          currentUser,
-          problem,
-          permissionType
-        );
-      }
+      await Promise.all(
+        request.permissionOfCurrentUser.map(async permissionType => {
+          result.permissionOfCurrentUser[permissionType] = await this.problemService.userHasPermission(
+            currentUser,
+            problem,
+            permissionType
+          );
+        })
+      );
     }
 
     if (request.permissions) {
@@ -360,13 +362,13 @@ export class ProblemController {
         userPermissions: await Promise.all(
           userPermissions.map(async ([user, permissionLevel]) => ({
             user: await this.userService.getUserMeta(user, currentUser),
-            permissionLevel: permissionLevel
+            permissionLevel
           }))
         ),
         groupPermissions: await Promise.all(
           groupPermissions.map(async ([group, permissionLevel]) => ({
             group: await this.groupService.getGroupMeta(group),
-            permissionLevel: permissionLevel
+            permissionLevel
           }))
         )
       };
@@ -432,7 +434,7 @@ export class ProblemController {
           request.userPermissions.map(userPermission => userPermission.userId)
         );
         const userPermissions: [UserEntity, ProblemPermissionLevel][] = [];
-        for (const i in request.userPermissions) {
+        for (const i of request.userPermissions.keys()) {
           const { userId, permissionLevel } = request.userPermissions[i];
           if (!users[i])
             return {
@@ -447,7 +449,7 @@ export class ProblemController {
           request.groupPermissions.map(groupPermission => groupPermission.groupId)
         );
         const groupPermissions: [GroupEntity, ProblemPermissionLevel][] = [];
-        for (const i in request.groupPermissions) {
+        for (const i of request.groupPermissions.keys()) {
           const { groupId, permissionLevel } = request.groupPermissions[i];
           if (!groups[i])
             return {
@@ -465,12 +467,12 @@ export class ProblemController {
         await this.auditService.log("problem.set_permissions", AuditLogObjectType.Problem, problem.id, {
           oldPermissions: {
             userPermissions: oldPermissions[0].map(([userId, permissionLevel]) => ({
-              userId: userId,
-              permissionLevel: permissionLevel
+              userId,
+              permissionLevel
             })),
             groupPermissions: oldPermissions[1].map(([groupId, permissionLevel]) => ({
-              groupId: groupId,
-              permissionLevel: permissionLevel
+              groupId,
+              permissionLevel
             }))
           },
           newPermissions: {
@@ -520,7 +522,7 @@ export class ProblemController {
       };
 
     await this.auditService.log("problem.set_display_id", AuditLogObjectType.Problem, problem.id, {
-      oldDisplayId: oldDisplayId,
+      oldDisplayId,
       newDisplayId: request.displayId
     });
 
@@ -602,7 +604,7 @@ export class ProblemController {
       return {
         error: result as AddProblemFileResponseError
       };
-    else if (result)
+    if (result)
       return {
         uploadInfo: result
       };
@@ -752,11 +754,11 @@ export class ProblemController {
     if (judgeInfoError)
       return {
         error: UpdateProblemJudgeInfoResponseError.INVALID_JUDGE_INFO,
-        judgeInfoError: judgeInfoError
+        judgeInfoError
       };
 
     await this.auditService.log("problem.update_judge_info", AuditLogObjectType.Problem, problem.id, {
-      oldJudgeInfo: oldJudgeInfo,
+      oldJudgeInfo,
       newJudgeInfo: request.judgeInfo
     });
 
@@ -825,7 +827,7 @@ export class ProblemController {
     return {
       id: problemTag.id,
       color: problemTag.color,
-      localizedNames: Object.entries(localizedNames).map(([locale, name]) => ({ locale: locale as Locale, name: name }))
+      localizedNames: Object.entries(localizedNames).map(([locale, name]) => ({ locale: locale as Locale, name }))
     };
   }
 
@@ -856,8 +858,8 @@ export class ProblemController {
     await this.problemService.updateProblemTag(problemTag, localizedNameTuples, request.color);
 
     await this.auditService.log("problem_tag.update", AuditLogObjectType.ProblemTag, problemTag.id, {
-      oldLocalizedNames: oldLocalizedNames,
-      oldColor: oldColor,
+      oldLocalizedNames,
+      oldColor,
       newLocalizedNames: Object.fromEntries(localizedNameTuples),
       newColor: request.color
     });
@@ -890,7 +892,7 @@ export class ProblemController {
     await this.problemService.deleteProblemTag(problemTag);
 
     await this.auditService.log("problem_tag.delete", AuditLogObjectType.ProblemTag, problemTag.id, {
-      localizedNames: localizedNames,
+      localizedNames,
       color: problemTag.color
     });
 
@@ -903,8 +905,7 @@ export class ProblemController {
     summary: "Get the meta and all localized names of all problem tags."
   })
   async getAllProblemTagsOfAllLocales(
-    @CurrentUser() currentUser: UserEntity,
-    @Body() request: GetAllProblemTagsOfAllLocalesRequestDto
+    @CurrentUser() currentUser: UserEntity
   ): Promise<GetAllProblemTagsOfAllLocalesResponseDto> {
     if (!(await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_PROBLEM)))
       return {
@@ -922,7 +923,7 @@ export class ProblemController {
             color: problemTag.color,
             localizedNames: Object.entries(localizedNames).map(([locale, name]) => ({
               locale: locale as Locale,
-              name: name
+              name
             }))
           };
         })
@@ -955,6 +956,7 @@ export class ProblemController {
     return await this.problemService.lockProblemById<DeleteProblemResponseDto>(
       request.problemId,
       "WRITE",
+      // eslint-disable-next-line no-shadow
       async problem => {
         if (!problem)
           return {
@@ -973,7 +975,7 @@ export class ProblemController {
           type: problem.type,
           isPublic: problem.isPublic,
           displayId: problem.displayId,
-          statement: statement
+          statement
         });
 
         return {};
@@ -1006,6 +1008,7 @@ export class ProblemController {
     return await this.problemService.lockProblemById<ChangeProblemTypeResponseDto>(
       request.problemId,
       "WRITE",
+      // eslint-disable-next-line no-shadow
       async problem => {
         if (!problem)
           return {
@@ -1021,8 +1024,8 @@ export class ProblemController {
           };
 
         await this.auditService.log("problem.change_type", AuditLogObjectType.Problem, problem.id, {
-          oldType: oldType,
-          oldJudgeInfo: oldJudgeInfo
+          oldType,
+          oldJudgeInfo
         });
 
         return {};

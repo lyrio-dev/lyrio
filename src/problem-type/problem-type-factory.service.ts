@@ -1,14 +1,14 @@
 import { Injectable } from "@nestjs/common";
 
 import { ProblemType } from "@/problem/problem.entity";
+import { SubmissionContent } from "@/submission/submission-content.interface";
+import { SubmissionTestcaseResult } from "@/submission/submission-result.interface";
+import { ProblemJudgeInfo } from "@/problem/problem-judge-info.interface";
+
 import { ProblemTypeServiceInterface } from "./problem-type-service.interface";
 
 import { ProblemTypeTraditionalService } from "./types/traditional/problem-type.service";
 import { ProblemTypeInteractionService } from "./types/interaction/problem-type.service";
-
-import { ProblemJudgeInfo } from "../problem/problem-judge-info.interface";
-import { SubmissionContent } from "@/submission/submission-content.interface";
-import { SubmissionTestcaseResult } from "@/submission/submission-result.interface";
 
 @Injectable()
 export class ProblemTypeFactoryService {
@@ -27,7 +27,9 @@ export class ProblemTypeFactoryService {
     };
   }
 
-  type(problemType: ProblemType) {
+  type(
+    problemType: ProblemType
+  ): ProblemTypeServiceInterface<ProblemJudgeInfo, SubmissionContent, SubmissionTestcaseResult> {
     return this.typeServices[problemType];
   }
 }

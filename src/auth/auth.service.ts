@@ -1,16 +1,19 @@
 import { Injectable, Inject, forwardRef } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
-import { LoginResponseError, RegisterResponseError } from "./dto";
+
 import { Repository, Connection, EntityManager } from "typeorm";
 import * as bcrypt from "bcrypt";
 
 import { UserEntity } from "@/user/user.entity";
-import { UserAuthEntity } from "./user-auth.entity";
 import { UserService } from "@/user/user.service";
 import { UserInformationEntity } from "@/user/user-information.entity";
 import { UserPreferenceEntity } from "@/user/user-preference.entity";
 import { ConfigService } from "@/config/config.service";
+
+import { UserAuthEntity } from "./user-auth.entity";
 import { AuthEmailVerifactionCodeService } from "./auth-email-verifaction-code.service";
+
+import { LoginResponseError, RegisterResponseError } from "./dto";
 
 @Injectable()
 export class AuthService {
@@ -33,7 +36,7 @@ export class AuthService {
 
   async findUserAuthByUserId(userId: number): Promise<UserAuthEntity> {
     return await this.userAuthRepository.findOne({
-      userId: userId
+      userId
     });
   }
 
@@ -61,7 +64,8 @@ export class AuthService {
         user.bio = "";
         user.avatarInfo = "gravatar:";
         user.isAdmin = false;
-        user.submissionCount = user.acceptedProblemCount = 0;
+        user.submissionCount = 0;
+        user.acceptedProblemCount = 0;
         user.rating = 0;
         user.registrationTime = new Date();
         await transactionalEntityManager.save(user);

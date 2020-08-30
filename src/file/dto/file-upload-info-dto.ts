@@ -11,7 +11,7 @@ export class FileUploadInfoDto {
   url: string;
 
   @ApiProperty()
-  extraFormData?: object;
+  extraFormData?: unknown;
 
   @ApiProperty()
   fileFieldName?: string;

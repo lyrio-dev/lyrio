@@ -1,9 +1,11 @@
+import { join } from "path";
+
 import { Injectable } from "@nestjs/common";
-import nodemailer = require("nodemailer");
-import ejs = require("ejs");
+
+import nodemailer from "nodemailer";
+import ejs from "ejs";
 
 import { ConfigService } from "@/config/config.service";
-import { join } from "path";
 import { Locale } from "@/common/locale.type";
 
 export enum MailTemplate {
@@ -21,7 +23,7 @@ export class MailService {
   }
 
   private resolveTemplate(template: string, locale: string): string {
-    return join(__dirname, "templates", locale, template + ".ejs");
+    return join(__dirname, "templates", locale, `${template}.ejs`);
   }
 
   /**
@@ -32,7 +34,12 @@ export class MailService {
    * @param recipient The recipient email address
    * @returns The error message. Falsy on success.
    */
-  async sendMail(template: MailTemplate, locale: Locale, data: object, recipient: string): Promise<string> {
+  async sendMail(
+    template: MailTemplate,
+    locale: Locale,
+    data: Record<string, unknown>,
+    recipient: string
+  ): Promise<string> {
     const renderResult = (
       await ejs.renderFile(this.resolveTemplate(template, locale), {
         ...data,
@@ -47,7 +54,7 @@ export class MailService {
       await this.transporter.sendMail({
         from: `${this.configService.config.preference.siteName} <${this.configService.config.services.mail.address}>`,
         to: recipient,
-        subject: subject,
+        subject,
         html: content
       });
       return null;

@@ -1,14 +1,16 @@
-import * as fs from "fs";
-import yaml = require("js-yaml");
+import fs from "fs-extra";
+
 import { validateSync } from "class-validator";
 import { plainToClass } from "class-transformer";
+import yaml from "js-yaml";
+
 import { AppConfig } from "./config.schema";
 
 export class ConfigService {
   public readonly config: AppConfig;
 
   constructor() {
-    const filePath: string = process.env["SYZOJ_NG_CONFIG_FILE"];
+    const filePath = process.env.SYZOJ_NG_CONFIG_FILE;
     if (!filePath) {
       throw new Error("Please specify configuration file with environment variable SYZOJ_NG_CONFIG_FILE");
     }
@@ -17,9 +19,9 @@ export class ConfigService {
     this.config = this.validateInput(config);
   }
 
-  private validateInput(inputConfig: any): AppConfig {
-    const appConfig: AppConfig = plainToClass(AppConfig, inputConfig);
-    const errors: object[] = validateSync(appConfig, {
+  private validateInput(inputConfig: unknown): AppConfig {
+    const appConfig = plainToClass(AppConfig, inputConfig);
+    const errors = validateSync(appConfig, {
       validationError: {
         target: false
       }

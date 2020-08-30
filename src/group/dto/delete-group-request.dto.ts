@@ -1,5 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsInt, IsBoolean } from "class-validator";
+
+import { IsInt } from "class-validator";
 
 export class DeleteGroupRequestDto {
   @ApiProperty()

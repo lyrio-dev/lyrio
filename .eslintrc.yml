@@ -1,0 +1,111 @@
+env:
+  es2020: true
+  node: true
+extends:
+  - airbnb-base
+parser: "@typescript-eslint/parser"
+parserOptions:
+  ecmaVersion: 12
+  sourceType: module
+  project: tsconfig.json
+settings:
+  import/parsers:
+    "@typescript-eslint/parser": [".ts"]
+  import/resolver:
+    typescript:
+      alwaysTryTypes: true
+plugins:
+  - "@typescript-eslint"
+rules:
+  # Code style is controlled by Prettier, not ESLint.
+  comma-dangle: off
+  curly: off
+  function-paren-newline: off
+  implicit-arrow-linebreak: off
+  indent: off
+  max-len: off
+  newline-per-chained-call: off
+  nonblock-statement-body-position: off
+  object-curly-newline: off
+  operator-linebreak: off
+  quotes: off
+
+  # Some rules in the preset is for JS only, we need the corresponding TS ones.
+  global-require: off
+  "@typescript-eslint/no-var-requires": error
+  no-empty-function: [error, { allow: [constructors] }]
+  no-dupe-class-members: off
+  "@typescript-eslint/no-dupe-class-members": error
+  no-unused-vars: off
+  "@typescript-eslint/no-unused-vars": error
+  no-return-await: off
+  "@typescript-eslint/return-await": [error, always]
+  no-useless-constructor: off
+  "@typescript-eslint/no-useless-constructor": error
+
+  # `any` is evil. Use `unknown` instead.
+  "@typescript-eslint/no-explicit-any": error
+
+  # Prefer `x => {}` to `(x) => {}` when x is the only argument.
+  arrow-parens: [error, as-needed]
+
+  # We organize almost everything to methods of the related classes since Nest.js's architecture.
+  # It's fine for some methods not using any dependency class or member variables.
+  class-methods-use-this: off
+
+  # Don't add the extra extensions in import filenames.
+  import/extensions: [error, never]
+
+  # Don't worry about import cycle as we use Nest.js DI.
+  import/no-cycle: off
+
+  # Use a strict order for imports and enforce newlines between them.
+  # But also allow manually added newlines to emphasize some special imports.
+  import/order:
+    - error
+    - groups: [builtin, external, internal, sibling]
+      pathGroups:
+        # "fs-extra" is replacing "fs" builtin module
+        - pattern: fs-extra
+          group: builtin
+        # Import Nest.js framework libraries before other externals
+        - pattern: "@nestjs/*"
+          group: external
+          position: before
+        # Import DTOs from other modules like "@/user/dto", put it before DTOs of the current module
+        - pattern: "**/dto"
+          group: sibling
+          position: after
+        # DTOs imports are very long, put them on the end
+        - pattern: ./dto
+          group: sibling
+          position: after
+      pathGroupsExcludedImportTypes: []
+      newlines-between: always-and-inside-groups
+
+  # import/export default is harmful: https://basarat.gitbook.io/typescript/main-1/defaultisbad.
+  import/prefer-default-export: off
+
+  # This rule is too general. Putting related classes together helps reading the code.
+  max-classes-per-file: off
+
+  # `else { if/return }` and `else if/return` are different in semantics.
+  # "Lonely" is not a reason to change them.
+  no-else-return: off
+  no-lonely-if: off
+
+  # Right use of `continue` will reduce code complexity -- they're sometimes better than too many `if`s.
+  no-continue: off
+
+  # This rule doesn't have a "allow at the beginning of a function" option so it's hard to use.
+  no-param-reassign: off
+
+  # Only language newbies will be confused by non-evil ++ and -- operators.
+  no-plusplus: off
+
+  # Airbnb uses it to disallow for...in, for...of, with and labels.
+  # But I use for...of since it's clearer than `Array.prototype.forEach()`.
+  no-restricted-syntax: off # Disable this ruleset
+  guard-for-in: error       # Disallow for...in
+  no-with: error            # Disallow with
+  no-labels: error          # Disallow labels

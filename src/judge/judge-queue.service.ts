@@ -1,7 +1,9 @@
 import { Injectable, Logger } from "@nestjs/common";
+
 import { Redis } from "ioredis";
 
 import { RedisService } from "@/redis/redis.service";
+
 import { JudgeTaskService } from "./judge-task-service.interface";
 import { JudgeTaskProgress } from "./judge-task-progress.interface";
 
@@ -16,7 +18,7 @@ export enum JudgeTaskPriority {
 
 // Since multiple keys is not supported in Redis ZSET, we use "<key1>.<key2>" to simulate it
 function combinePriority(id: number, priorityValue: JudgeTaskPriority): string {
-  return priorityValue + "." + id;
+  return `${priorityValue}.${id}`;
 }
 
 export enum JudgeTaskType {
@@ -30,6 +32,7 @@ export interface JudgeTaskMeta {
   type: JudgeTaskType;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface JudgeTaskExtraInfo {}
 
 // Extra info is also send to judge client while ONLY meta is used to identity the task
@@ -56,7 +59,9 @@ const REDIS_CONSUME_TIMEOUT = 10;
 @Injectable()
 export class JudgeQueueService {
   private readonly redisForPush: Redis;
+
   private readonly redisForConsume: Redis;
+
   private readonly taskServices: Map<
     JudgeTaskType,
     JudgeTaskService<JudgeTaskProgress, JudgeTaskExtraInfo>
@@ -70,7 +75,7 @@ export class JudgeQueueService {
   public registerTaskType<TaskProgress>(
     taskType: JudgeTaskType,
     service: JudgeTaskService<TaskProgress, JudgeTaskExtraInfo>
-  ) {
+  ): void {
     this.taskServices.set(taskType, service);
   }
 
@@ -79,7 +84,7 @@ export class JudgeQueueService {
     type: JudgeTaskType,
     priority: JudgeTaskPriority,
     priorityId: number,
-    repush: boolean = false
+    repush = false
   ): Promise<void> {
     if (repush)
       Logger.verbose(
@@ -91,8 +96,8 @@ export class JudgeQueueService {
       REDIS_KEY_JUDGE_QUEUE,
       combinePriority(priorityId, priority),
       JSON.stringify({
-        taskId: taskId,
-        type: type
+        taskId,
+        type
       })
     );
   }
@@ -101,6 +106,7 @@ export class JudgeQueueService {
     Logger.verbose("Consuming task queue");
 
     // ioredis's definition doesn't have bzpopmin method
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const redisResponse: [string, string] = await (this.redisForConsume as any).bzpopmin(
       REDIS_KEY_JUDGE_QUEUE,
       REDIS_CONSUME_TIMEOUT
@@ -110,7 +116,7 @@ export class JudgeQueueService {
       return null;
     }
 
-    const [combinedPriority, taskJson] = redisResponse;
+    const [, taskJson] = redisResponse;
     const taskMeta: JudgeTaskMeta = JSON.parse(taskJson);
     const task = await this.taskServices.get(taskMeta.type).getTaskToBeSentToJudgeByTaskId(taskMeta.taskId);
     if (!task) {

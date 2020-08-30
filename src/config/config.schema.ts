@@ -1,4 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
+
 import {
   ValidateNested,
   IsIP,
@@ -7,12 +8,12 @@ import {
   IsBoolean,
   IsInt,
   Min,
-  IsObject,
   IsEmail,
   IsOptional,
   IsArray
 } from "class-validator";
 import { Type } from "class-transformer";
+
 import { IsPortNumber } from "@/common/validators";
 
 class ServerConfig {
@@ -72,7 +73,7 @@ class MailConfig {
   @IsOptional()
   readonly address: string;
 
-  readonly transport: object | string;
+  readonly transport: unknown;
 }
 
 class ServicesConfig {

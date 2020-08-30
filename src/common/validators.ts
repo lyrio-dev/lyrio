@@ -1,13 +1,15 @@
-import { registerDecorator, ValidationOptions, ValidationArguments, IsInt } from "class-validator";
+import { registerDecorator, ValidationOptions } from "class-validator";
 
-export function If<T = any>(callback: (value: T) => boolean, validationOptions?: ValidationOptions) {
-  return function (object: Object, propertyName: string) {
+/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
+
+export function If<T>(callback: (value: T) => boolean, validationOptions?: ValidationOptions) {
+  return (object: unknown, propertyName: string) => {
     registerDecorator({
       target: object.constructor,
-      propertyName: propertyName,
+      propertyName,
       options: validationOptions,
       validator: {
-        validate(value: T, args: ValidationArguments) {
+        validate(value: T) {
           return callback(value);
         }
       }
@@ -33,7 +35,7 @@ export function IsPortNumber(validationOptions?: ValidationOptions) {
 //
 // TODO: Add Chinese support
 export function IsUsername(validationOptions?: ValidationOptions) {
-  return If(value => typeof value === "string" && /^[a-zA-Z0-9\-\_\.\#\$]{3,24}$/.test(value), validationOptions);
+  return If(value => typeof value === "string" && /^[a-zA-Z0-9\-_.#$]{3,24}$/.test(value), validationOptions);
 }
 
 // A group name is a string of 1 ~ 48 ASCII characters, and each character
@@ -42,8 +44,5 @@ export function IsUsername(validationOptions?: ValidationOptions) {
 //
 // TODO: Add Chinese support
 export function IsGroupName(validationOptions?: ValidationOptions) {
-  return If(
-    value => typeof value === "string" && /^[a-zA-Z0-9\ \:\@\~\-\_\.\#\$\/]{1,48}$/.test(value),
-    validationOptions
-  );
+  return If(value => typeof value === "string" && /^[a-zA-Z0-9 :@~-_.#$/]{1,48}$/.test(value), validationOptions);
 }

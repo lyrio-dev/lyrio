@@ -1,11 +1,14 @@
 import { Injectable } from "@nestjs/common";
+
 import { ValidationError, validateSync } from "class-validator";
 import { plainToClass } from "class-transformer";
 
 import { CodeLanguage } from "./code-language.type";
 
+import LanguageOptionsCpp from "./language-options/cpp";
+
 const LanguageOptionsClasses = {
-  [CodeLanguage.CPP]: require("./language-options/cpp").default
+  [CodeLanguage.CPP]: LanguageOptionsCpp
 };
 
 @Injectable()

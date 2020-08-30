@@ -1,4 +1,5 @@
 import { JudgeTaskProgress } from "@/judge/judge-task-progress.interface";
+
 import { SubmissionTestcaseResult } from "./submission-result.interface";
 import { SubmissionStatus } from "./submission-status.enum";
 

@@ -7,6 +7,7 @@ export enum DownloadProblemFilesResponseError {
 
 export class ProblemFileDownloadInfoDto {
   filename: string;
+
   downloadUrl: string;
 }
 

@@ -1,9 +1,11 @@
-import { Controller, Post, Body, Get, Query } from "@nestjs/common";
+import { Controller, Post, Body, Get } from "@nestjs/common";
 import { ApiOperation, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import { CurrentUser } from "@/common/user.decorator";
 import { UserEntity } from "@/user/user.entity";
+
 import { JudgeClientService } from "./judge-client.service";
+
 import {
   AddJudgeClientRequestDto,
   AddJudgeClientResponseDto,
@@ -11,7 +13,6 @@ import {
   DeleteJudgeClientRequestDto,
   DeleteJudgeClientResponseDto,
   DeleteJudgeClientResponseError,
-  ListJudgeClientsRequestDto,
   ListJudgeClientsResponseDto,
   ResetJudgeClientKeyRequestDto,
   ResetJudgeClientKeyResponseDto,
@@ -101,10 +102,7 @@ export class JudgeClientController {
   })
   @ApiBearerAuth()
   @Get("listJudgeClients")
-  async listJudgeClients(
-    @CurrentUser() currentUser: UserEntity,
-    @Query() request: ListJudgeClientsRequestDto
-  ): Promise<ListJudgeClientsResponseDto> {
+  async listJudgeClients(@CurrentUser() currentUser: UserEntity): Promise<ListJudgeClientsResponseDto> {
     const judgeClients = await this.judgeClientService.listJudgeClients();
     return {
       judgeClients: await Promise.all(

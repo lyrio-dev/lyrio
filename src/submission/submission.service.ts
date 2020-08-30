@@ -1,16 +1,14 @@
 import { Injectable, Logger, Inject, forwardRef } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
+
 import { Repository, Connection } from "typeorm";
 import { ValidationError } from "class-validator";
-import moment = require("moment-timezone");
 import { v4 as uuid } from "uuid";
+import moment from "moment-timezone";
 
-import { SubmissionEntity } from "./submission.entity";
-import { SubmissionDetailEntity } from "./submission-detail.entity";
 import { ProblemService } from "@/problem/problem.service";
 import { UserEntity } from "@/user/user.entity";
 import { ProblemEntity, ProblemType } from "@/problem/problem.entity";
-import { SubmissionStatus } from "./submission-status.enum";
 import {
   JudgeQueueService,
   JudgeTaskType,
@@ -19,18 +17,23 @@ import {
   JudgeTaskExtraInfo
 } from "@/judge/judge-queue.service";
 import { JudgeTaskService } from "@/judge/judge-task-service.interface";
-import { SubmissionProgress, SubmissionProgressType } from "./submission-progress.interface";
 import { ProblemFileType } from "@/problem/problem-file.entity";
 import { ProblemJudgeInfo } from "@/problem/problem-judge-info.interface";
-import { SubmissionContent } from "./submission-content.interface";
-import { SubmissionProgressService, SubmissionEventType } from "./submission-progress.service";
-import { SubmissionBasicMetaDto } from "./dto";
-import { SubmissionStatisticsService } from "./submission-statistics.service";
 import { UserService } from "@/user/user.service";
 import { ProblemSampleData } from "@/problem/problem-sample-data.interface";
 import { RedisService } from "@/redis/redis.service";
 import { JudgeGateway } from "@/judge/judge.gateway";
 import { ProblemTypeFactoryService } from "@/problem-type/problem-type-factory.service";
+
+import { SubmissionProgress, SubmissionProgressType } from "./submission-progress.interface";
+import { SubmissionContent } from "./submission-content.interface";
+import { SubmissionProgressService, SubmissionEventType } from "./submission-progress.service";
+import { SubmissionStatisticsService } from "./submission-statistics.service";
+import { SubmissionEntity } from "./submission.entity";
+import { SubmissionDetailEntity } from "./submission-detail.entity";
+import { SubmissionStatus } from "./submission-status.enum";
+
+import { SubmissionBasicMetaDto } from "./dto";
 
 interface SubmissionTaskExtraInfo extends JudgeTaskExtraInfo {
   problemType: ProblemType;
@@ -70,7 +73,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
 
   public async findSubmissionByTaskId(taskId: string): Promise<SubmissionEntity> {
     return await this.submissionRepository.findOne({
-      taskId: taskId
+      taskId
     });
   }
 
@@ -102,25 +105,25 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
 
     if (problemId) {
       queryBuilder.andWhere("problemId = :problemId", {
-        problemId: problemId
+        problemId
       });
     }
 
     if (submitterId) {
       queryBuilder.andWhere("submitterId = :submitterId", {
-        submitterId: submitterId
+        submitterId
       });
     }
 
     if (codeLanguage) {
       queryBuilder.andWhere("codeLanguage = :codeLanguage", {
-        codeLanguage: codeLanguage
+        codeLanguage
       });
     }
 
     if (status) {
       queryBuilder.andWhere("status = :status", {
-        status: status
+        status
       });
     }
 
@@ -129,13 +132,13 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     let reversed = false;
     if (minId != null) {
       queryBuilder.andWhere("id >= :minId", {
-        minId: minId
+        minId
       });
       queryBuilder.orderBy("id", "ASC");
       reversed = true;
     } else if (maxId != null) {
       queryBuilder.andWhere("id <= :maxId", {
-        maxId: maxId
+        maxId
       });
       queryBuilder.orderBy("id", "DESC");
     } else {
@@ -154,15 +157,15 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
         hasLargerId: false
       };
 
-    const largestId = result[0].id,
-      smallestId = result[result.length - 1].id;
+    const largestId = result[0].id;
+    const smallestId = result[result.length - 1].id;
     const [hasSmallerId, hasLargerId] = await Promise.all([
-      queryBuilderWithoutPagination.clone().andWhere("id < :smallestId", { smallestId: smallestId }).take(1).getCount(),
-      queryBuilderWithoutPagination.clone().andWhere("id > :largestId", { largestId: largestId }).take(1).getCount()
+      queryBuilderWithoutPagination.clone().andWhere("id < :smallestId", { smallestId }).take(1).getCount(),
+      queryBuilderWithoutPagination.clone().andWhere("id > :largestId", { largestId }).take(1).getCount()
     ]);
 
     return {
-      result: result,
+      result,
       hasSmallerId: !!hasSmallerId,
       hasLargerId: !!hasLargerId
     };
@@ -180,6 +183,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     if (validationError && validationError.length > 0) return [validationError, null];
 
     const submission = await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
+      // eslint-disable-next-line no-shadow
       const submission = new SubmissionEntity();
       submission.isPublic = problem.isPublic;
       const pair = await this.problemTypeFactoryService
@@ -230,7 +234,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
   }
 
   public async getSubmissionDetail(submission: SubmissionEntity): Promise<SubmissionDetailEntity> {
-    return this.submissionDetailRepository.findOne({
+    return await this.submissionDetailRepository.findOne({
       submissionId: submission.id
     });
   }
@@ -254,7 +258,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
       .addSelect("COUNT(*)", "count")
       .where("submitterId = :submitterId", { submitterId: user.id })
       .andWhere('submitTime >= DATE_SUB(CONVERT_TZ(:now, "UTC", :timezone), INTERVAL :offsetDays DAY)', {
-        now: now,
+        now,
         offsetDays: days - 1
       })
       .groupBy("submitDate")
@@ -280,7 +284,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
    * @param submission Must be locked (or just created, ID not exposed to user).
    */
   public async judgeSubmission(submission: SubmissionEntity): Promise<void> {
-    const oldSubmission = Object.assign({}, submission);
+    const oldSubmission = { ...submission };
 
     if (submission.taskId) {
       this.judgeGateway.cancelTask(submission.taskId);
@@ -304,6 +308,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
   }
 
   public async rejudgeSubmission(submission: SubmissionEntity): Promise<void> {
+    // eslint-disable-next-line no-shadow
     await this.lockSubmission(submission, true, async submission => {
       if (!submission) return;
       this.judgeSubmission(submission);
@@ -311,12 +316,13 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
   }
 
   public async cancelSubmission(submission: SubmissionEntity): Promise<void> {
+    // eslint-disable-next-line no-shadow
     const canceled = await this.lockSubmission(submission, true, async submission => {
       if (!submission || !submission.taskId) return false;
 
       this.judgeGateway.cancelTask(submission.taskId);
 
-      const oldSubmission = Object.assign({}, submission);
+      const oldSubmission = { ...submission };
 
       submission.taskId = null;
       submission.score = null;
@@ -349,6 +355,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
 
   public async deleteSubmission(submission: SubmissionEntity): Promise<void> {
     // This function updates related info, lock the problem for READ first, then lock the submission
+    // eslint-disable-next-line no-shadow
     await this.lockSubmission(submission, true, async submission => {
       if (!submission) return;
 
@@ -393,7 +400,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     problem: ProblemEntity,
     progress: SubmissionProgress
   ): Promise<void> {
-    const oldSubmission = Object.assign({}, submission);
+    const oldSubmission = { ...submission };
 
     const submissionDetail = await this.getSubmissionDetail(submission);
     submissionDetail.result = {
@@ -443,10 +450,10 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     const finished = progress.progressType === SubmissionProgressType.Finished;
 
     // Don't lock the problem if not finished since we don't modify the database.
+    // eslint-disable-next-line no-shadow
     await this.lockSubmission(submission, finished, async (submission, problem?) => {
       if (!submission || submission.taskId !== taskId) {
         Logger.warn(`Invalid task Id ${taskId} of task progress, maybe there's a too-early rejudge?`);
-        return false;
       }
 
       // First update database, then report progress
@@ -484,7 +491,8 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
           problemType: problem.type,
           judgeInfo: preprocessedJudgeInfo,
           samples:
-            preprocessedJudgeInfo && preprocessedJudgeInfo["runSamples"]
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            preprocessedJudgeInfo && (preprocessedJudgeInfo as any).runSamples
               ? await this.problemService.getProblemSamples(problem)
               : null,
           testData: Object.fromEntries(testData.map(problemFile => [problemFile.filename, problemFile.uuid])),
@@ -506,25 +514,24 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     callback: (submission: SubmissionEntity, problem?: ProblemEntity) => Promise<T>
   ): Promise<T> {
     if (lockProblem) {
-      return this.problemService.lockProblemById(submission.problemId, "READ", async problem => {
+      return await this.problemService.lockProblemById(submission.problemId, "READ", async problem => {
         if (!problem) return await callback(null);
-        return this.redisService.lock(
+        return await this.redisService.lock(
           `Submission_${submission.id}`,
           async () => await callback(await this.findSubmissionById(submission.id), problem)
         );
       });
-    } else {
-      return this.redisService.lock(
-        `Submission_${submission.id}`,
-        async () => await callback(await this.findSubmissionById(submission.id))
-      );
     }
+    return await this.redisService.lock(
+      `Submission_${submission.id}`,
+      async () => await callback(await this.findSubmissionById(submission.id))
+    );
   }
 
   async getUserProblemAcceptedSubmissionCount(userId: number, problemId: number): Promise<number> {
     return await this.submissionRepository.count({
       submitterId: userId,
-      problemId: problemId,
+      problemId,
       status: SubmissionStatus.Accepted
     });
   }
@@ -546,7 +553,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
       ? queryBuilder.andWhere("status = :status", { status: SubmissionStatus.Accepted })
       : queryBuilder.andWhere("status != :status", { status: SubmissionStatus.Pending })
     ).getRawMany();
-    const submissionIds = queryResult.map(result => parseInt(result.id));
+    const submissionIds = queryResult.map(result => Number(result.id));
     const submissions = await this.findSubmissionsByExistingIds(submissionIds);
     return new Map(submissions.map(submission => [submission.problemId, submission]));
   }
@@ -555,7 +562,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     return (
       (await this.submissionRepository.count({
         problemId: problem.id
-      })) != 0
+      })) !== 0
     );
   }
 
@@ -566,7 +573,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     const pendingSubmissions = await this.submissionRepository
       .createQueryBuilder()
       .select()
-      .where("problemId = :problemId", { problemId: problemId })
+      .where("problemId = :problemId", { problemId })
       .andWhere("taskId IS NOT NULL")
       .getMany();
     await Promise.all(

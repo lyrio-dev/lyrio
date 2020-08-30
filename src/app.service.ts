@@ -10,7 +10,7 @@ export class AppService {
   constructor(private readonly redisService: RedisService, private readonly fileService: FileService) {}
 
   // TODO: Make the site read-only while running maintaince tasks.
-  public async runMaintainceTasks() {
+  public async runMaintainceTasks(): Promise<void> {
     await this.redisService.lock(REDIS_LOCK_MAINTAINCE_TASKS, async () => {
       await this.fileService.runMaintainceTasks();
     });

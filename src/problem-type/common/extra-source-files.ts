@@ -1,4 +1,6 @@
-import validFilename = require("valid-filename");
+/* eslint-disable no-throw-literal */
+
+import validFilename from "valid-filename";
 
 import { CodeLanguage } from "@/code-language/code-language.type";
 import { ProblemFileEntity } from "@/problem/problem-file.entity";
@@ -7,7 +9,10 @@ interface JudgeInfoWithExtraSourceFiles {
   extraSourceFiles?: Partial<Record<CodeLanguage, Record<string, string>>>;
 }
 
-export function validateExtraSourceFiles(judgeInfo: JudgeInfoWithExtraSourceFiles, testData: ProblemFileEntity[]) {
+export function validateExtraSourceFiles(
+  judgeInfo: JudgeInfoWithExtraSourceFiles,
+  testData: ProblemFileEntity[]
+): void {
   if (judgeInfo.extraSourceFiles) {
     if (typeof judgeInfo.extraSourceFiles !== "object") throw ["INVALID_EXTRA_SOURCE_FILES"];
 

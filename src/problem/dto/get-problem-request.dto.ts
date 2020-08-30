@@ -1,5 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
+
 import { IsInt, IsOptional, IsEnum, IsBoolean, IsArray, ArrayUnique } from "class-validator";
+
 import { Locale } from "@/common/locale.type";
 import { ProblemPermissionType } from "@/problem/problem.service";
 

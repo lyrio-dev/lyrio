@@ -1,19 +1,22 @@
 import { Injectable } from "@nestjs/common";
+
 import { ValidationError, validate } from "class-validator";
 import { plainToClass } from "class-transformer";
 
-import { ProblemJudgeInfoTraditional } from "./problem-judge-info.interface";
-import { ProblemTypeServiceInterface } from "../../problem-type-service.interface";
 import { ConfigService } from "@/config/config.service";
 import { ProblemFileEntity } from "@/problem/problem-file.entity";
-import { SubmissionContentTraditional } from "./submission-content.interface";
-import { SubmissionTestcaseResultTraditional } from "./submission-testcase-result.interface";
 import { SubmissionResult } from "@/submission/submission-result.interface";
 import { CodeLanguageService } from "@/code-language/code-language.service";
 import { validateMetaAndSubtasks } from "@/problem-type/common/meta-and-subtasks";
 import { validateChecker } from "@/problem-type/common/checker";
 import { validateExtraSourceFiles } from "@/problem-type/common/extra-source-files";
 import { autoMatchInputOutput } from "@/problem-type/common/auto-match-input-output";
+
+import { SubmissionTestcaseResultTraditional } from "./submission-testcase-result.interface";
+import { SubmissionContentTraditional } from "./submission-content.interface";
+import { ProblemJudgeInfoTraditional } from "./problem-judge-info.interface";
+
+import { ProblemTypeServiceInterface } from "../../problem-type-service.interface";
 
 @Injectable()
 export class ProblemTypeTraditionalService
@@ -83,6 +86,7 @@ export class ProblemTypeTraditionalService
     );
   }
 
+  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   async getCodeLanguageAndAnswerSizeFromSubmissionContent(submissionContent: SubmissionContentTraditional) {
     return {
       language: submissionContent.language,
@@ -93,6 +97,7 @@ export class ProblemTypeTraditionalService
     };
   }
 
+  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   getTimeAndMemoryUsedFromSubmissionResult(submissionResult: SubmissionResult<SubmissionTestcaseResultTraditional>) {
     const result = {
       timeUsed: 0,

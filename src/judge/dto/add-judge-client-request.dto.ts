@@ -1,4 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
+
 import { IsString, Length, IsArray } from "class-validator";
 
 export class AddJudgeClientRequestDto {

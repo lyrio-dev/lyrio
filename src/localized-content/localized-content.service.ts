@@ -1,11 +1,13 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, EntityManager } from "typeorm";
+
+import { Repository, EntityManager, FindConditions } from "typeorm";
 import { Redis } from "ioredis";
 
-import { LocalizedContentEntity, LocalizedContentType } from "./localized-content.entity";
 import { Locale } from "@/common/locale.type";
 import { RedisService } from "@/redis/redis.service";
+
+import { LocalizedContentEntity, LocalizedContentType } from "./localized-content.entity";
 
 const REDIS_KEY_LOCALIZED_CONTENT = "localized-content:%s:%d:%s";
 
@@ -54,9 +56,9 @@ export class LocalizedContentService {
     locale?: Locale,
     transactionalEntityManager?: EntityManager
   ): Promise<void> {
-    const match: any = {
-      objectId: objectId,
-      type: type
+    const match: FindConditions<LocalizedContentEntity> = {
+      objectId,
+      type
     };
 
     if (locale) match.locale = locale;
@@ -72,9 +74,9 @@ export class LocalizedContentService {
     if (cachedResult) return cachedResult;
 
     const localizedContent = await this.localizedContentRepository.findOne({
-      objectId: objectId,
-      type: type,
-      locale: locale
+      objectId,
+      type,
+      locale
     });
 
     if (!localizedContent) return null;
@@ -85,19 +87,19 @@ export class LocalizedContentService {
 
   async getOfAllLocales(objectId: number, type: LocalizedContentType): Promise<Partial<Record<Locale, string>>> {
     const localizedContents = await this.localizedContentRepository.find({
-      objectId: objectId,
-      type: type
+      objectId,
+      type
     });
 
-    let result: Partial<Record<Locale, string>> = {};
+    const result: Partial<Record<Locale, string>> = {};
     for (const localizedContent of localizedContents) result[localizedContent.locale] = localizedContent.data;
     return result;
   }
 
   async getOfAnyLocale(objectId: number, type: LocalizedContentType): Promise<[locale: Locale, content: string]> {
     const localizedContent = await this.localizedContentRepository.findOne({
-      objectId: objectId,
-      type: type
+      objectId,
+      type
     });
 
     return localizedContent ? [localizedContent.locale, localizedContent.data] : null;
@@ -105,8 +107,8 @@ export class LocalizedContentService {
 
   async countLocales(objectId: number, type: LocalizedContentType): Promise<number> {
     return await this.localizedContentRepository.count({
-      objectId: objectId,
-      type: type
+      objectId,
+      type
     });
   }
 }

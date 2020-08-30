@@ -1,11 +1,14 @@
 import { Injectable, OnModuleInit, Logger } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
-import { Repository, Connection, EntityManager, In, LessThan } from "typeorm";
-import Minio = require("minio");
+
+import { Repository, Connection, EntityManager, In } from "typeorm";
 import { v4 as UUID } from "uuid";
+import { Client as MinioClient } from "minio";
 
 import { ConfigService } from "@/config/config.service";
+
 import { FileEntity } from "./file.entity";
+
 import { FileUploadInfoDto } from "./dto";
 
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent
@@ -29,7 +32,8 @@ const FILE_DOWNLOAD_EXPIRE_TIME = 20 * 60 * 60;
 
 @Injectable()
 export class FileService implements OnModuleInit {
-  private readonly minioClient: Minio.Client;
+  private readonly minioClient: MinioClient;
+
   private readonly bucket: string;
 
   constructor(
@@ -39,7 +43,7 @@ export class FileService implements OnModuleInit {
     private readonly fileRepository: Repository<FileEntity>,
     private readonly configService: ConfigService
   ) {
-    this.minioClient = new Minio.Client({
+    this.minioClient = new MinioClient({
       endPoint: this.configService.config.services.minio.endPoint,
       port: this.configService.config.services.minio.port,
       useSSL: this.configService.config.services.minio.useSSL,
@@ -77,7 +81,7 @@ export class FileService implements OnModuleInit {
     const policyResult = await this.minioClient.presignedPostPolicy(policy);
 
     return {
-      uuid: uuid,
+      uuid,
       method: "POST",
       url: policyResult.postURL,
       extraFormData: policyResult.formData,
@@ -93,7 +97,7 @@ export class FileService implements OnModuleInit {
     transactionalEntityManager: EntityManager
   ): Promise<"INVALID_OPERATION" | "NOT_UPLOADED"> {
     // If the file has already uploaded and finished
-    if ((await this.fileRepository.count({ uuid: uuid })) != 0) return "INVALID_OPERATION";
+    if ((await this.fileRepository.count({ uuid })) !== 0) return "INVALID_OPERATION";
 
     // Get file size
     let size: number;
@@ -103,7 +107,8 @@ export class FileService implements OnModuleInit {
     } catch (e) {
       if (e.message === "The specified key does not exist.") {
         return "NOT_UPLOADED";
-      } else throw e;
+      }
+      throw e;
     }
 
     const file = new FileEntity();
@@ -121,18 +126,22 @@ export class FileService implements OnModuleInit {
    */
   async deleteFile(uuid: string | string[], transactionalEntityManager: EntityManager): Promise<() => void> {
     if (typeof uuid === "string") {
-      await transactionalEntityManager.delete(FileEntity, { uuid: uuid });
+      await transactionalEntityManager.delete(FileEntity, { uuid });
       return () =>
         this.minioClient.removeObject(this.bucket, uuid).catch(e => {
           Logger.error(`Failed to delete file ${uuid}: ${e}`);
         });
-    } else if (uuid.length > 0) {
+    }
+    if (uuid.length > 0) {
       await transactionalEntityManager.delete(FileEntity, { uuid: In(uuid) });
       return () =>
         this.minioClient.removeObjects(this.bucket, uuid).catch(e => {
           Logger.error(`Failed to delete file [${uuid}]: ${e}`);
         });
     }
+    return () => {
+      /* do nothing */
+    };
   }
 
   /**
@@ -164,7 +173,7 @@ export class FileService implements OnModuleInit {
       !filename
         ? {}
         : {
-            "response-content-disposition": 'attachment; filename="' + encodeRFC5987ValueChars(filename) + '"'
+            "response-content-disposition": `attachment; filename="${encodeRFC5987ValueChars(filename)}"`
           }
     );
   }
@@ -172,15 +181,15 @@ export class FileService implements OnModuleInit {
   async runMaintainceTasks(): Promise<void> {
     // Delete unused files
     // TODO: Use listObjectsV2 instead, which returns at most 1000 objects in a time
-    const stream = this.minioClient.listObjects(this.bucket),
-      deleteList: string[] = [];
+    const stream = this.minioClient.listObjects(this.bucket);
+    const deleteList: string[] = [];
     await new Promise((resolve, reject) => {
       const promises: Promise<void>[] = [];
       stream.on("data", object => {
         promises.push(
           (async () => {
             const uuid = object.name;
-            if (!(await this.fileRepository.count({ uuid: uuid }))) {
+            if (!(await this.fileRepository.count({ uuid }))) {
               deleteList.push(uuid);
             }
           })()

@@ -1,7 +1,8 @@
 import { ApiProperty } from "@nestjs/swagger";
 
-import { ProblemJudgeInfo } from "../problem-judge-info.interface";
 import { IsObject, IsInt } from "class-validator";
+
+import { ProblemJudgeInfo } from "../problem-judge-info.interface";
 
 export class UpdateProblemJudgeInfoRequestDto {
   @ApiProperty()

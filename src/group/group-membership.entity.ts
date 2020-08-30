@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Index, ManyToOne, Column, JoinColumn } from "typeorm";
 
 import { UserEntity } from "@/user/user.entity";
+
 import { GroupEntity } from "./group.entity";
 
 @Entity("group_membership")
@@ -10,7 +11,7 @@ export class GroupMembershipEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(type => UserEntity, {
+  @ManyToOne(() => UserEntity, {
     onDelete: "CASCADE"
   })
   @JoinColumn()
@@ -20,7 +21,7 @@ export class GroupMembershipEntity {
   @Index()
   userId: number;
 
-  @ManyToOne(type => GroupEntity, {
+  @ManyToOne(() => GroupEntity, {
     onDelete: "CASCADE"
   })
   @JoinColumn()

@@ -1,5 +1,7 @@
-# Just build. We don't have tests.
+# Just lint and build. We don't have tests.
 language: node_js
 node_js:
   - lts/*
-script: yarn build
+script:
+  - yarn lint
+  - yarn build

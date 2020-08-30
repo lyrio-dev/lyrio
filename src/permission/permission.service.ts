@@ -1,15 +1,15 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
-import { Repository, EntityManager, Connection } from "typeorm";
+
+import { Repository, EntityManager, Connection, FindConditions } from "typeorm";
+
+import { UserEntity } from "@/user/user.entity";
+import { GroupEntity } from "@/group/group.entity";
+import { GroupService } from "@/group/group.service";
 
 import { PermissionForUserEntity } from "./permission-for-user.entity";
 import { PermissionForGroupEntity } from "./permission-for-group.entity";
 import { PermissionObjectType } from "./permission-object-type.enum";
-
-import { UserEntity } from "@/user/user.entity";
-import { GroupEntity } from "@/group/group.entity";
-
-import { GroupService } from "@/group/group.service";
 
 export { PermissionObjectType } from "./permission-object-type.enum";
 
@@ -79,7 +79,7 @@ export class PermissionService {
     objectType?: PermissionObjectType,
     transactionalEntityManager?: EntityManager
   ): Promise<void> {
-    const match: any = {};
+    const match: FindConditions<PermissionForUserEntity> = {};
     if (objectId) match.objectId = objectId;
     if (objectType) match.objectType = objectType;
     if (user) match.userId = user.id;
@@ -94,7 +94,7 @@ export class PermissionService {
     objectType?: PermissionObjectType,
     transactionalEntityManager?: EntityManager
   ): Promise<void> {
-    const match: any = {};
+    const match: FindConditions<PermissionForGroupEntity> = {};
     if (objectId) match.objectId = objectId;
     if (objectType) match.objectType = objectType;
     if (group) match.groupId = group.id;
@@ -109,8 +109,8 @@ export class PermissionService {
     objectType: PermissionObjectType
   ): Promise<PermissionLevel> {
     const permissionForUser = await this.permissionForUserRepository.findOne({
-      objectId: objectId,
-      objectType: objectType,
+      objectId,
+      objectType,
       userId: user.id
     });
     if (!permissionForUser) return null;
@@ -123,8 +123,8 @@ export class PermissionService {
     objectType: PermissionObjectType
   ): Promise<PermissionLevel> {
     const permissionForGroup = await this.permissionForGroupRepository.findOne({
-      objectId: objectId,
-      objectType: objectType,
+      objectId,
+      objectType,
       groupId: group.id
     });
     if (!permissionForGroup) return null;
@@ -146,7 +146,7 @@ export class PermissionService {
         permission,
         transactionalEntityManager
       );
-    else if (userOrGroup instanceof GroupEntity)
+    if (userOrGroup instanceof GroupEntity)
       return await this.setGroupPermissionLevel(
         userOrGroup,
         objectId,
@@ -154,7 +154,7 @@ export class PermissionService {
         permission,
         transactionalEntityManager
       );
-    else throw new Error("userOrGroup is neither a user nor a group");
+    throw new Error("userOrGroup is neither a user nor a group");
   }
 
   async revokePermission(
@@ -165,9 +165,9 @@ export class PermissionService {
   ): Promise<void> {
     if (userOrGroup instanceof UserEntity)
       return await this.revokeUserPermission(userOrGroup, objectId, objectType, transactionalEntityManager);
-    else if (userOrGroup instanceof GroupEntity)
+    if (userOrGroup instanceof GroupEntity)
       return await this.revokeGroupPermission(userOrGroup, objectId, objectType, transactionalEntityManager);
-    else throw new Error("userOrGroup is neither a user nor a group");
+    throw new Error("userOrGroup is neither a user nor a group");
   }
 
   async getPermissionLevel<PermissionLevel extends number>(
@@ -176,9 +176,9 @@ export class PermissionService {
     objectType: PermissionObjectType
   ): Promise<PermissionLevel> {
     if (userOrGroup instanceof UserEntity) return await this.getUserPermissionLevel(userOrGroup, objectId, objectType);
-    else if (userOrGroup instanceof GroupEntity)
+    if (userOrGroup instanceof GroupEntity)
       return await this.getGroupPermissionLevel(userOrGroup, objectId, objectType);
-    else throw new Error("userOrGroup is neither a user nor a group");
+    throw new Error("userOrGroup is neither a user nor a group");
   }
 
   async userOrItsGroupsHavePermission<PermissionLevel extends number>(
@@ -196,13 +196,13 @@ export class PermissionService {
         .createQueryBuilder()
         .select("MAX(permissionLevel)", "maxPermissionLevel")
         .where("objectId = :objectId AND objectType = :objectType AND groupId IN (:...groupIds)", {
-          objectId: objectId,
-          objectType: objectType,
+          objectId,
+          objectType,
           groupIds: groupIdsOfUser
         })
         .getRawOne());
 
-    return queryResult && queryResult["maxPermissionLevel"] >= permissionLevelRequired;
+    return queryResult && queryResult.maxPermissionLevel >= permissionLevelRequired;
   }
 
   async getUserOrItsGroupsMaxPermissionLevel<PermissionLevel extends number>(
@@ -219,15 +219,15 @@ export class PermissionService {
         .createQueryBuilder()
         .select("MAX(permissionLevel)", "maxPermissionLevel")
         .where("objectId = :objectId AND objectType = :objectType AND groupId IN (:...groupIds)", {
-          objectId: objectId,
-          objectType: objectType,
+          objectId,
+          objectType,
           groupIds: groupIdsOfUser
         })
         .getRawOne());
 
-    if (!userPermission) return queryResult ? queryResult["maxPermissionLevel"] : null;
-    else if (!queryResult) return userPermission as PermissionLevel;
-    else return Math.max(userPermission, queryResult["maxPermissionLevel"]) as PermissionLevel;
+    if (!userPermission) return queryResult ? queryResult.maxPermissionLevel : null;
+    if (!queryResult) return userPermission as PermissionLevel;
+    return Math.max(userPermission, queryResult.maxPermissionLevel) as PermissionLevel;
   }
 
   async getUsersWithExactPermissionLevel<PermissionLevel extends number>(
@@ -237,9 +237,9 @@ export class PermissionService {
   ): Promise<number[]> {
     return (
       await this.permissionForUserRepository.find({
-        objectId: objectId,
-        objectType: objectType,
-        permissionLevel: permissionLevel
+        objectId,
+        objectType,
+        permissionLevel
       })
     ).map(permissionForUser => permissionForUser.userId);
   }
@@ -251,9 +251,9 @@ export class PermissionService {
   ): Promise<number[]> {
     return (
       await this.permissionForGroupRepository.find({
-        objectId: objectId,
-        objectType: objectType,
-        permissionLevel: permissionLevel
+        objectId,
+        objectType,
+        permissionLevel
       })
     ).map(permissionForGroup => permissionForGroup.groupId);
   }
@@ -275,8 +275,8 @@ export class PermissionService {
   ): Promise<[userId: number, permissionLevel: PermissionLevel][]> {
     return (
       await this.permissionForUserRepository.find({
-        objectId: objectId,
-        objectType: objectType
+        objectId,
+        objectType
       })
     ).map(permissionForUser => [permissionForUser.userId, permissionForUser.permissionLevel as PermissionLevel]);
   }
@@ -287,8 +287,8 @@ export class PermissionService {
   ): Promise<[groupId: number, permissionLevel: PermissionLevel][]> {
     return (
       await this.permissionForGroupRepository.find({
-        objectId: objectId,
-        objectType: objectType
+        objectId,
+        objectType
       })
     ).map(permissionForGroup => [permissionForGroup.groupId, permissionForGroup.permissionLevel as PermissionLevel]);
   }
@@ -312,15 +312,16 @@ export class PermissionService {
     groupPermissions: [GroupEntity, PermissionLevel][],
     transactionalEntityManager?: EntityManager
   ): Promise<void> {
+    // eslint-disable-next-line no-shadow
     const runInTransaction = async (transactionalEntityManager: EntityManager) => {
       await transactionalEntityManager.delete(PermissionForUserEntity, {
-        objectId: objectId,
-        objectType: objectType
+        objectId,
+        objectType
       });
 
       await transactionalEntityManager.delete(PermissionForGroupEntity, {
-        objectId: objectId,
-        objectType: objectType
+        objectId,
+        objectType
       });
 
       if (userPermissions.length > 0) {
@@ -330,10 +331,10 @@ export class PermissionService {
           .into(PermissionForUserEntity)
           .values(
             userPermissions.map(([user, permissionLevel]) => ({
-              objectId: objectId,
-              objectType: objectType,
+              objectId,
+              objectType,
               userId: user.id,
-              permissionLevel: permissionLevel
+              permissionLevel
             }))
           )
           .execute();
@@ -346,10 +347,10 @@ export class PermissionService {
           .into(PermissionForGroupEntity)
           .values(
             groupPermissions.map(([group, permissionLevel]) => ({
-              objectId: objectId,
-              objectType: objectType,
+              objectId,
+              objectType,
               groupId: group.id,
-              permissionLevel: permissionLevel
+              permissionLevel
             }))
           )
           .execute();

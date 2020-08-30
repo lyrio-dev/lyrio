@@ -1,6 +1,15 @@
 import { Injectable, Inject, forwardRef } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
+
 import { Repository, Connection, Like } from "typeorm";
+
+import { UserService } from "@/user/user.service";
+import { escapeLike } from "@/database/database.utils";
+import { UserEntity } from "@/user/user.entity";
+import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
+
+import { GroupMembershipEntity } from "./group-membership.entity";
+import { GroupEntity } from "./group.entity";
 
 import {
   CreateGroupResponseError,
@@ -9,13 +18,6 @@ import {
   SetGroupAdminResponseError,
   GroupMetaDto
 } from "./dto";
-
-import { UserService } from "@/user/user.service";
-import { GroupEntity } from "./group.entity";
-import { GroupMembershipEntity } from "./group-membership.entity";
-import { escapeLike } from "@/database/database.utils";
-import { UserEntity } from "@/user/user.entity";
-import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
 
 @Injectable()
 export class GroupService {
@@ -37,7 +39,7 @@ export class GroupService {
   }
 
   async groupExists(id: number): Promise<boolean> {
-    return (await this.groupRepository.count({ id: id })) != 0;
+    return (await this.groupRepository.count({ id })) === 0;
   }
 
   async findGroupById(id: number): Promise<GroupEntity> {
@@ -54,8 +56,8 @@ export class GroupService {
 
   async findGroupMembership(userId: number, groupId: number): Promise<GroupMembershipEntity> {
     return await this.groupMembershipRepository.findOne({
-      userId: userId,
-      groupId: groupId
+      userId,
+      groupId
     });
   }
 
@@ -70,17 +72,17 @@ export class GroupService {
   async isGroupAdmin(userId: number, groupId: number): Promise<boolean> {
     return (
       (await this.groupMembershipRepository.count({
-        userId: userId,
-        groupId: groupId,
+        userId,
+        groupId,
         isGroupAdmin: true
-      })) != 0
+      })) !== 0
     );
   }
 
   async getGroupIdsByUserId(userId: number): Promise<number[]> {
     return (
       await this.groupMembershipRepository.find({
-        userId: userId
+        userId
       })
     ).map(memberShip => memberShip.groupId);
   }
@@ -97,8 +99,7 @@ export class GroupService {
 
       return [null, group];
     } catch (e) {
-      if (await this.groupRepository.count({ name: name }))
-        return [CreateGroupResponseError.DUPLICATE_GROUP_NAME, null];
+      if (await this.groupRepository.count({ name })) return [CreateGroupResponseError.DUPLICATE_GROUP_NAME, null];
 
       throw e;
     }
@@ -114,7 +115,7 @@ export class GroupService {
       await this.groupRepository.save(group);
       return true;
     } catch (e) {
-      if (await this.groupRepository.count({ name: name })) return false;
+      if (await this.groupRepository.count({ name })) return false;
 
       throw e;
     }
@@ -135,7 +136,7 @@ export class GroupService {
     } catch (e) {
       if (
         await this.groupMembershipRepository.count({
-          userId: userId,
+          userId,
           groupId: group.id
         })
       ) {
@@ -170,8 +171,8 @@ export class GroupService {
     if (!(await this.groupExists(groupId))) return SetGroupAdminResponseError.NO_SUCH_GROUP;
 
     const groupMembership = await this.groupMembershipRepository.findOne({
-      userId: userId,
-      groupId: groupId
+      userId,
+      groupId
     });
 
     if (!groupMembership) return SetGroupAdminResponseError.USER_NOT_IN_GROUP;
@@ -184,8 +185,8 @@ export class GroupService {
 
   async searchGroup(query: string, wildcard: "START" | "END" | "BOTH", maxTakeCount: number): Promise<GroupEntity[]> {
     query = escapeLike(query);
-    if (wildcard === "START" || wildcard === "BOTH") query = "%" + query;
-    if (wildcard === "END" || wildcard === "BOTH") query = query + "%";
+    if (wildcard === "START" || wildcard === "BOTH") query = `%${query}`;
+    if (wildcard === "END" || wildcard === "BOTH") query += "%";
 
     return await this.groupRepository.find({
       where: {
@@ -206,7 +207,7 @@ export class GroupService {
     return [
       groups,
       groupMemberships
-        .filter((groupMembership, i) => groupMembership.isGroupAdmin)
+        .filter(groupMembership => groupMembership.isGroupAdmin)
         .map(groupMembership => groupMembership.groupId)
     ];
   }

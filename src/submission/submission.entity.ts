@@ -1,9 +1,9 @@
 import { Entity, PrimaryGeneratedColumn, Index, ManyToOne, Column, JoinColumn, OneToOne } from "typeorm";
 
-import { SubmissionStatus } from "./submission-status.enum";
-
 import { UserEntity } from "@/user/user.entity";
 import { ProblemEntity } from "@/problem/problem.entity";
+
+import { SubmissionStatus } from "./submission-status.enum";
 import { SubmissionDetailEntity } from "./submission-detail.entity";
 
 @Entity("submission")
@@ -56,7 +56,7 @@ export class SubmissionEntity {
   @Index()
   submitTime: Date;
 
-  @ManyToOne(type => ProblemEntity, { onDelete: "CASCADE" })
+  @ManyToOne(() => ProblemEntity, { onDelete: "CASCADE" })
   @JoinColumn()
   problem: Promise<ProblemEntity>;
 
@@ -64,7 +64,7 @@ export class SubmissionEntity {
   @Index()
   problemId: number;
 
-  @ManyToOne(type => UserEntity)
+  @ManyToOne(() => UserEntity)
   @JoinColumn()
   submitter: Promise<UserEntity>;
 
@@ -72,6 +72,6 @@ export class SubmissionEntity {
   @Index()
   submitterId: number;
 
-  @OneToOne(type => SubmissionDetailEntity, submissionDetail => submissionDetail.submission)
+  @OneToOne(() => SubmissionDetailEntity, submissionDetail => submissionDetail.submission)
   detail: Promise<SubmissionDetailEntity>;
 }

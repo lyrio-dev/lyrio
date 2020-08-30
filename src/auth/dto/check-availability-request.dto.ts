@@ -1,5 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
+
 import { IsOptional, IsEmail } from "class-validator";
+
 import { IsUsername } from "@/common/validators";
 
 export class CheckAvailabilityRequestDto {

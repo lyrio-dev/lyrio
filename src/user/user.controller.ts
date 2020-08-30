@@ -2,9 +2,16 @@ import { Controller, Get, Post, Body, Query, Inject, forwardRef } from "@nestjs/
 import { ApiOperation, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import { CurrentUser } from "@/common/user.decorator";
+import { AuthService } from "@/auth/auth.service";
+import { ConfigService } from "@/config/config.service";
+import { SubmissionService } from "@/submission/submission.service";
+import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
+
 import { UserEntity } from "./user.entity";
 import { UserService } from "./user.service";
 import { UserPrivilegeService } from "./user-privilege.service";
+import { UserPrivilegeType } from "./user-privilege.entity";
+
 import {
   GetUserMetaResponseDto,
   GetUserMetaRequestDto,
@@ -42,11 +49,6 @@ import {
   UpdateUserSelfEmailResponseDto,
   UpdateUserSelfEmailResponseError
 } from "./dto";
-import { UserPrivilegeType } from "./user-privilege.entity";
-import { AuthService } from "@/auth/auth.service";
-import { ConfigService } from "@/config/config.service";
-import { SubmissionService } from "@/submission/submission.service";
-import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
 
 @ApiTags("User")
 @Controller("user")
@@ -132,12 +134,12 @@ export class UserController {
     const error = await this.userPrivilegeService.setUserPrivileges(request.userId, request.privileges);
 
     await this.auditService.log("user.set_privileges", AuditLogObjectType.User, request.userId, {
-      oldPrivileges: oldPrivileges,
+      oldPrivileges,
       newPrivileges: request.privileges
     });
 
     return {
-      error: error
+      error
     };
   }
 
@@ -206,12 +208,12 @@ export class UserController {
     if (oldUsername !== request.username) {
       if (user.id === currentUser.id) {
         await this.auditService.log("user.change_username", {
-          oldUsername: oldUsername,
+          oldUsername,
           newUsername: request.username
         });
       } else {
         await this.auditService.log("user.change_others_username", AuditLogObjectType.User, user.id, {
-          oldUsername: oldUsername,
+          oldUsername,
           newUsername: request.username
         });
       }
@@ -220,19 +222,19 @@ export class UserController {
     if (oldEmail !== request.email) {
       if (user.id === currentUser.id) {
         await this.auditService.log("user.change_email", {
-          oldEmail: oldEmail,
+          oldEmail,
           newEmail: request.email
         });
       } else {
         await this.auditService.log("user.change_others_email", AuditLogObjectType.User, user.id, {
-          oldEmail: oldEmail,
+          oldEmail,
           newEmail: request.email
         });
       }
     }
 
     return {
-      error: error
+      error
     };
   }
 
@@ -254,7 +256,7 @@ export class UserController {
 
     return {
       userMetas: await Promise.all(users.map(user => this.userService.getUserMeta(user, currentUser))),
-      count: count
+      count
     };
   }
 
@@ -293,7 +295,7 @@ export class UserController {
         qq: userInformation.qq,
         github: userInformation.github
       },
-      submissionCountPerDay: submissionCountPerDay,
+      submissionCountPerDay,
       rank: await this.userService.getUserRank(user),
       hasPrivilege:
         currentUser &&
@@ -515,15 +517,14 @@ export class UserController {
 
     if (oldEmail !== request.email) {
       await this.auditService.log("auth.change_email", {
-        oldEmail: oldEmail,
+        oldEmail,
         newEmail: request.email
       });
     }
 
     if (!error) return {};
-    else
-      return {
-        error: error
-      };
+    return {
+      error
+    };
   }
 }

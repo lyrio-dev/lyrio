@@ -6,7 +6,7 @@ import { ProblemSampleData } from "./problem-sample-data.interface";
 
 @Entity("problem_sample")
 export class ProblemSampleEntity {
-  @OneToOne(type => ProblemEntity, { onDelete: "CASCADE" })
+  @OneToOne(() => ProblemEntity, { onDelete: "CASCADE" })
   @JoinColumn()
   problem: Promise<ProblemEntity>;
 

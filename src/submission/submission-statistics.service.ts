@@ -1,10 +1,12 @@
 import { Injectable, Logger, Inject, forwardRef } from "@nestjs/common";
 import { InjectConnection } from "@nestjs/typeorm";
+
 import { Connection } from "typeorm";
 import { Redis } from "ioredis";
 
 import { RedisService } from "@/redis/redis.service";
 import { ProblemEntity } from "@/problem/problem.entity";
+
 import { SubmissionEntity } from "./submission.entity";
 import { SubmissionStatus } from "./submission-status.enum";
 import { SubmissionService } from "./submission.service";
@@ -43,9 +45,9 @@ const submissionStatisticsFields: Record<SubmissionStatisticsType, SubmissionSta
 };
 
 // We use Redis to cache the result of submission statistics
-// The data in redis is [submissionId, submitterId, fieldValue]
 // Each time a submission is updated, if it's in the ranklist, or it should be inserted to the ranklist
 // the cache will be purged
+type SubmissionStatisticsCache = [submissionId: number, submitterId: number, fieldValue: number];
 const REDIS_KEY_SUBMISSION_STATISTICS = "submission-statistics:%d:%s";
 
 const REDIS_KEY_SUBMISSION_SCORE_STATISTICS = "submission-score-statistics:%d";
@@ -71,7 +73,9 @@ export class SubmissionStatisticsService {
     const str = await this.redis.get(key);
     try {
       return JSON.parse(str);
-    } catch (e) {}
+    } catch (e) {
+      return null;
+    }
   }
 
   public async querySubmissionStatisticsAndCount(
@@ -83,11 +87,11 @@ export class SubmissionStatisticsService {
     const { field, sort } = submissionStatisticsFields[statisticsType];
 
     const key = REDIS_KEY_SUBMISSION_SCORE_STATISTICS.format(problem.id, statisticsType);
-    let tuples = await this.parseFromRedis<[number, number, number][]>(key);
+    let tuples = await this.parseFromRedis<SubmissionStatisticsCache[]>(key);
 
     if (!tuples) {
       const aggregateFunction = sort === "ASC" ? "MIN" : "MAX";
-      const queryResult: { submissionId: number; submitterId: number; fieldValue: any }[] = await this.connection
+      const queryResult: { submissionId: number; submitterId: number; fieldValue: unknown }[] = await this.connection
         .createQueryBuilder()
         .select("submission.id", "submissionId")
         .addSelect("submission.submitterId", "submitterId")
@@ -167,49 +171,47 @@ export class SubmissionStatisticsService {
       (!submission || submission.status !== SubmissionStatus.Accepted)
     )
       return;
-    for (const statisticsType of Object.values(SubmissionStatisticsType)) {
-      const { field, sort } = submissionStatisticsFields[statisticsType];
-      const key = REDIS_KEY_SUBMISSION_SCORE_STATISTICS.format(oldSubmission.problemId, statisticsType);
-      const tuples = await this.parseFromRedis<[number, number, number][]>(key);
+    await Promise.all(
+      Object.values(SubmissionStatisticsType).map(async statisticsType => {
+        const { field, sort } = submissionStatisticsFields[statisticsType];
+        const key = REDIS_KEY_SUBMISSION_SCORE_STATISTICS.format(oldSubmission.problemId, statisticsType);
+        const tuples = await this.parseFromRedis<SubmissionStatisticsCache[]>(key);
 
-      if (!tuples || tuples.length === 0) continue;
+        if (!tuples || tuples.length === 0) return;
 
-      const isFirstBetter = (value: number, anotherValue: number) => {
-        return (sort === "ASC" && value < anotherValue) || (sort === "DESC" && value > anotherValue);
-      };
+        const isFirstBetter = (value: number, anotherValue: number) =>
+          (sort === "ASC" && value < anotherValue) || (sort === "DESC" && value > anotherValue);
 
-      const shouldCacheBePurged = () => {
-        const oldSubmissionInList = tuples.some(([id]) => id === oldSubmission.id);
+        const shouldCacheBePurged = () => {
+          const oldSubmissionInList = tuples.some(([id]) => id === oldSubmission.id);
 
-        // If the old value is in the list
-        const oldValue = Number(oldSubmission[field]),
-          newValue = submission && Number(submission[field]);
-        if (oldSubmissionInList) {
-          return oldValue !== newValue || !submission || submission.status !== SubmissionStatus.Accepted;
-        } else {
+          // If the old value is in the list
+          const oldValue = Number(oldSubmission[field]);
+          const newValue = submission && Number(submission[field]);
+          if (oldSubmissionInList) {
+            return oldValue !== newValue || !submission || submission.status !== SubmissionStatus.Accepted;
+          }
           if (!submission || submission.status !== SubmissionStatus.Accepted) return false;
 
           // If the new submission is Accepted, check if it's better than the submitter's best
-          const submitterBestValue = tuples.find(
-            ([submissionId, submitterId]) => submitterId === oldSubmission.submitterId
-          )[2];
+          const submitterBestValue = tuples.find(([, submitterId]) => submitterId === oldSubmission.submitterId)[2];
           if (submitterBestValue != null) {
             return newValue != null && isFirstBetter(newValue, submitterBestValue);
           }
 
           // If the new value is better than the last of the ranklist
-          const [lastId, lastSubmitterId, lastValue] = tuples[tuples.length - 1];
+          const [, , lastValue] = tuples[tuples.length - 1];
           return newValue != null && isFirstBetter(newValue, lastValue);
-        }
-      };
+        };
 
-      if (shouldCacheBePurged()) {
-        Logger.log(
-          `Purging submission statistics cache: problemId = ${oldSubmission.problemId}, statisticsType = ${statisticsType}`
-        );
-        await this.redis.del(key);
-      }
-    }
+        if (shouldCacheBePurged()) {
+          Logger.log(
+            `Purging submission statistics cache: problemId = ${oldSubmission.problemId}, statisticsType = ${statisticsType}`
+          );
+          await this.redis.del(key);
+        }
+      })
+    );
   }
 
   public async onProblemDeleted(problemId: number): Promise<void> {

@@ -1,11 +1,13 @@
 import { Injectable, Inject, forwardRef } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
-import { Repository, Connection, In } from "typeorm";
+
+import { Repository, Connection } from "typeorm";
 
 import { UserEntity } from "./user.entity";
 import { UserPrivilegeEntity, UserPrivilegeType } from "./user-privilege.entity";
-import { SetUserPrivilegesResponseError } from "./dto";
 import { UserService } from "./user.service";
+
+import { SetUserPrivilegesResponseError } from "./dto";
 
 export { UserPrivilegeType } from "./user-privilege.entity";
 
@@ -26,15 +28,13 @@ export class UserPrivilegeService {
       (user.isAdmin ||
         (await this.userPrivilegeRepository.count({
           userId: user.id,
-          privilegeType: privilegeType
-        })) != 0)
+          privilegeType
+        })) !== 0)
     );
   }
 
   async getUserPrivileges(userId: number): Promise<UserPrivilegeType[]> {
-    return (await this.userPrivilegeRepository.find({ userId: userId })).map(
-      userPrivilege => userPrivilege.privilegeType
-    );
+    return (await this.userPrivilegeRepository.find({ userId })).map(userPrivilege => userPrivilege.privilegeType);
   }
 
   async setUserPrivileges(
@@ -45,14 +45,14 @@ export class UserPrivilegeService {
 
     await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
       await transactionalEntityManager.delete(UserPrivilegeEntity, {
-        userId: userId
+        userId
       });
 
       for (const newPrivilegeType of newPrivilegeTypes) {
         const userPrivilege = new UserPrivilegeEntity();
         userPrivilege.privilegeType = newPrivilegeType;
         userPrivilege.userId = userId;
-        await transactionalEntityManager.save(userPrivilege);
+        await transactionalEntityManager.save(userPrivilege); // eslint-disable-line no-await-in-loop
       }
     });
 

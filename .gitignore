@@ -31,3 +31,6 @@ lerna-debug.log*
 
 # IDE - VSCode
 .vscode
+
+# Cache
+.eslintcache

@@ -1,9 +1,12 @@
-import { NestMiddleware, Injectable } from "@nestjs/common";
-import { Request, Response } from "express";
 import { AsyncLocalStorage } from "async_hooks";
 
-import { AuthSessionService } from "./auth-session.service";
+import { NestMiddleware, Injectable } from "@nestjs/common";
+
+import { Request, Response } from "express"; // eslint-disable-line import/no-extraneous-dependencies
+
 import { UserEntity } from "@/user/user.entity";
+
+import { AuthSessionService } from "./auth-session.service";
 
 const asyncLocalStorage = new AsyncLocalStorage();
 
@@ -21,16 +24,16 @@ export interface RequestWithSession extends Request {
 export class AuthMiddleware implements NestMiddleware {
   constructor(private readonly authSessionService: AuthSessionService) {}
 
-  async use(req: RequestWithSession, res: Response, next: Function) {
-    const authHeader = req.headers.authorization,
-      sessionKey = authHeader && authHeader.split(" ")[1];
+  async use(req: RequestWithSession, res: Response, next: () => void): Promise<void> {
+    const authHeader = req.headers.authorization;
+    const sessionKey = authHeader && authHeader.split(" ")[1];
     if (sessionKey) {
       const [sessionId, user] = await this.authSessionService.accessSession(sessionKey);
       if (user) {
         req.session = {
-          sessionKey: sessionKey,
-          sessionId: sessionId,
-          user: user
+          sessionKey,
+          sessionId,
+          user
         };
       }
     }
@@ -45,4 +48,6 @@ export class AuthMiddleware implements NestMiddleware {
  * Calling it in a EventEmitter's callback may be not working since EventEmitter's callbacks
  * run in different contexts.
  */
-export const getCurrentRequest = () => asyncLocalStorage.getStore() as RequestWithSession;
+export function getCurrentRequest(): RequestWithSession {
+  return asyncLocalStorage.getStore() as RequestWithSession;
+}

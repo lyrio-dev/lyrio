@@ -1,4 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
+
 import { IsInt, IsObject } from "class-validator";
 
 export class SubmitRequestDto {
@@ -8,5 +9,5 @@ export class SubmitRequestDto {
 
   @ApiProperty()
   @IsObject()
-  readonly content: object;
+  readonly content: unknown;
 }

@@ -12,7 +12,7 @@ export enum UserPrivilegeType {
 
 @Entity("user_privilege")
 export class UserPrivilegeEntity {
-  @ManyToOne(type => UserEntity, {
+  @ManyToOne(() => UserEntity, {
     onDelete: "CASCADE"
   })
   @JoinColumn()

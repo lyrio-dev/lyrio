@@ -8,14 +8,16 @@ import {
   OnGatewayConnection,
   OnGatewayDisconnect
 } from "@nestjs/websockets";
-import { Server, Socket } from "socket.io";
+
+import { Server, Socket } from "socket.io"; // eslint-disable-line import/no-extraneous-dependencies
+
+import { FileService } from "@/file/file.service";
+import { SubmissionProgress } from "@/submission/submission-progress.interface";
 
 import { JudgeClientService } from "./judge-client.service";
 import { JudgeClientEntity } from "./judge-client.entity";
 import { JudgeQueueService, JudgeTask, JudgeTaskMeta, JudgeTaskExtraInfo } from "./judge-queue.service";
 import { JudgeClientSystemInfo } from "./judge-client-system-info.interface";
-import { FileService } from "@/file/file.service";
-import { SubmissionProgress } from "@/submission/submission-progress.interface";
 
 interface JudgeClientState {
   judgeClient: JudgeClientEntity;
@@ -31,7 +33,9 @@ interface SubmissionProgressMessage {
 export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   private server: Server;
+
   private mapSessionIdToJudgeClient: Map<string, JudgeClientState> = new Map();
+
   private mapTaskIdToSocket: Map<string, Socket> = new Map();
 
   constructor(
@@ -40,7 +44,7 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly fileService: FileService
   ) {}
 
-  cancelTask(taskId: string) {
+  cancelTask(taskId: string): void {
     const client = this.mapTaskIdToSocket.get(taskId);
     if (!client) {
       Logger.warn(
@@ -63,8 +67,8 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
     return true;
   }
 
-  async handleConnection(client: Socket) {
-    const key = client.handshake.query["key"].split(" ").pop();
+  async handleConnection(client: Socket): Promise<void> {
+    const key = client.handshake.query.key.split(" ").pop();
     const judgeClient = await this.judgeClientService.findJudgeClientByKey(key);
 
     if (!judgeClient) {
@@ -84,7 +88,7 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     this.mapSessionIdToJudgeClient.set(client.id, {
-      judgeClient: judgeClient,
+      judgeClient,
       pendingTasks: new Set()
     });
 
@@ -93,7 +97,7 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
     Logger.log(`Judge client ${client.id} (${judgeClient.name}) initialized.`);
   }
 
-  async handleDisconnect(client: Socket) {
+  async handleDisconnect(client: Socket): Promise<void> {
     const state = this.mapSessionIdToJudgeClient.get(client.id);
     if (!state) {
       Logger.log(`Judge client ${client.id} disconnected before initialized, ignoring`);
@@ -110,10 +114,12 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
       `Repushing ${state.pendingTasks.size} tasks consumed by judge client ${client.id} (${state.judgeClient.name}).`
     );
     // Push the pending tasks back to the queue
-    for (const task of state.pendingTasks.values()) {
-      this.mapTaskIdToSocket.delete(task.taskId);
-      await this.judgeQueueService.pushTask(task.taskId, task.type, task.priority, task.priorityId, true);
-    }
+    await Promise.all(
+      Array.from(state.pendingTasks.values()).map(async task => {
+        this.mapTaskIdToSocket.delete(task.taskId);
+        await this.judgeQueueService.pushTask(task.taskId, task.type, task.priority, task.priorityId, true);
+      })
+    );
   }
 
   @SubscribeMessage("systemInfo")
@@ -135,7 +141,7 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const state = this.mapSessionIdToJudgeClient.get(client.id);
     if (!state) {
       Logger.warn(`"requestFiles" emitted from an unknown client ${client.id}, ignoring`);
-      return;
+      return [];
     }
 
     Logger.log(`Judge client ${client.id} (${state.judgeClient.name}) requested ${fileUuids.length} files`);
@@ -152,6 +158,7 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
+    /* eslint-disable no-await-in-loop */
     while (await this.checkConnection(client)) {
       const task = await this.judgeQueueService.consumeTask();
       if (!task) continue;
@@ -175,6 +182,7 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       return;
     }
+    /* eslint-enable no-await-in-loop */
   }
 
   @SubscribeMessage("progress")
