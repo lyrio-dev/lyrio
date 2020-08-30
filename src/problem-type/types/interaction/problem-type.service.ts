@@ -1,18 +1,21 @@
 import { Injectable } from "@nestjs/common";
+
 import { ValidationError, validate } from "class-validator";
 import { plainToClass } from "class-transformer";
 
-import { ProblemJudgeInfoInteraction } from "./judge-info.interface";
-import { ProblemTypeServiceInterface } from "../../problem-type-service.interface";
 import { ConfigService } from "@/config/config.service";
 import { ProblemFileEntity } from "@/problem/problem-file.entity";
-import { SubmissionContentInteraction } from "./submission-content.interface";
-import { SubmissionTestcaseResultInteraction } from "./submission-testcase-result.interface";
 import { SubmissionResult } from "@/submission/submission-result.interface";
 import { CodeLanguageService } from "@/code-language/code-language.service";
 import { validateMetaAndSubtasks } from "@/problem-type/common/meta-and-subtasks";
 import { validateExtraSourceFiles } from "@/problem-type/common/extra-source-files";
 import { CodeLanguage } from "@/code-language/code-language.type";
+
+import { SubmissionTestcaseResultInteraction } from "./submission-testcase-result.interface";
+import { SubmissionContentInteraction } from "./submission-content.interface";
+import { ProblemJudgeInfoInteraction } from "./judge-info.interface";
+
+import { ProblemTypeServiceInterface } from "../../problem-type-service.interface";
 
 @Injectable()
 export class ProblemTypeInteractionService
@@ -54,6 +57,7 @@ export class ProblemTypeInteractionService
         };
   }
 
+  /* eslint-disable no-throw-literal */
   validateJudgeInfo(
     judgeInfo: ProblemJudgeInfoInteraction,
     testData: ProblemFileEntity[],
@@ -67,11 +71,11 @@ export class ProblemTypeInteractionService
       enableFileIo: true,
       enableInputFile: true,
       enableOutputFile: true,
-      hardTimeLimit: hardTimeLimit,
-      hardMemoryLimit: hardMemoryLimit
+      hardTimeLimit,
+      hardMemoryLimit
     });
 
-    const interactor = judgeInfo.interactor;
+    const { interactor } = judgeInfo;
     if (!interactor) throw ["INVALID_INTERACTOR"];
     if (!["stdio", "shm"].includes(interactor.interface)) throw ["INVALID_INTERACTOR_INTERFACE"];
     if (interactor.interface === "shm") {
@@ -88,18 +92,19 @@ export class ProblemTypeInteractionService
     if (!testData.some(file => file.filename === interactor.filename))
       throw ["NO_SUCH_INTERACTOR_FILE", interactor.filename];
 
-    const timeLimit = judgeInfo.interactor.timeLimit == null ? judgeInfo["timeLimit"] : judgeInfo.interactor.timeLimit;
+    const timeLimit = judgeInfo.interactor.timeLimit == null ? judgeInfo.timeLimit : judgeInfo.interactor.timeLimit;
     if (!Number.isSafeInteger(timeLimit) || timeLimit <= 0) throw [`INVALID_TIME_LIMIT_INTERACTOR`];
     if (hardTimeLimit != null && timeLimit > hardTimeLimit) throw [`TIME_LIMIT_TOO_LARGE_INTERACTOR`, timeLimit];
 
     const memoryLimit =
-      judgeInfo.interactor.memoryLimit == null ? judgeInfo["memoryLimit"] : judgeInfo.interactor.memoryLimit;
+      judgeInfo.interactor.memoryLimit == null ? judgeInfo.memoryLimit : judgeInfo.interactor.memoryLimit;
     if (!Number.isSafeInteger(memoryLimit) || memoryLimit <= 0) throw [`INVALID_MEMORY_LIMIT_INTERACTOR`];
     if (hardMemoryLimit != null && memoryLimit > hardMemoryLimit)
       throw [`MEMORY_LIMIT_TOO_LARGE_INTERACTOR`, memoryLimit];
 
     validateExtraSourceFiles(judgeInfo, testData);
   }
+  /* eslint-enable no-throw-literal */
 
   async validateSubmissionContent(submissionContent: SubmissionContentInteraction): Promise<ValidationError[]> {
     const errors = await validate(plainToClass(SubmissionContentInteraction, submissionContent));

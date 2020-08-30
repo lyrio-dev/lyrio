@@ -1,6 +1,21 @@
 import { Controller, Get, Post, Body, Query, Req } from "@nestjs/common";
 import { ApiOperation, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
+import { ConfigService } from "@/config/config.service";
+import { UserService } from "@/user/user.service";
+import { CurrentUser } from "@/common/user.decorator";
+import { UserEntity } from "@/user/user.entity";
+import { MailService, MailTemplate } from "@/mail/mail.service";
+import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.service";
+import { GroupService } from "@/group/group.service";
+import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
+
+import { AuthEmailVerifactionCodeService, EmailVerifactionCodeType } from "./auth-email-verifaction-code.service";
+import { AuthSessionService } from "./auth-session.service";
+import { AuthIpLocationService } from "./auth-ip-location.service";
+import { RequestWithSession } from "./auth.middleware";
+import { AuthService } from "./auth.service";
+
 import {
   LoginRequestDto,
   RegisterRequestDto,
@@ -25,19 +40,6 @@ import {
   RevokeUserSessionResponseDto,
   RevokeUserSessionResponseError
 } from "./dto";
-import { ConfigService } from "@/config/config.service";
-import { UserService } from "@/user/user.service";
-import { AuthService } from "./auth.service";
-import { CurrentUser } from "@/common/user.decorator";
-import { UserEntity } from "@/user/user.entity";
-import { AuthEmailVerifactionCodeService, EmailVerifactionCodeType } from "./auth-email-verifaction-code.service";
-import { MailService, MailTemplate } from "@/mail/mail.service";
-import { AuthSessionService } from "./auth-session.service";
-import { AuthIpLocationService } from "./auth-ip-location.service";
-import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.service";
-import { GroupService } from "@/group/group.service";
-import { RequestWithSession } from "./auth.middleware";
-import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
 
 // Refer to auth.middleware.ts for req.session
 
@@ -80,7 +82,7 @@ export class AuthController {
         result
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       )});` as any;
-    else return result;
+    return result;
   }
 
   @Post("login")
@@ -107,7 +109,7 @@ export class AuthController {
       }
 
       return {
-        error: error
+        error
       };
     }
 
@@ -218,7 +220,7 @@ export class AuthController {
       }[request.type],
       request.locale,
       {
-        code: code
+        code
       },
       request.email
     );
@@ -257,7 +259,7 @@ export class AuthController {
 
     if (error)
       return {
-        error: error
+        error
       };
 
     await this.auditService.log(user.id, "auth.register", {

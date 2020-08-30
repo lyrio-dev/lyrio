@@ -1,4 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
+
 import { IsNumber, IsBoolean } from "class-validator";
 
 export class SetGroupAdminRequestDto {

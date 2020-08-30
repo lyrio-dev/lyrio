@@ -1,14 +1,6 @@
 import { Module, forwardRef } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
-import { ProblemEntity } from "./problem.entity";
-import { ProblemJudgeInfoEntity } from "./problem-judge-info.entity";
-import { ProblemSampleEntity } from "./problem-sample.entity";
-import { ProblemFileEntity } from "./problem-file.entity";
-import { ProblemTagEntity } from "./problem-tag.entity";
-import { ProblemTagMapEntity } from "./problem-tag-map.entity";
-import { ProblemController } from "./problem.controller";
-import { ProblemService } from "./problem.service";
 import { ConfigModule } from "@/config/config.module";
 import { LocalizedContentModule } from "@/localized-content/localized-content.module";
 import { UserModule } from "@/user/user.module";
@@ -19,6 +11,15 @@ import { RedisModule } from "@/redis/redis.module";
 import { SubmissionModule } from "@/submission/submission.module";
 import { ProblemTypeModule } from "@/problem-type/problem-type.module";
 import { AuditModule } from "@/audit/audit.module";
+
+import { ProblemService } from "./problem.service";
+import { ProblemController } from "./problem.controller";
+import { ProblemTagMapEntity } from "./problem-tag-map.entity";
+import { ProblemTagEntity } from "./problem-tag.entity";
+import { ProblemFileEntity } from "./problem-file.entity";
+import { ProblemSampleEntity } from "./problem-sample.entity";
+import { ProblemJudgeInfoEntity } from "./problem-judge-info.entity";
+import { ProblemEntity } from "./problem.entity";
 
 @Module({
   imports: [

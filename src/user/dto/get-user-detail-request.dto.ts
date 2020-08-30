@@ -1,4 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
+
 import { IsInt, IsDateString, IsString, MaxLength } from "class-validator";
 
 export class GetUserDetailRequestDto {

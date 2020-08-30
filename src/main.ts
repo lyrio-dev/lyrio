@@ -1,25 +1,26 @@
+import util from "util";
+
 import { NestFactory } from "@nestjs/core";
 import { NestExpressApplication } from "@nestjs/platform-express";
-import { Logger } from "@nestjs/common";
+import { Logger, ValidationPipe } from "@nestjs/common";
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
-import { ValidationPipe } from "@nestjs/common";
-import { format } from "util";
 
-import getGitRepoInfo = require("git-repo-info");
-import moment = require("moment");
+import getGitRepoInfo from "git-repo-info";
+import moment from "moment";
 
 import { AppModule } from "./app.module";
 import { ConfigService } from "./config/config.service";
 
-String.prototype.format = function (...args) {
-  return format.call(this, ...args);
+// eslint-disable-next-line no-extend-native
+String.prototype.format = function format(...args) {
+  return util.format.call(this, ...args);
 };
 
 async function bootstrap() {
   // Get package info
   const packageInfo = require("../package.json"); // eslint-disable-line @typescript-eslint/no-var-requires
   const gitRepoInfo = getGitRepoInfo();
-  const appVersion = "v" + packageInfo.version;
+  const appVersion = `v${packageInfo.version}`;
   const gitRepoVersion = gitRepoInfo.sha
     ? ` (Git revision ${gitRepoInfo.sha.substr(8)} on ${moment(gitRepoInfo.committerDate).format(
         "YYYY-MM-DD H:mm:ss"
@@ -56,7 +57,7 @@ async function bootstrap() {
 }
 
 bootstrap().catch(err => {
-  console.error(err);
-  console.error("Error bootstrapping the application, exiting...");
+  console.error(err); // eslint-disable-line no-console
+  console.error("Error bootstrapping the application, exiting..."); // eslint-disable-line no-console
   process.exit(1);
 });

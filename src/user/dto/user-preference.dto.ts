@@ -1,5 +1,6 @@
-import { Locale } from "@/common/locale.type";
 import { IsEnum, IsOptional, IsBoolean, IsString, MaxLength, IsObject } from "class-validator";
+
+import { Locale } from "@/common/locale.type";
 
 export class UserPreferenceDto {
   @IsEnum(Locale)

@@ -1,11 +1,13 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
+
 import { Repository } from "typeorm";
 
-import { AuditLogEntity, AuditLogObjectType } from "./audit-log.entity";
 import { getCurrentRequest } from "@/auth/auth.middleware";
 import { UserEntity } from "@/user/user.entity";
 import { Locale } from "@/common/locale.type";
+
+import { AuditLogEntity, AuditLogObjectType } from "./audit-log.entity";
 
 export { AuditLogObjectType } from "./audit-log.entity";
 
@@ -46,6 +48,7 @@ export class AuditService {
   }
 
   async log(userId: number, action: string, details?: unknown): Promise<void>;
+
   async log(
     userId: number,
     action: string,
@@ -53,6 +56,7 @@ export class AuditService {
     objectId: number,
     details?: unknown
   ): Promise<void>;
+
   async log(
     userId: number,
     action: string,
@@ -62,8 +66,11 @@ export class AuditService {
     secondObjectId: number,
     details?: unknown
   ): Promise<void>;
+
   async log(action: string, details?: unknown): Promise<void>;
+
   async log(action: string, objectType: AuditLogObjectType, objectId: number, details?: unknown): Promise<void>;
+
   async log(
     action: string,
     firstObjectType: AuditLogObjectType,

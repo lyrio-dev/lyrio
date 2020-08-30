@@ -1,5 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
+
 import { IsInt, Min, IsEnum, IsArray, ArrayUnique, ArrayMaxSize, IsOptional, Length, IsBoolean } from "class-validator";
+
 import { Locale } from "@/common/locale.type";
 
 export class QueryProblemSetRequestDto {

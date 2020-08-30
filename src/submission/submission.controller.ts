@@ -3,13 +3,20 @@ import { ApiOperation, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import { CurrentUser } from "@/common/user.decorator";
 import { UserEntity } from "@/user/user.entity";
-import { SubmissionService } from "./submission.service";
-import { SubmissionProgressGateway, SubmissionProgressSubscriptionType } from "./submission-progress.gateway";
-import { SubmissionProgressService } from "./submission-progress.service";
 import { ProblemService, ProblemPermissionType } from "@/problem/problem.service";
 import { UserService } from "@/user/user.service";
 import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.service";
 import { ConfigService } from "@/config/config.service";
+import { ProblemEntity } from "@/problem/problem.entity";
+import { ProblemTypeFactoryService } from "@/problem-type/problem-type-factory.service";
+import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
+
+import { SubmissionStatus } from "./submission-status.enum";
+import { SubmissionStatisticsService } from "./submission-statistics.service";
+import { SubmissionProgressService } from "./submission-progress.service";
+import { SubmissionProgressGateway, SubmissionProgressSubscriptionType } from "./submission-progress.gateway";
+import { SubmissionService } from "./submission.service";
+
 import {
   SubmitRequestDto,
   SubmitResponseDto,
@@ -37,11 +44,6 @@ import {
   DeleteSubmissionResponseDto,
   DeleteSubmissionResponseError
 } from "./dto";
-import { ProblemEntity } from "@/problem/problem.entity";
-import { SubmissionStatus } from "./submission-status.enum";
-import { SubmissionStatisticsService } from "./submission-statistics.service";
-import { ProblemTypeFactoryService } from "@/problem-type/problem-type-factory.service";
-import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
 
 @ApiTags("Submission")
 @Controller("submission")
@@ -155,38 +157,40 @@ export class SubmissionController {
       queryResult.result.map(submission => submission.submitterId)
     );
     const pendingSubmissionIds: number[] = [];
-    for (const i in queryResult.result) {
-      const submission = queryResult.result[i];
-      const titleLocale = problems[i].locales.includes(request.locale) ? request.locale : problems[i].locales[0];
+    await Promise.all(
+      queryResult.result.map(async (_, i) => {
+        const submission = queryResult.result[i];
+        const titleLocale = problems[i].locales.includes(request.locale) ? request.locale : problems[i].locales[0];
 
-      submissionMetas[i] = {
-        id: submission.id,
-        isPublic: submission.isPublic,
-        codeLanguage: submission.codeLanguage,
-        answerSize: submission.answerSize,
-        score: submission.score,
-        status: submission.status,
-        submitTime: submission.submitTime,
-        problem: await this.problemService.getProblemMeta(problems[i]),
-        problemTitle: await this.problemService.getProblemLocalizedTitle(problems[i], titleLocale),
-        submitter: await this.userService.getUserMeta(submitters[i], currentUser),
-        timeUsed: submission.timeUsed,
-        memoryUsed: submission.memoryUsed
-      };
+        submissionMetas[i] = {
+          id: submission.id,
+          isPublic: submission.isPublic,
+          codeLanguage: submission.codeLanguage,
+          answerSize: submission.answerSize,
+          score: submission.score,
+          status: submission.status,
+          submitTime: submission.submitTime,
+          problem: await this.problemService.getProblemMeta(problems[i]),
+          problemTitle: await this.problemService.getProblemLocalizedTitle(problems[i], titleLocale),
+          submitter: await this.userService.getUserMeta(submitters[i], currentUser),
+          timeUsed: submission.timeUsed,
+          memoryUsed: submission.memoryUsed
+        };
 
-      // For progress reporting
-      const progress =
-        submission.status === SubmissionStatus.Pending &&
-        (await this.submissionProgressService.getSubmissionProgress(submission.id));
+        // For progress reporting
+        const progress =
+          submission.status === SubmissionStatus.Pending &&
+          (await this.submissionProgressService.getSubmissionProgress(submission.id));
 
-      if (progress) {
-        submissionMetas[i].progressMeta = progress.progressType;
-      }
+        if (progress) {
+          submissionMetas[i].progressMeta = progress.progressType;
+        }
 
-      if (submission.status === SubmissionStatus.Pending) {
-        pendingSubmissionIds.push(submission.id);
-      }
-    }
+        if (submission.status === SubmissionStatus.Pending) {
+          pendingSubmissionIds.push(submission.id);
+        }
+      })
+    );
 
     return {
       submissions: submissionMetas,
@@ -211,7 +215,7 @@ export class SubmissionController {
     @CurrentUser() currentUser: UserEntity,
     @Body() request: GetSubmissionDetailRequestDto
   ): Promise<GetSubmissionDetailResponseDto> {
-    const submission = await this.submissionService.findSubmissionById(parseInt(request.submissionId));
+    const submission = await this.submissionService.findSubmissionById(Number(request.submissionId));
     if (!submission)
       return {
         error: GetSubmissionDetailResponseError.NO_SUCH_SUBMISSION
@@ -253,7 +257,7 @@ export class SubmissionController {
       },
       content: submissionDetail.content,
       result: submissionDetail.result,
-      progress: progress,
+      progress,
       progressSubscriptionKey: !pending
         ? null
         : this.submissionProgressGateway.encodeSubscription({
@@ -307,9 +311,7 @@ export class SubmissionController {
     const submitters = await this.userService.findUsersByExistingIds(
       submissions.map(submission => submission.submitterId)
     );
-    for (const i in submissions) {
-      const submission = submissions[i];
-
+    submissions.map(async (submission, i) => {
       submissionMetas[i] = {
         id: submission.id,
         isPublic: submission.isPublic,
@@ -319,17 +321,17 @@ export class SubmissionController {
         status: submission.status,
         submitTime: submission.submitTime,
         problem: await this.problemService.getProblemMeta(problem),
-        problemTitle: problemTitle,
+        problemTitle,
         submitter: await this.userService.getUserMeta(submitters[i], currentUser),
         timeUsed: submission.timeUsed,
         memoryUsed: submission.memoryUsed
       };
-    }
+    });
 
     return {
       submissions: submissionMetas,
       scores: await this.submissionStatisticsService.querySubmissionScoreStatistics(problem),
-      count: count
+      count
     };
   }
 
@@ -367,9 +369,9 @@ export class SubmissionController {
     await this.submissionService.rejudgeSubmission(submission);
 
     await this.auditService.log("submission.rejudge", AuditLogObjectType.Submission, submission.id, {
-      isPreviouslyPending: isPreviouslyPending,
-      previousStatus: previousStatus,
-      previousScore: previousScore
+      isPreviouslyPending,
+      previousStatus,
+      previousScore
     });
 
     return {};
@@ -405,12 +407,12 @@ export class SubmissionController {
         };
     }
 
-    const taskId = submission.taskId;
+    const { taskId } = submission;
 
     await this.submissionService.cancelSubmission(submission);
 
     await this.auditService.log("submission.cancel", AuditLogObjectType.Submission, submission.id, {
-      taskId: taskId
+      taskId
     });
 
     return {};

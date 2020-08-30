@@ -21,13 +21,14 @@ export function autoMatchInputOutput(testData: ProblemFileEntity[]): Subtask[] {
               .map(ext => input.filename.slice(0, -3).toLowerCase() + ext)
               .includes(file.filename.toLowerCase())
           ),
-          (input.filename.match(/\d+/g) || []).map(parseInt)
+          (input.filename.match(/\d+/g) || []).map(Number)
         ])
         .filter(([, outputFile]) => outputFile)
         .sort(([inputA, , numbersA], [inputB, , numbersB]) => {
           const firstNonEqualIndex = [...Array(Math.max(numbersA.length, numbersB.length)).keys()].findIndex(
             i => numbersA[i] !== numbersB[i]
           );
+          // eslint-disable-next-line no-nested-ternary
           return firstNonEqualIndex === -1
             ? inputA.filename < inputB.filename
               ? -1

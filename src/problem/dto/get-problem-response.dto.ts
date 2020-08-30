@@ -1,16 +1,20 @@
 import { ApiProperty } from "@nestjs/swagger";
 
+import { ProblemPermissionType, ProblemPermissionLevel } from "@/problem/problem.service";
+
+import { SubmissionContent } from "@/submission/submission-content.interface";
+
 import { ProblemMetaDto } from "./problem-meta.dto";
 import { ProblemSampleDataMemberDto } from "./problem-sample-data-member.dto";
-import { ProblemJudgeInfo } from "../problem-judge-info.interface";
 import { ProblemFileDto } from "./problem-file.dto";
 import { ProblemLocalizedContentDto } from "./problem-statement.dto";
-import { ProblemPermissionType, ProblemPermissionLevel } from "@/problem/problem.service";
+import { LocalizedProblemTagDto } from "./localized-problem-tag.dto";
+
 import { UserMetaDto } from "@/user/dto";
 import { GroupMetaDto } from "@/group/dto";
-import { LocalizedProblemTagDto } from "./localized-problem-tag.dto";
 import { SubmissionBasicMetaDto } from "@/submission/dto";
-import { SubmissionContent } from "@/submission/submission-content.interface";
+
+import { ProblemJudgeInfo } from "../problem-judge-info.interface";
 
 export enum GetProblemResponseError {
   PERMISSION_DENIED = "PERMISSION_DENIED",
@@ -20,12 +24,16 @@ export enum GetProblemResponseError {
 export class ProblemPermissionOfCurrentUserDto {
   @ApiProperty({ required: false })
   [ProblemPermissionType.VIEW]?: boolean;
+
   @ApiProperty({ required: false })
   [ProblemPermissionType.MODIFY]?: boolean;
+
   @ApiProperty({ required: false })
   [ProblemPermissionType.MANAGE_PERMISSION]?: boolean;
+
   @ApiProperty({ required: false })
   [ProblemPermissionType.MANAGE_PUBLICNESS]?: boolean;
+
   @ApiProperty({ required: false })
   [ProblemPermissionType.DELETE]?: boolean;
 }

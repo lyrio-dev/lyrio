@@ -1,14 +1,16 @@
-import * as fs from "fs";
-import yaml = require("js-yaml");
+import fs from "fs-extra";
+
 import { validateSync } from "class-validator";
 import { plainToClass } from "class-transformer";
+import yaml from "js-yaml";
+
 import { AppConfig } from "./config.schema";
 
 export class ConfigService {
   public readonly config: AppConfig;
 
   constructor() {
-    const filePath = process.env["SYZOJ_NG_CONFIG_FILE"];
+    const filePath = process.env.SYZOJ_NG_CONFIG_FILE;
     if (!filePath) {
       throw new Error("Please specify configuration file with environment variable SYZOJ_NG_CONFIG_FILE");
     }

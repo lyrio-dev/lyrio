@@ -1,8 +1,13 @@
 import { Injectable, OnModuleInit } from "@nestjs/common";
-import Redis = require("ioredis");
-import Redlock = require("redlock");
+
+import Redis from "ioredis";
+import Redlock from "redlock";
 
 import { ConfigService } from "@/config/config.service";
+
+const REDIS_KEY_RWLOCK_NUM_READERS_ACTIVE = "%s_NUM_READERS_ACTIVE";
+const REDIS_KEY_RWLOCK_NUM_WRITERS_WAITING = "%s_NUM_WRITERS_WAITING";
+const REDIS_KEY_RWLOCK_WRITER_ACTIVE = "%s_WRITER_ACTIVE";
 
 async function sleep() {
   const SLEEP_TIME = 20;
@@ -12,7 +17,9 @@ async function sleep() {
 @Injectable()
 export class RedisService implements OnModuleInit {
   private readonly client: Redis.Redis;
+
   private readonly redlock: Redlock;
+
   private readonly untilReady: Promise<void>;
 
   constructor(private readonly configService: ConfigService) {
@@ -95,10 +102,12 @@ export class RedisService implements OnModuleInit {
     const lockRead = async () => {
       let unlock: () => Promise<void>;
       try {
+        /* eslint-disable no-await-in-loop */
         for (;;) {
           unlock = await this.lock(name);
-          const numWritersWaiting = Number(await this.client.get(name + "_NUM_WRITERS_WAITING")) || 0;
-          const writerActive = Number(await this.client.get(name + "_WRITER_ACTIVE")) || 0;
+          const numWritersWaiting =
+            Number(await this.client.get(REDIS_KEY_RWLOCK_NUM_WRITERS_WAITING.format(name))) || 0;
+          const writerActive = Number(await this.client.get(REDIS_KEY_RWLOCK_WRITER_ACTIVE.format(name))) || 0;
 
           if (numWritersWaiting > 0 || writerActive) {
             await unlock();
@@ -107,9 +116,10 @@ export class RedisService implements OnModuleInit {
             break;
           }
         }
+        /* eslint-enable no-await-in-loop */
 
-        const numReadersActive = Number(await this.client.get(name + "_NUM_READERS_ACTIVE")) || 0;
-        await this.client.set(name + "_NUM_READERS_ACTIVE", numReadersActive + 1);
+        const numReadersActive = Number(await this.client.get(REDIS_KEY_RWLOCK_NUM_READERS_ACTIVE.format(name))) || 0;
+        await this.client.set(REDIS_KEY_RWLOCK_NUM_READERS_ACTIVE.format(name), numReadersActive + 1);
 
         await unlock();
       } finally {
@@ -119,24 +129,25 @@ export class RedisService implements OnModuleInit {
 
     const unlockRead = async () =>
       await this.lock(name, async () => {
-        const numReadersActive = Number(await this.client.get(name + "_NUM_READERS_ACTIVE")) || 0;
+        const numReadersActive = Number(await this.client.get(REDIS_KEY_RWLOCK_NUM_READERS_ACTIVE.format(name))) || 0;
         if (numReadersActive <= 1) {
-          await this.client.del(name + "_NUM_READERS_ACTIVE");
+          await this.client.del(REDIS_KEY_RWLOCK_NUM_READERS_ACTIVE.format(name));
         } else {
-          await this.client.set(name + "_NUM_READERS_ACTIVE", numReadersActive - 1);
+          await this.client.set(REDIS_KEY_RWLOCK_NUM_READERS_ACTIVE.format(name), numReadersActive - 1);
         }
       });
 
     const lockWrite = async () => {
       let unlock = await this.lock(name);
 
-      const numWritersWaiting = Number(await this.client.get(name + "_NUM_WRITERS_WAITING")) || 0;
-      await this.client.set(name + "_NUM_WRITERS_WAITING", numWritersWaiting + 1);
+      const numWritersWaiting = Number(await this.client.get(REDIS_KEY_RWLOCK_NUM_WRITERS_WAITING.format(name))) || 0;
+      await this.client.set(REDIS_KEY_RWLOCK_NUM_WRITERS_WAITING.format(name), numWritersWaiting + 1);
 
       try {
+        /* eslint-disable no-await-in-loop */
         for (;;) {
-          const numReadersActive = Number(await this.client.get(name + "_NUM_READERS_ACTIVE")) || 0;
-          const writerActive = Number(await this.client.get(name + "_WRITER_ACTIVE")) || 0;
+          const numReadersActive = Number(await this.client.get(REDIS_KEY_RWLOCK_NUM_READERS_ACTIVE.format(name))) || 0;
+          const writerActive = Number(await this.client.get(REDIS_KEY_RWLOCK_WRITER_ACTIVE.format(name))) || 0;
 
           if (numReadersActive > 0 || writerActive) {
             await unlock();
@@ -146,14 +157,16 @@ export class RedisService implements OnModuleInit {
             break;
           }
         }
+        /* eslint-enable no-await-in-loop */
 
-        const numWritersWaiting = Number(await this.client.get(name + "_NUM_WRITERS_WAITING")) || 0;
+        // eslint-disable-next-line no-shadow
+        const numWritersWaiting = Number(await this.client.get(REDIS_KEY_RWLOCK_NUM_WRITERS_WAITING.format(name))) || 0;
         if (numWritersWaiting === 1) {
-          await this.client.del(name + "_NUM_WRITERS_WAITING");
+          await this.client.del(REDIS_KEY_RWLOCK_NUM_WRITERS_WAITING.format(name));
         } else {
-          await this.client.set(name + "_NUM_WRITERS_WAITING", numWritersWaiting - 1);
+          await this.client.set(REDIS_KEY_RWLOCK_NUM_WRITERS_WAITING.format(name), numWritersWaiting - 1);
         }
-        await this.client.set(name + "_WRITER_ACTIVE", 1);
+        await this.client.set(REDIS_KEY_RWLOCK_WRITER_ACTIVE.format(name), 1);
 
         await unlock();
       } finally {
@@ -163,7 +176,7 @@ export class RedisService implements OnModuleInit {
 
     const unlockWrite = async () =>
       await this.lock(name, async () => {
-        await this.client.del(name + "_WRITER_ACTIVE");
+        await this.client.del(REDIS_KEY_RWLOCK_WRITER_ACTIVE.format(name));
       });
 
     if (type === "READ") {

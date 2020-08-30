@@ -1,4 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
+
 import { Locale } from "@/common/locale.type";
 
 import { ProblemType } from "../problem.entity";

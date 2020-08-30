@@ -1,7 +1,9 @@
 import { Injectable, Logger } from "@nestjs/common";
+
 import { Redis } from "ioredis";
 
 import { RedisService } from "@/redis/redis.service";
+
 import { JudgeTaskService } from "./judge-task-service.interface";
 import { JudgeTaskProgress } from "./judge-task-progress.interface";
 
@@ -16,7 +18,7 @@ export enum JudgeTaskPriority {
 
 // Since multiple keys is not supported in Redis ZSET, we use "<key1>.<key2>" to simulate it
 function combinePriority(id: number, priorityValue: JudgeTaskPriority): string {
-  return priorityValue + "." + id;
+  return `${priorityValue}.${id}`;
 }
 
 export enum JudgeTaskType {
@@ -57,7 +59,9 @@ const REDIS_CONSUME_TIMEOUT = 10;
 @Injectable()
 export class JudgeQueueService {
   private readonly redisForPush: Redis;
+
   private readonly redisForConsume: Redis;
+
   private readonly taskServices: Map<
     JudgeTaskType,
     JudgeTaskService<JudgeTaskProgress, JudgeTaskExtraInfo>
@@ -92,8 +96,8 @@ export class JudgeQueueService {
       REDIS_KEY_JUDGE_QUEUE,
       combinePriority(priorityId, priority),
       JSON.stringify({
-        taskId: taskId,
-        type: type
+        taskId,
+        type
       })
     );
   }

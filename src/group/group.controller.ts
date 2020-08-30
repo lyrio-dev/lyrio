@@ -1,6 +1,15 @@
 import { Controller, Get, Post, Body, Query } from "@nestjs/common";
 import { ApiOperation, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
+import { ConfigService } from "@/config/config.service";
+import { CurrentUser } from "@/common/user.decorator";
+import { UserEntity } from "@/user/user.entity";
+import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.service";
+import { UserService } from "@/user/user.service";
+import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
+
+import { GroupService } from "./group.service";
+
 import {
   GetGroupMetaRequestDto,
   GetGroupMetaResponseDto,
@@ -30,13 +39,6 @@ import {
   RenameGroupResponseDto,
   RenameGroupResponseError
 } from "./dto";
-import { ConfigService } from "@/config/config.service";
-import { GroupService } from "./group.service";
-import { CurrentUser } from "@/common/user.decorator";
-import { UserEntity } from "@/user/user.entity";
-import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.service";
-import { UserService } from "@/user/user.service";
-import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
 
 @ApiTags("Group")
 @Controller("group")
@@ -56,7 +58,7 @@ export class GroupController {
     summary: "Get the metadata of a group by its ID."
   })
   async getGroupMeta(@Query() request: GetGroupMetaRequestDto): Promise<GetGroupMetaResponseDto> {
-    const group = await this.groupService.findGroupById(parseInt(request.groupId));
+    const group = await this.groupService.findGroupById(Number(request.groupId));
     if (!group)
       return {
         error: GetGroupMetaResponseError.NO_SUCH_GROUP
@@ -105,7 +107,7 @@ export class GroupController {
     const [error, group] = await this.groupService.createGroup(request.groupName);
     if (error)
       return {
-        error: error
+        error
       };
 
     await this.auditService.log("group.create", AuditLogObjectType.Group, group.id, {
@@ -188,7 +190,7 @@ export class GroupController {
       };
 
     await this.auditService.log("group.rename", AuditLogObjectType.Group, group.id, {
-      oldName: oldName,
+      oldName,
       newName: request.name
     });
 
@@ -228,7 +230,7 @@ export class GroupController {
     const error = await this.groupService.addUserToGroup(request.userId, group);
     if (error)
       return {
-        error: error
+        error
       };
 
     await this.auditService.log(
@@ -275,7 +277,7 @@ export class GroupController {
     const error = await this.groupService.removeUserFromGroup(request.userId, group);
     if (error)
       return {
-        error: error
+        error
       };
 
     await this.auditService.log(
@@ -317,7 +319,7 @@ export class GroupController {
     const error = await this.groupService.setIsGroupAdmin(request.userId, request.groupId, request.isGroupAdmin);
     if (error)
       return {
-        error: error
+        error
       };
 
     await this.auditService.log(
@@ -349,13 +351,12 @@ export class GroupController {
         groups: await Promise.all(groups.map(async group => await this.groupService.getGroupMeta(group))),
         groupsWithAdminPermission: groups.map(group => group.id)
       };
-    } else {
-      const [groups, groupsWithAdminPermission] = await this.groupService.getUserJoinedGroups(currentUser);
-      return {
-        groups: await Promise.all(groups.map(async group => await this.groupService.getGroupMeta(group))),
-        groupsWithAdminPermission: groupsWithAdminPermission
-      };
     }
+    const [groups, groupsWithAdminPermission] = await this.groupService.getUserJoinedGroups(currentUser);
+    return {
+      groups: await Promise.all(groups.map(async group => await this.groupService.getGroupMeta(group))),
+      groupsWithAdminPermission
+    };
   }
 
   @Post("getGroupMemberList")

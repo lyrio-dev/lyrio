@@ -1,4 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
+
 import {
   ValidateNested,
   IsIP,
@@ -12,6 +13,7 @@ import {
   IsArray
 } from "class-validator";
 import { Type } from "class-transformer";
+
 import { IsPortNumber } from "@/common/validators";
 
 class ServerConfig {

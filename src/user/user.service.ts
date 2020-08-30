@@ -1,22 +1,11 @@
+import crypto from "crypto";
+
 import { Injectable, forwardRef, Inject } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
-import { Repository, Connection, Like, MoreThan, EntityManager } from "typeorm";
-import crypto = require("crypto");
 
-import { UserEntity } from "./user.entity";
-import {
-  UpdateUserProfileResponseError,
-  UserMetaDto,
-  UserAvatarDto,
-  UserAvatarType,
-  UpdateUserSelfEmailResponseError
-} from "./dto";
+import { Repository, Connection, Like, MoreThan, EntityManager } from "typeorm";
+
 import { escapeLike } from "@/database/database.utils";
-import { UserPrivilegeService, UserPrivilegeType } from "./user-privilege.service";
-import { UserInformationDto } from "./dto/user-information.dto";
-import { UserInformationEntity } from "./user-information.entity";
-import { UserPreference } from "./user-preference.interface";
-import { UserPreferenceEntity } from "./user-preference.entity";
 import { RedisService } from "@/redis/redis.service";
 import { SubmissionService } from "@/submission/submission.service";
 import { SubmissionEntity } from "@/submission/submission.entity";
@@ -24,6 +13,21 @@ import { SubmissionStatus } from "@/submission/submission-status.enum";
 import { ConfigService } from "@/config/config.service";
 import { AuthEmailVerifactionCodeService } from "@/auth/auth-email-verifaction-code.service";
 import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
+
+import { UserEntity } from "./user.entity";
+import { UserPrivilegeService, UserPrivilegeType } from "./user-privilege.service";
+import { UserInformationDto } from "./dto/user-information.dto";
+import { UserInformationEntity } from "./user-information.entity";
+import { UserPreference } from "./user-preference.interface";
+import { UserPreferenceEntity } from "./user-preference.entity";
+
+import {
+  UpdateUserProfileResponseError,
+  UserMetaDto,
+  UserAvatarDto,
+  UserAvatarType,
+  UpdateUserSelfEmailResponseError
+} from "./dto";
 
 @Injectable()
 export class UserService {
@@ -56,7 +60,7 @@ export class UserService {
 
   async findUserById(id: number): Promise<UserEntity> {
     return await this.userRepository.findOne({
-      id: id
+      id
     });
   }
 
@@ -76,13 +80,13 @@ export class UserService {
 
   async findUserByUsername(username: string): Promise<UserEntity> {
     return await this.userRepository.findOne({
-      username: username
+      username
     });
   }
 
   async findUserByEmail(email: string): Promise<UserEntity> {
     return await this.userRepository.findOne({
-      email: email
+      email
     });
   }
 
@@ -139,22 +143,22 @@ export class UserService {
   }
 
   async userExists(id: number): Promise<boolean> {
-    return (await this.userRepository.count({ id: id })) != 0;
+    return (await this.userRepository.count({ id })) !== 0;
   }
 
   async checkUsernameAvailability(username: string): Promise<boolean> {
     return (
       (await this.userRepository.count({
-        username: username
-      })) == 0
+        username
+      })) === 0
     );
   }
 
   async checkEmailAvailability(email: string): Promise<boolean> {
     return (
       (await this.userRepository.count({
-        email: email
-      })) == 0
+        email
+      })) === 0
     );
   }
 
@@ -234,8 +238,8 @@ export class UserService {
 
   async searchUser(query: string, wildcard: "START" | "END" | "BOTH", maxTakeCount: number): Promise<UserEntity[]> {
     query = escapeLike(query);
-    if (wildcard === "START" || wildcard === "BOTH") query = "%" + query;
-    if (wildcard === "END" || wildcard === "BOTH") query = query + "%";
+    if (wildcard === "START" || wildcard === "BOTH") query = `%${query}`;
+    if (wildcard === "END" || wildcard === "BOTH") query += "%";
 
     return await this.userRepository.find({
       where: {
@@ -278,7 +282,7 @@ export class UserService {
       .createQueryBuilder()
       .select("DISTINCT(submitterId)")
       .from(SubmissionEntity, "submission")
-      .where("problemId = :problemId", { problemId: problemId })
+      .where("problemId = :problemId", { problemId })
       .andWhere("status = :status", { status: SubmissionStatus.Accepted });
     await transactionalEntityManager
       .createQueryBuilder()

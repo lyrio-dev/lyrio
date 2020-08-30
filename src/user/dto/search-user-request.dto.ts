@@ -1,4 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
+
 import { Length, IsIn, IsOptional } from "class-validator";
 
 export class SearchUserRequestDto {

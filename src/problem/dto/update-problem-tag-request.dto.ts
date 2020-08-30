@@ -1,8 +1,10 @@
 import { ApiProperty } from "@nestjs/swagger";
+
 import { IsString, Length, ValidateNested, IsInt, ArrayNotEmpty } from "class-validator";
 import { Type } from "class-transformer";
 
 import { If } from "@/common/validators";
+
 import { ProblemTagLocalizedNameDto } from "./problem-tag-localized-name.dto";
 
 export class UpdateProblemTagRequestDto {

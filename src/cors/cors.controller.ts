@@ -1,7 +1,9 @@
+import fs from "fs-extra";
+
 import { Controller, Get, Header } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
-import * as fs from "fs-extra";
-import * as serialize from "serialize-javascript";
+
+import serialize from "serialize-javascript";
 
 import { ConfigService } from "@/config/config.service";
 

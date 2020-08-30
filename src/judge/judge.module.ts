@@ -3,6 +3,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { RedisModule } from "@/redis/redis.module";
 import { FileModule } from "@/file/file.module";
+
 import { JudgeQueueService } from "./judge-queue.service";
 import { JudgeGateway } from "./judge.gateway";
 import { JudgeClientController } from "./judge-client.controller";

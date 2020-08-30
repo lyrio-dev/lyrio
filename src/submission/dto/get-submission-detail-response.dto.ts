@@ -1,4 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
+
 import { SubmissionMetaDto } from "./submission-meta.dto";
 
 import { SubmissionContent } from "../submission-content.interface";

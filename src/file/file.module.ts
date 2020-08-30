@@ -2,6 +2,7 @@ import { Module, forwardRef } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { ConfigModule } from "@/config/config.module";
+
 import { FileEntity } from "./file.entity";
 import { FileService } from "./file.service";
 

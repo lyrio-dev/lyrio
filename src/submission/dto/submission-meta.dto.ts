@@ -1,8 +1,10 @@
 import { ApiProperty } from "@nestjs/swagger";
+
 import { ProblemMetaDto } from "@/problem/dto";
 
-import { SubmissionStatus } from "../submission-status.enum";
 import { UserMetaDto } from "@/user/dto";
+
+import { SubmissionStatus } from "../submission-status.enum";
 import { SubmissionProgressType } from "../submission-progress.interface";
 
 // The basic meta doesn't contains information obtained from related database tables, such as problem and submitter meta
@@ -49,7 +51,7 @@ export class SubmissionMetaDto extends SubmissionBasicMetaDto {
   @ApiProperty({
     enum: Object.values(SubmissionProgressType)
       .map(s => Number(s))
-      .filter(x => !isNaN(x))
+      .filter(x => !Number.isNaN(x))
   })
   progressMeta?: SubmissionProgressType;
 }

@@ -1,3 +1,5 @@
+/* eslint-disable no-throw-literal */
+
 import { CodeLanguage } from "@/code-language/code-language.type";
 import { ProblemFileEntity } from "@/problem/problem-file.entity";
 
@@ -45,6 +47,9 @@ export type Checker =
   | CheckerTypeCustom;
 
 interface JudgeInfoWithChecker {
+  timeLimit?: number;
+  memoryLimit?: number;
+
   checker: Checker;
 }
 
@@ -59,7 +64,7 @@ export function validateChecker(
   testData: ProblemFileEntity[],
   options: ValidateCheckerOptions
 ): void {
-  if (!judgeInfo.checker || !["integers", "floats", "lines", "binary", "custom"].includes(judgeInfo.checker.type)) {
+  if (!judgeInfo.checker) {
     throw ["INVALID_CHECKER_TYPE"];
   }
   switch (judgeInfo.checker.type) {
@@ -71,7 +76,7 @@ export function validateChecker(
       if (typeof judgeInfo.checker.caseSensitive !== "boolean") throw ["INVALID_CHECKER_OPTIONS"];
       break;
     case "custom": {
-      const checker = judgeInfo.checker;
+      const { checker } = judgeInfo;
       if (!["testlib", "legacy", "lemon", "hustoj", "qduoj", "domjudge"].includes(checker.interface))
         throw ["INVALID_CHECKER_INTERFACE"];
       if (!Object.values(CodeLanguage).includes(checker.language)) throw ["INVALID_CHECKER_LANGUAGE"];
@@ -79,18 +84,19 @@ export function validateChecker(
       if (!options.validateLanguageOptions(checker.language, checker.languageOptions))
         throw ["INVALID_CHECKER_LANGUAGE_OPTIONS"];
 
-      const timeLimit = judgeInfo.checker.timeLimit == null ? judgeInfo["timeLimit"] : judgeInfo.checker.timeLimit;
+      const timeLimit = judgeInfo.checker.timeLimit == null ? judgeInfo.timeLimit : judgeInfo.checker.timeLimit;
       if (!Number.isSafeInteger(timeLimit) || timeLimit <= 0) throw [`INVALID_TIME_LIMIT_CHECKER`];
       if (options.hardTimeLimit != null && timeLimit > options.hardTimeLimit)
         throw [`TIME_LIMIT_TOO_LARGE_CHECKER`, timeLimit];
 
-      const memoryLimit =
-        judgeInfo.checker.memoryLimit == null ? judgeInfo["memoryLimit"] : judgeInfo.checker.memoryLimit;
+      const memoryLimit = judgeInfo.checker.memoryLimit == null ? judgeInfo.memoryLimit : judgeInfo.checker.memoryLimit;
       if (!Number.isSafeInteger(memoryLimit) || memoryLimit <= 0) throw [`INVALID_MEMORY_LIMIT_CHECKER`];
       if (options.hardMemoryLimit != null && memoryLimit > options.hardMemoryLimit)
         throw [`MEMORY_LIMIT_TOO_LARGE_CHECKER`, memoryLimit];
 
       break;
     }
+    default:
+      throw ["INVALID_CHECKER_TYPE"];
   }
 }

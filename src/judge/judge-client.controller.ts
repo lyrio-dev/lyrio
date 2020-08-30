@@ -3,7 +3,9 @@ import { ApiOperation, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import { CurrentUser } from "@/common/user.decorator";
 import { UserEntity } from "@/user/user.entity";
+
 import { JudgeClientService } from "./judge-client.service";
+
 import {
   AddJudgeClientRequestDto,
   AddJudgeClientResponseDto,

@@ -1,16 +1,19 @@
 import { Logger, Inject, forwardRef } from "@nestjs/common";
 import { WebSocketGateway, WebSocketServer, OnGatewayConnection, OnGatewayDisconnect } from "@nestjs/websockets";
-import { Server, Socket } from "socket.io";
-import * as jwt from "jsonwebtoken";
+
+import { Server, Socket } from "socket.io"; // eslint-disable-line import/no-extraneous-dependencies
+import jwt from "jsonwebtoken";
 import { diff } from "jsondiffpatch";
 
-import { SubmissionProgress, SubmissionProgressType } from "./submission-progress.interface";
 import { ConfigService } from "@/config/config.service";
+
+import { SubmissionProgress, SubmissionProgressType } from "./submission-progress.interface";
 import { SubmissionService } from "./submission.service";
-import { SubmissionBasicMetaDto } from "./dto";
 import { SubmissionResult } from "./submission-result.interface";
 import { SubmissionStatus } from "./submission-status.enum";
 import { SubmissionEventType } from "./submission-progress.service";
+
+import { SubmissionBasicMetaDto } from "./dto";
 
 export enum SubmissionProgressSubscriptionType {
   Meta,
@@ -41,11 +44,13 @@ interface SubmissionProgressMessage {
 export class SubmissionProgressGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   private server: Server;
+
   private secret: string;
 
   // We don't use Socket.IO rooms since we push message additionally
   // rooms: each set is created on first joins and deleted on last leaves
   private rooms: Map<string, Set<string>> = new Map();
+
   // clientJoinedRooms: each set is created and deleted on the client connects and disconnects
   private clientJoinedRooms: Map<string, Set<string>> = new Map();
 
@@ -61,7 +66,7 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
   ) {
     // Use a different key with session secret to prevent someone attempt to use the session key
     // as subscription key
-    this.secret = this.configService.config.security.sessionSecret + "SubmissionProgress";
+    this.secret = `${this.configService.config.security.sessionSecret}SubmissionProgress`;
   }
 
   // A subscription key is send to the client to let it connect to the WebSocket gateway to subscribe some
@@ -81,7 +86,7 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
   }
 
   private getRoom(subscriptionType: SubmissionProgressSubscriptionType, submissionId: number) {
-    return subscriptionType + "_" + submissionId;
+    return `${subscriptionType}_${submissionId}`;
   }
 
   private joinRoom(client: Socket, room: string) {
@@ -164,7 +169,7 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
   }
 
   async handleConnection(client: Socket): Promise<void> {
-    const subscription = this.decodeSubscription(client.handshake.query["subscriptionKey"]);
+    const subscription = this.decodeSubscription(client.handshake.query.subscriptionKey);
     if (!subscription) {
       client.disconnect(true);
       return;
@@ -181,30 +186,33 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
     }
 
     // Send messages for the already finished submissions
-    for (const submissionId of subscription.submissionIds) {
-      const submission = await this.submissionService.findSubmissionById(submissionId);
-      if (submission.status === SubmissionStatus.Pending) continue;
+    await Promise.all(
+      subscription.submissionIds.map(async submissionId => {
+        const submission = await this.submissionService.findSubmissionById(submissionId);
+        if (submission.status === SubmissionStatus.Pending) return;
 
-      // This submission has already finished
-      const basicMeta = await this.submissionService.getSubmissionBasicMeta(submission);
-      this.leaveRoom(client, this.getRoom(subscription.type, submissionId));
+        // This submission has already finished
+        const basicMeta = await this.submissionService.getSubmissionBasicMeta(submission);
+        this.leaveRoom(client, this.getRoom(subscription.type, submissionId));
 
-      switch (subscription.type) {
-        case SubmissionProgressSubscriptionType.Meta:
-          this.sendMessage(client, submissionId, {
-            resultMeta: basicMeta
-          });
-          break;
-        case SubmissionProgressSubscriptionType.Detail: {
-          const submissionDetail = await this.submissionService.getSubmissionDetail(submission);
-          this.sendMessage(client, submissionId, {
-            resultMeta: basicMeta,
-            resultDetail: submissionDetail.result
-          });
-          break;
+        switch (subscription.type) {
+          case SubmissionProgressSubscriptionType.Meta:
+            this.sendMessage(client, submissionId, {
+              resultMeta: basicMeta
+            });
+            break;
+          case SubmissionProgressSubscriptionType.Detail: {
+            const submissionDetail = await this.submissionService.getSubmissionDetail(submission);
+            this.sendMessage(client, submissionId, {
+              resultMeta: basicMeta,
+              resultDetail: submissionDetail.result
+            });
+            break;
+          }
+          default:
         }
-      }
-    }
+      })
+    );
   }
 
   public async onSubmissionEvent(

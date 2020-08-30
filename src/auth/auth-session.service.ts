@@ -1,8 +1,10 @@
-import { Injectable } from "@nestjs/common";
-import * as jwt from "jsonwebtoken";
-import { Redis, ValueType } from "ioredis";
 import { join } from "path";
-import fs = require("fs-extra");
+import fs from "fs-extra";
+
+import { Injectable } from "@nestjs/common";
+
+import jwt from "jsonwebtoken";
+import { Redis, ValueType } from "ioredis";
 
 import { UserEntity } from "@/user/user.entity";
 import { ConfigService } from "@/config/config.service";
@@ -44,19 +46,19 @@ export class AuthSessionService {
   async newSession(user: UserEntity, loginIp: string, userAgent: string): Promise<string> {
     const timeStamp = +new Date();
     const sessionInfo: SessionInfoInternal = {
-      loginIp: loginIp,
-      userAgent: userAgent,
+      loginIp,
+      userAgent,
       loginTime: timeStamp
     };
 
     const sessionId = await this.redis.callSessionManager("new", timeStamp, user.id, JSON.stringify(sessionInfo));
 
-    return jwt.sign(user.id.toString() + " " + sessionId, this.configService.config.security.sessionSecret);
+    return jwt.sign(`${user.id.toString()} ${sessionId}`, this.configService.config.security.sessionSecret);
   }
 
   private decodeSessionKey(sessionKey: string): [userId: number, sessionId: number] {
     const jwtString = jwt.verify(sessionKey, this.configService.config.security.sessionSecret) as string;
-    return jwtString.split(" ").map(s => parseInt(s)) as [userId: number, sessionId: number];
+    return jwtString.split(" ").map(s => Number(s)) as [userId: number, sessionId: number];
   }
 
   async revokeSession(userId: number, sessionId: number): Promise<void> {
@@ -97,8 +99,8 @@ export class AuthSessionService {
     ][];
     return result.map(
       ([sessionId, lastAccessTime, sessionInfo]): SessionInfo => ({
-        sessionId: parseInt(sessionId),
-        lastAccessTime: parseInt(lastAccessTime),
+        sessionId: Number(sessionId),
+        lastAccessTime: Number(lastAccessTime),
         ...JSON.parse(sessionInfo)
       })
     );

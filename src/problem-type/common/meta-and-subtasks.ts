@@ -1,5 +1,7 @@
-import validFilename = require("valid-filename");
-import toposort = require("toposort");
+/* eslint-disable no-throw-literal */
+
+import validFilename from "valid-filename";
+import toposort from "toposort";
 
 import { ProblemFileEntity } from "@/problem/problem-file.entity";
 
@@ -111,6 +113,7 @@ export function validateMetaAndSubtasks(
 
     if (!Array.isArray(testcases) || testcases.length === 0) throw ["SUBTASK_HAS_NO_TESTCASES", i + 1];
 
+    // eslint-disable-next-line no-shadow
     testcases.forEach(({ inputFile, outputFile, timeLimit, memoryLimit, points }, j) => {
       if (options.enableInputFile) {
         if (!testData.some(file => file.filename === inputFile)) throw ["NO_SUCH_INPUT_FILE", i + 1, j + 1, inputFile];
@@ -130,6 +133,7 @@ export function validateMetaAndSubtasks(
         throw ["INVALID_POINTS_TESTCASE", i + 1, j + 1, points];
     });
 
+    // eslint-disable-next-line no-shadow
     const sum = testcases.reduce((s, { points }) => (points ? s + points : s), 0);
     if (sum > 100) {
       throw ["POINTS_SUM_UP_TO_LARGER_THAN_100_TESTCASES", i + 1, sum];

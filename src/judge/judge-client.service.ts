@@ -1,12 +1,15 @@
+import crypto from "crypto";
+
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
+
 import { Repository } from "typeorm";
-import * as crypto from "crypto";
 import { Redis } from "ioredis";
+
+import { RedisService } from "@/redis/redis.service";
 
 import { JudgeClientEntity } from "./judge-client.entity";
 import { JudgeClientInfoDto } from "./dto/judge-client-info.dto";
-import { RedisService } from "@/redis/redis.service";
 import { JudgeClientSystemInfo } from "./judge-client-system-info.interface";
 
 const JUDGE_CLIENT_KEY_BYTE_LENGTH = 30;
@@ -31,11 +34,11 @@ export class JudgeClientService {
   }
 
   public async findJudgeClientById(id: number): Promise<JudgeClientEntity> {
-    return await this.judgeClientRepository.findOne({ id: id });
+    return await this.judgeClientRepository.findOne({ id });
   }
 
   public async findJudgeClientByKey(key: string): Promise<JudgeClientEntity> {
-    return await this.judgeClientRepository.findOne({ key: key });
+    return await this.judgeClientRepository.findOne({ key });
   }
 
   public async listJudgeClients(): Promise<JudgeClientEntity[]> {
@@ -85,7 +88,7 @@ export class JudgeClientService {
   }
 
   public async checkJudgeClientSession(judgeClient: JudgeClientEntity, sessionId: string): Promise<boolean> {
-    return sessionId == (await this.redis.get(REDIS_KEY_JUDGE_CLIENT_SESSION_ID.format(judgeClient.id)));
+    return sessionId === (await this.redis.get(REDIS_KEY_JUDGE_CLIENT_SESSION_ID.format(judgeClient.id)));
   }
 
   public async updateJudgeClientSystemInfo(

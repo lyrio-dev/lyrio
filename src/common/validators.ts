@@ -3,10 +3,10 @@ import { registerDecorator, ValidationOptions } from "class-validator";
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 
 export function If<T>(callback: (value: T) => boolean, validationOptions?: ValidationOptions) {
-  return function (object: unknown, propertyName: string) {
+  return (object: unknown, propertyName: string) => {
     registerDecorator({
       target: object.constructor,
-      propertyName: propertyName,
+      propertyName,
       options: validationOptions,
       validator: {
         validate(value: T) {

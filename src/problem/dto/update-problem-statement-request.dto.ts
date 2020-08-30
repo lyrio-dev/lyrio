@@ -1,4 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
+
 import {
   ValidateNested,
   IsEnum,
@@ -10,6 +11,7 @@ import {
   IsInt,
   ArrayNotEmpty
 } from "class-validator";
+
 import { Locale } from "@/common/locale.type";
 import { If } from "@/common/validators";
 

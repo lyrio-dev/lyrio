@@ -1,4 +1,6 @@
-import validFilename = require("valid-filename");
+/* eslint-disable no-throw-literal */
+
+import validFilename from "valid-filename";
 
 import { CodeLanguage } from "@/code-language/code-language.type";
 import { ProblemFileEntity } from "@/problem/problem-file.entity";

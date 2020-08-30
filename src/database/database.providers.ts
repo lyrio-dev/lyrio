@@ -13,8 +13,8 @@ export const databaseProviders = [
       username: configService.config.services.database.username,
       password: configService.config.services.database.password,
       database: configService.config.services.database.database,
-      entities: [__dirname + "/../**/*.entity{.ts,.js}"],
-      logging: !!process.env["SYZOJ_NG_LOG_SQL"],
+      entities: [`${__dirname}/../**/*.entity{.ts,.js}`],
+      logging: !!process.env.SYZOJ_NG_LOG_SQL,
       synchronize: true
     }),
     inject: [ConfigService]
