@@ -38,3 +38,6 @@ export * from "./update-user-password-response.dto";
 
 export * from "./update-user-self-email-request.dto";
 export * from "./update-user-self-email-response.dto";
+
+export * from "./query-audit-logs-request.dto";
+export * from "./query-audit-logs-response.dto";

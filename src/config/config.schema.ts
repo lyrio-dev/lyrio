@@ -200,6 +200,10 @@ class QueryLimitConfig {
   @IsInt()
   @Min(0)
   readonly userListUsersTake: number;
+
+  @IsInt()
+  @Min(1)
+  readonly userAuditLogsTake: number;
 }
 
 class VendorConfig {

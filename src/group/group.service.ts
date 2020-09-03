@@ -32,10 +32,10 @@ export class GroupService {
     private readonly userService: UserService,
     private readonly auditService: AuditService
   ) {
-    this.auditService.registerObjectTypeQueryHandler(
-      AuditLogObjectType.Group,
-      async groupId => await this.getGroupMeta(await this.findGroupById(groupId))
-    );
+    this.auditService.registerObjectTypeQueryHandler(AuditLogObjectType.Group, async groupId => {
+      const group = await this.findGroupById(groupId);
+      return !group ? null : await this.getGroupMeta(group);
+    });
   }
 
   async groupExists(id: number): Promise<boolean> {

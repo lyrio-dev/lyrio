@@ -52,10 +52,10 @@ export class UserService {
     private readonly userPrivilegeService: UserPrivilegeService,
     private readonly auditService: AuditService
   ) {
-    this.auditService.registerObjectTypeQueryHandler(
-      AuditLogObjectType.User,
-      async (userId, locale, currentUser) => await this.getUserMeta(await this.findUserById(userId), currentUser)
-    );
+    this.auditService.registerObjectTypeQueryHandler(AuditLogObjectType.User, async (userId, locale, currentUser) => {
+      const user = await this.findUserById(userId);
+      return !user ? null : await this.getUserMeta(user, currentUser);
+    });
   }
 
   async findUserById(id: number): Promise<UserEntity> {

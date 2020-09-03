@@ -1,13 +1,15 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 
-import { Repository } from "typeorm";
+import { FindConditions, Like, Repository } from "typeorm";
 
 import { getCurrentRequest } from "@/auth/auth.middleware";
 import { UserEntity } from "@/user/user.entity";
 import { Locale } from "@/common/locale.type";
+import { escapeLike } from "@/database/database.utils";
 
 import { AuditLogEntity, AuditLogObjectType } from "./audit-log.entity";
+import { AuditLogQueryResult } from "./audit-log-query-result.interface";
 
 export { AuditLogObjectType } from "./audit-log.entity";
 
@@ -125,5 +127,59 @@ export class AuditService {
     auditLog.details = details;
 
     await this.auditLogRepository.save(auditLog);
+  }
+
+  // TODO: add time query
+  async query(
+    userId: number,
+    actionQuery: string,
+    ip: string,
+    firstObjectId: number,
+    secondObjectId: number,
+    locale: Locale,
+    currentUser: UserEntity,
+    skipCount: number,
+    takeCount: number
+  ): Promise<[results: AuditLogQueryResult[], count: number]> {
+    const where: FindConditions<AuditLogEntity> = {};
+    if (userId != null) where.userId = userId;
+    if (actionQuery != null) where.action = Like(`${escapeLike(actionQuery)}%`);
+    if (ip != null) where.ip = ip;
+    if (firstObjectId != null) where.firstObjectId = firstObjectId;
+    if (secondObjectId != null) where.secondObjectId = secondObjectId;
+
+    const [results, count] = await this.auditLogRepository.findAndCount({
+      where,
+      skip: skipCount,
+      take: takeCount,
+      order: {
+        time: "DESC"
+      }
+    });
+
+    return [
+      await Promise.all(
+        results.map<Promise<AuditLogQueryResult>>(async result => ({
+          userId: result.userId,
+          ip: result.ip,
+          time: result.time,
+          action: result.action,
+          firstObjectType: result.firstObjectType,
+          firstObjectId: result.firstObjectId,
+          firstObject:
+            result.firstObjectType in this.objectTypeQueryHandlers
+              ? await this.objectTypeQueryHandlers[result.firstObjectType](result.firstObjectId, locale, currentUser)
+              : null,
+          secondObjectType: result.secondObjectType,
+          secondObjectId: result.secondObjectId,
+          secondObject:
+            result.secondObjectType in this.objectTypeQueryHandlers
+              ? await this.objectTypeQueryHandlers[result.secondObjectType](result.secondObjectId, locale, currentUser)
+              : null,
+          details: result.details
+        }))
+      ),
+      count
+    ];
   }
 }

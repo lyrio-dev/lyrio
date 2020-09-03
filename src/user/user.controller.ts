@@ -6,6 +6,7 @@ import { AuthService } from "@/auth/auth.service";
 import { ConfigService } from "@/config/config.service";
 import { SubmissionService } from "@/submission/submission.service";
 import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
+import { AuthIpLocationService } from "@/auth/auth-ip-location.service";
 
 import { UserEntity } from "./user.entity";
 import { UserService } from "./user.service";
@@ -47,7 +48,10 @@ import {
   UpdateUserPasswordResponseError,
   UpdateUserSelfEmailRequestDto,
   UpdateUserSelfEmailResponseDto,
-  UpdateUserSelfEmailResponseError
+  UpdateUserSelfEmailResponseError,
+  QueryAuditLogsRequestDto,
+  QueryAuditLogsResponseDto,
+  QueryAuditLogsResponseError
 } from "./dto";
 
 @ApiTags("User")
@@ -60,7 +64,8 @@ export class UserController {
     private readonly userPrivilegeService: UserPrivilegeService,
     @Inject(forwardRef(() => SubmissionService))
     private readonly submissionService: SubmissionService,
-    private readonly auditService: AuditService
+    private readonly auditService: AuditService,
+    private readonly authIpLocationService: AuthIpLocationService
   ) {}
 
   @Get("searchUser")
@@ -446,6 +451,75 @@ export class UserController {
 
     return {
       meta: await this.userService.getUserMeta(user, currentUser)
+    };
+  }
+
+  @Post("queryAuditLogs")
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: "Query audit logs."
+  })
+  async queryAuditLogs(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: QueryAuditLogsRequestDto
+  ): Promise<QueryAuditLogsResponseDto> {
+    if (request.takeCount > this.configService.config.queryLimit.userAuditLogsTake)
+      return {
+        error: QueryAuditLogsResponseError.TAKE_TOO_MANY
+      };
+
+    if (!currentUser)
+      return {
+        error: QueryAuditLogsResponseError.PERMISSION_DENIED
+      };
+
+    if (
+      currentUser.id !== request.userId &&
+      !(await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER))
+    )
+      return {
+        error: QueryAuditLogsResponseError.PERMISSION_DENIED
+      };
+
+    const user = await this.userService.findUserById(request.userId);
+    if (request.userId != null && !user)
+      return {
+        error: QueryAuditLogsResponseError.NO_SUCH_USER
+      };
+
+    const [results, count] = await this.auditService.query(
+      request.userId,
+      request.actionQuery,
+      request.ip,
+      request.firstObjectId,
+      request.secondObjectId,
+      request.locale,
+      currentUser,
+      request.skipCount,
+      request.takeCount
+    );
+
+    return {
+      results: await Promise.all(
+        results.map(async result => ({
+          user: await this.userService.getUserMeta(
+            result.userId === request.userId ? user : await this.userService.findUserById(result.userId),
+            currentUser
+          ),
+          ip: result.ip,
+          ipLocation: this.authIpLocationService.query(result.ip),
+          time: result.time,
+          action: result.action,
+          firstObjectType: result.firstObjectType,
+          firstObjectId: result.firstObjectId,
+          firstObject: result.firstObject,
+          secondObjectType: result.secondObjectType,
+          secondObjectId: result.secondObjectId,
+          secondObject: result.secondObject,
+          details: result.details
+        }))
+      ),
+      count
     };
   }
 

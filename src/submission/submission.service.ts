@@ -24,6 +24,7 @@ import { ProblemSampleData } from "@/problem/problem-sample-data.interface";
 import { RedisService } from "@/redis/redis.service";
 import { JudgeGateway } from "@/judge/judge.gateway";
 import { ProblemTypeFactoryService } from "@/problem-type/problem-type-factory.service";
+import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
 
 import { SubmissionProgress, SubmissionProgressType } from "./submission-progress.interface";
 import { SubmissionContent } from "./submission-content.interface";
@@ -60,9 +61,15 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     private readonly redisService: RedisService,
     private readonly submissionProgressService: SubmissionProgressService,
     private readonly submissionStatisticsService: SubmissionStatisticsService,
-    private readonly judgeGateway: JudgeGateway
+    private readonly judgeGateway: JudgeGateway,
+    private readonly auditService: AuditService
   ) {
     this.judgeQueueService.registerTaskType(JudgeTaskType.Submission, this);
+
+    this.auditService.registerObjectTypeQueryHandler(AuditLogObjectType.Submission, async submissionId => {
+      const submission = await this.findSubmissionById(submissionId);
+      return !submission ? null : await this.getSubmissionBasicMeta(submission);
+    });
   }
 
   public async findSubmissionById(submissionId: number): Promise<SubmissionEntity> {

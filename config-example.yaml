@@ -52,5 +52,6 @@ queryLimit:
   searchUserTake: 10
   searchGroupTake: 10
   userListUsersTake: 100
+  userAuditLogsTake: 20
 vendor:
   ip2region: /opt/ip2region/ip2region.db
