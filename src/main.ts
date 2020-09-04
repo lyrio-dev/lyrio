@@ -13,7 +13,7 @@ import { ConfigService } from "./config/config.service";
 
 // eslint-disable-next-line no-extend-native
 String.prototype.format = function format(...args) {
-  return util.format.call(this, ...args);
+  return util.format.call(undefined, this, ...args);
 };
 
 async function bootstrap() {
