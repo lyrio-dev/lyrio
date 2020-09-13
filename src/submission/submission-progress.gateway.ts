@@ -192,8 +192,8 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
         if (submission.status === SubmissionStatus.Pending) return;
 
         // This submission has already finished
+
         const basicMeta = await this.submissionService.getSubmissionBasicMeta(submission);
-        this.leaveRoom(client, this.getRoom(subscription.type, submissionId));
 
         switch (subscription.type) {
           case SubmissionProgressSubscriptionType.Meta:
@@ -211,6 +211,8 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
           }
           default:
         }
+
+        this.leaveRoom(client, this.getRoom(subscription.type, submissionId));
       })
     );
   }
