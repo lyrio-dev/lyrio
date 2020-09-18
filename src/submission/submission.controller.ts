@@ -8,8 +8,9 @@ import { UserService } from "@/user/user.service";
 import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.service";
 import { ConfigService } from "@/config/config.service";
 import { ProblemEntity } from "@/problem/problem.entity";
-import { ProblemTypeFactoryService } from "@/problem-type/problem-type-factory.service";
 import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
+import { FileService } from "@/file/file.service";
+import { ProblemTypeFactoryService } from "@/problem-type/problem-type-factory.service";
 
 import { SubmissionStatus } from "./submission-status.enum";
 import { SubmissionStatisticsService } from "./submission-statistics.service";
@@ -28,6 +29,9 @@ import {
   GetSubmissionDetailRequestDto,
   GetSubmissionDetailResponseDto,
   GetSubmissionDetailResponseError,
+  DownloadSubmissionFileRequestDto,
+  DownloadSubmissionFileResponseDto,
+  DownloadSubmissionFileResponseError,
   QuerySubmissionStatisticsRequestDto,
   QuerySubmissionStatisticsResponseDto,
   QuerySubmissionStatisticsResponseError,
@@ -58,7 +62,8 @@ export class SubmissionController {
     private readonly submissionProgressGateway: SubmissionProgressGateway,
     private readonly submissionProgressService: SubmissionProgressService,
     private readonly submissionStatisticsService: SubmissionStatisticsService,
-    private readonly auditService: AuditService
+    private readonly auditService: AuditService,
+    private readonly fileService: FileService
   ) {}
 
   @ApiOperation({
@@ -84,14 +89,26 @@ export class SubmissionController {
           error: SubmitResponseError.PERMISSION_DENIED
         };
 
-      const [validationError, submission] = await this.submissionService.createSubmission(
+      const [validationError, fileErrorOrUploadRequest, submission] = await this.submissionService.createSubmission(
         currentUser,
         problem,
-        request.content
+        request.content,
+        request.uploadInfo
       );
 
       if (validationError && validationError.length > 0) throw new BadRequestException(validationError);
 
+      // If file upload is required
+      if (typeof fileErrorOrUploadRequest === "string")
+        return {
+          error: fileErrorOrUploadRequest as SubmitResponseError
+        };
+      else if (fileErrorOrUploadRequest)
+        return {
+          signedUploadRequest: fileErrorOrUploadRequest
+        };
+
+      // Submitted successfully
       return {
         submissionId: submission.id
       };
@@ -272,6 +289,38 @@ export class SubmissionController {
   }
 
   @ApiOperation({
+    summary: "Get the meta, content and result of a submission."
+  })
+  @ApiBearerAuth()
+  @Post("downloadSubmissionFile")
+  async downloadSubmissionFile(
+    @CurrentUser() currentUser: UserEntity,
+    @Body() request: DownloadSubmissionFileRequestDto
+  ): Promise<DownloadSubmissionFileResponseDto> {
+    const submission = await this.submissionService.findSubmissionById(request.submissionId);
+    if (!submission)
+      return {
+        error: DownloadSubmissionFileResponseError.NO_SUCH_SUBMISSION
+      };
+
+    const problem = await this.problemService.findProblemById(submission.problemId);
+    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.VIEW)))
+      return {
+        error: DownloadSubmissionFileResponseError.PERMISSION_DENIED
+      };
+
+    const submissionDetail = await this.submissionService.getSubmissionDetail(submission);
+    if (!submissionDetail.fileUuid)
+      return {
+        error: DownloadSubmissionFileResponseError.NO_SUCH_FILE
+      };
+
+    return {
+      url: await this.fileService.getDownloadLink(submissionDetail.fileUuid, request.filename)
+    };
+  }
+
+  @ApiOperation({
     summary: "Query a problem's submission statistics, i.e. the ranklist of each user's best submissions"
   })
   @ApiBearerAuth()
@@ -293,7 +342,10 @@ export class SubmissionController {
         error: QuerySubmissionStatisticsResponseError.NO_SUCH_PROBLEM
       };
 
-    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.VIEW)))
+    if (
+      !this.problemTypeFactoryService.type(problem.type).enableStatistics() ||
+      !(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.VIEW))
+    )
       return {
         error: QuerySubmissionStatisticsResponseError.PERMISSION_DENIED
       };

@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 
-export class FileUploadInfoDto {
+export class SignedFileUploadRequestDto {
   @ApiProperty()
   uuid: string;
 

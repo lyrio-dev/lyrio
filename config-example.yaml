@@ -45,6 +45,7 @@ resourceLimit:
   problemTestcases: 20
   problemTimeLimit: 2000
   problemMemoryLimit: 512
+  submissionFileSize: 10485760
 queryLimit:
   problemSetProblemsTake: 100
   submissionsTake: 10

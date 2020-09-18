@@ -9,6 +9,9 @@ export * from "./query-submission-response.dto";
 export * from "./get-submission-detail-request.dto";
 export * from "./get-submission-detail-response.dto";
 
+export * from "./download-submission-file-request.dto";
+export * from "./download-submission-file-response.dto";
+
 export * from "./query-submission-statistics-request.dto";
 export * from "./query-submission-statistics-response.dto";
 

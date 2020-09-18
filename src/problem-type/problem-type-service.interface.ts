@@ -4,6 +4,7 @@ import { ProblemJudgeInfo } from "@/problem/problem-judge-info.interface";
 import { ProblemFileEntity } from "@/problem/problem-file.entity";
 import { SubmissionContent } from "@/submission/submission-content.interface";
 import { SubmissionTestcaseResult, SubmissionResult } from "@/submission/submission-result.interface";
+import { FileEntity } from "@/file/file.entity";
 
 export interface ProblemTypeServiceInterface<
   JudgeInfoType extends ProblemJudgeInfo,
@@ -14,6 +15,16 @@ export interface ProblemTypeServiceInterface<
    * Return the default judge info for a newly created problem.
    */
   getDefaultJudgeInfo(): JudgeInfoType;
+
+  /**
+   * Return if a submission of the problem contains a file.
+   */
+  shouldUploadAnswerFile(): boolean;
+
+  /**
+   * Return if this type of problems have the submission statistics page
+   */
+  enableStatistics(): boolean;
 
   /**
    * Preprocess judge info for judging, e.g. detect testcases automatically from test data when configured.
@@ -41,12 +52,14 @@ export interface ProblemTypeServiceInterface<
   validateSubmissionContent(submissionContent: SubmissionContentType): Promise<ValidationError[]>;
 
   /**
-   * Get code language and answer size from submission content submitted by user.
+   * Get code language and answer size from submission content and file submitted by user.
    * @param submissionContent The submission content submitted by user.
+   * @param file The file submitted by user.
    * @returns An object containing the code language and answer size of the submission content.
    */
-  getCodeLanguageAndAnswerSizeFromSubmissionContent(
-    submissionContent: SubmissionContentType
+  getCodeLanguageAndAnswerSizeFromSubmissionContentAndFile(
+    submissionContent: SubmissionContentType,
+    file?: FileEntity
   ): Promise<{
     language: string;
     answerSize: number;

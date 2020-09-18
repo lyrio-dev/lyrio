@@ -3,6 +3,8 @@ import { InjectConnection, InjectRepository } from "@nestjs/typeorm";
 
 import { Connection, Repository, EntityManager, Brackets, In } from "typeorm";
 
+import { Redis } from "ioredis";
+
 import { UserEntity } from "@/user/user.entity";
 import { GroupEntity } from "@/group/group.entity";
 import { LocalizedContentService } from "@/localized-content/localized-content.service";
@@ -19,6 +21,8 @@ import { SubmissionService } from "@/submission/submission.service";
 import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
 import { ProblemTypeFactoryService } from "@/problem-type/problem-type-factory.service";
 
+import { FileEntity } from "@/file/file.entity";
+
 import { ProblemJudgeInfo } from "./problem-judge-info.interface";
 import { ProblemSampleData } from "./problem-sample-data.interface";
 import { ProblemContentSection } from "./problem-content.interface";
@@ -29,7 +33,7 @@ import { ProblemSampleEntity } from "./problem-sample.entity";
 import { ProblemJudgeInfoEntity } from "./problem-judge-info.entity";
 import { ProblemEntity, ProblemType } from "./problem.entity";
 
-import { FileUploadInfoDto } from "@/file/dto";
+import { FileUploadInfoDto, SignedFileUploadRequestDto } from "@/file/dto";
 
 import {
   ProblemStatementDto,
@@ -52,9 +56,15 @@ export enum ProblemPermissionLevel {
   READ = 1,
   WRITE = 2
 }
+/**
+ * See `ProblemService.getPreprocessedJudgeInfo()`
+ */
+const REDIS_KEY_PROBLEM_PREPROCESSED_JUDGE_INFO = "problem-preprocessed-judge-info:%d";
 
 @Injectable()
 export class ProblemService {
+  private readonly redis: Redis;
+
   constructor(
     @InjectConnection()
     private readonly connection: Connection,
@@ -95,6 +105,8 @@ export class ProblemService {
       const problemTag = await this.findProblemTagById(problemTagId);
       return !problemTag ? null : await this.getProblemTagLocalized(problemTag, locale);
     });
+
+    this.redis = this.redisService.getClient();
   }
 
   async findProblemById(id: number): Promise<ProblemEntity> {
@@ -407,6 +419,8 @@ export class ProblemService {
     problemJudgeInfo.judgeInfo = judgeInfo;
     await this.problemJudgeInfoRepository.save(problemJudgeInfo);
 
+    await this.redis.del(REDIS_KEY_PROBLEM_PREPROCESSED_JUDGE_INFO.format(problem.id));
+
     return null;
   }
 
@@ -441,6 +455,28 @@ export class ProblemService {
   async getProblemJudgeInfo(problem: ProblemEntity): Promise<ProblemJudgeInfo> {
     const problemJudgeInfo = await this.problemJudgeInfoRepository.findOne({ problemId: problem.id });
     return problemJudgeInfo.judgeInfo;
+  }
+
+  /**
+   * Judge info needs to be preprocessed before sending to clients or judge clients.
+   * Currently preprocessing is detecting testcases from testdata files.
+   *
+   * The cache gets cleared when the testdata files or judge info changed.
+   */
+  async getProblemPreprocessedJudgeInfo(problem: ProblemEntity): Promise<ProblemJudgeInfo> {
+    const key = REDIS_KEY_PROBLEM_PREPROCESSED_JUDGE_INFO.format(problem.id);
+    const cachedResult: ProblemJudgeInfo = JSON.parse(await this.redis.get(key));
+    if (cachedResult) return cachedResult;
+
+    const result = this.problemTypeFactoryService
+      .type(problem.type)
+      .preprocessJudgeInfo(
+        await this.getProblemJudgeInfo(problem),
+        await this.getProblemFiles(problem, ProblemFileType.TestData)
+      );
+    await this.redis.setnx(key, JSON.stringify(result));
+
+    return result;
   }
 
   /**
@@ -576,45 +612,44 @@ export class ProblemService {
   }
 
   /**
-   * If the user have not uploaded the file, the @param uuid should be null.
-   * It will @return [UUID, upload request info] if success and error message if limit exceeded.
+   * @error "NO_SUCH_PROBLEM"
+   *
+   * If the user have not uploaded the file, the uuid should be null.
+   * It will return [UUID, upload request info] if success and error message if limit exceeded.
    * @error "TOO_MANY_FILES" | "TOTAL_SIZE_TOO_LARGE"
    *
-   * If the user have uploaded the file, the @param uuid should be the uploaded file UUID.
-   * It will @return null if success and error message if failed.
-   * @error "INVALID_OPERATION" | "NOT_UPLOADED"
+   * If the user have uploaded the file, the uuid should be the uploaded file UUID.
+   * It will return null if success and error message if failed.
+   * @error "FILE_UUID_EXISTS" | "FILE_NOT_UPLOADED"
    */
   async addProblemFile(
     problem: ProblemEntity,
     type: ProblemFileType,
-    uuid: string,
-    size: number,
+    uploadInfo: FileUploadInfoDto,
     filename: string,
     noLimit: boolean
-  ): Promise<FileUploadInfoDto | "TOO_MANY_FILES" | "TOTAL_SIZE_TOO_LARGE" | "INVALID_OPERATION" | "NOT_UPLOADED"> {
+  ): Promise<
+    | SignedFileUploadRequestDto
+    | "NO_SUCH_PROBLEM"
+    | "TOO_MANY_FILES"
+    | "TOTAL_SIZE_TOO_LARGE"
+    | "FILE_UUID_EXISTS"
+    | "FILE_NOT_UPLOADED"
+  > {
     // eslint-disable-next-line no-shadow
     return await this.lockManageProblemFile(problem.id, type, async problem => {
-      if (!problem) return "INVALID_OPERATION";
-
-      // Check limit
-      if (!noLimit) {
-        const error = await this.checkAddProblemFileLimit(problem, type, size, filename);
-        if (error) {
-          // If the user have uploaded the file, delete it
-          if (uuid) this.fileService.deleteUnfinishedUploadedFile(uuid);
-          return error;
-        }
-      }
-
-      // If not uploaded, return the upload request info
-      if (!uuid) {
-        return await this.fileService.signUploadRequest(size, size);
-      }
+      if (!problem) return "NO_SUCH_PROBLEM";
 
       let deleteOldFileActually: () => void = null;
       const ret = await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
-        const error = await this.fileService.finishUpload(uuid, transactionalEntityManager);
-        if (error) return error;
+        const result = await this.fileService.processUploadRequest(
+          uploadInfo,
+          async size => (noLimit ? null : await this.checkAddProblemFileLimit(problem, type, size, filename)),
+          transactionalEntityManager
+        );
+
+        // SignedFileUploadRequestDto object or error
+        if (!(result instanceof FileEntity)) return result;
 
         const oldProblemFile = await transactionalEntityManager.findOne(ProblemFileEntity, {
           problemId: problem.id,
@@ -628,13 +663,16 @@ export class ProblemService {
         problemFile.problemId = problem.id;
         problemFile.type = type;
         problemFile.filename = filename;
-        problemFile.uuid = uuid;
+        problemFile.uuid = uploadInfo.uuid;
 
         await transactionalEntityManager.save(ProblemFileEntity, problemFile);
 
         return null;
       });
+
       if (deleteOldFileActually) deleteOldFileActually();
+      if (type === ProblemFileType.TestData)
+        await this.redis.del(REDIS_KEY_PROBLEM_PREPROCESSED_JUDGE_INFO.format(problem.id));
 
       return ret;
     });
@@ -664,7 +702,10 @@ export class ProblemService {
           transactionalEntityManager
         );
       });
+
       if (deleteFilesActually) deleteFilesActually();
+      if (type === ProblemFileType.TestData)
+        await this.redis.del(REDIS_KEY_PROBLEM_PREPROCESSED_JUDGE_INFO.format(problem.id));
     });
   }
 
@@ -713,6 +754,9 @@ export class ProblemService {
       await this.problemFileRepository.update(problemFile, {
         filename: newFilename
       });
+
+      if (type === ProblemFileType.TestData)
+        await this.redis.del(REDIS_KEY_PROBLEM_PREPROCESSED_JUDGE_INFO.format(problem.id));
 
       return true;
     });
@@ -930,7 +974,7 @@ export class ProblemService {
       await transactionalEntityManager.update(
         ProblemJudgeInfoEntity,
         {
-          id: problem.id
+          problemId: problem.id
         },
         {
           judgeInfo: this.problemTypeFactoryService.type(type).getDefaultJudgeInfo()

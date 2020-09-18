@@ -1,6 +1,9 @@
 import { ApiProperty } from "@nestjs/swagger";
 
-import { IsInt, IsObject } from "class-validator";
+import { Type } from "class-transformer";
+import { IsInt, IsObject, IsOptional, ValidateNested } from "class-validator";
+
+import { FileUploadInfoDto } from "@/file/dto";
 
 export class SubmitRequestDto {
   @ApiProperty()
@@ -10,4 +13,10 @@ export class SubmitRequestDto {
   @ApiProperty()
   @IsObject()
   readonly content: unknown;
+
+  @ApiProperty()
+  @ValidateNested()
+  @Type(() => FileUploadInfoDto)
+  @IsOptional()
+  readonly uploadInfo?: FileUploadInfoDto;
 }

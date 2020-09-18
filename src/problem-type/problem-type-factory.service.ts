@@ -9,6 +9,7 @@ import { ProblemTypeServiceInterface } from "./problem-type-service.interface";
 
 import { ProblemTypeTraditionalService } from "./types/traditional/problem-type.service";
 import { ProblemTypeInteractionService } from "./types/interaction/problem-type.service";
+import { ProblemTypeSubmitAnswerService } from "./types/submit-answer/problem-type.service";
 
 @Injectable()
 export class ProblemTypeFactoryService {
@@ -19,11 +20,13 @@ export class ProblemTypeFactoryService {
 
   constructor(
     private readonly problemTypeTraditionalService: ProblemTypeTraditionalService,
-    private readonly problemTypeInteractionService: ProblemTypeInteractionService
+    private readonly problemTypeInteractionService: ProblemTypeInteractionService,
+    private readonly problemTypeSubmitAnswerService: ProblemTypeSubmitAnswerService
   ) {
     this.typeServices = {
       [ProblemType.TRADITIONAL]: this.problemTypeTraditionalService,
-      [ProblemType.INTERACTION]: this.problemTypeInteractionService
+      [ProblemType.INTERACTION]: this.problemTypeInteractionService,
+      [ProblemType.SUBMIT_ANSWER]: this.problemTypeSubmitAnswerService
     };
   }
 

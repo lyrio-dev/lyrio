@@ -27,6 +27,8 @@ interface JudgeInfoWithMetaAndSubtasks {
       inputFile?: string;
       outputFile?: string;
 
+      userOutputFilename?: string;
+
       timeLimit?: number;
       memoryLimit?: number;
       points?: number;
@@ -40,8 +42,9 @@ interface ValidateMetaAndSubtasksOptions {
   hardMemoryLimit?: number;
 
   enableFileIo: boolean;
-  enableInputFile: boolean;
-  enableOutputFile: boolean;
+  enableInputFile: boolean | "optional";
+  enableOutputFile: boolean | "optional";
+  enableUserOutputFilename: boolean;
 }
 
 export function validateMetaAndSubtasks(
@@ -88,6 +91,9 @@ export function validateMetaAndSubtasks(
   }
   if (judgeInfo.subtasks && !judgeInfo.subtasks.length) throw ["NO_TESTCASES"];
 
+  // Used to check duplicated user output filenames
+  const userOutputFilenames: [filename: string, subtaskIndex: number, testcaseIndex: number][] = [];
+
   // [A, B] means B depends on A
   const edges: [number, number][] = [];
   (judgeInfo.subtasks || []).forEach(({ timeLimit, memoryLimit, scoringType, points, dependencies, testcases }, i) => {
@@ -114,14 +120,47 @@ export function validateMetaAndSubtasks(
     if (!Array.isArray(testcases) || testcases.length === 0) throw ["SUBTASK_HAS_NO_TESTCASES", i + 1];
 
     // eslint-disable-next-line no-shadow
-    testcases.forEach(({ inputFile, outputFile, timeLimit, memoryLimit, points }, j) => {
+    testcases.forEach(({ inputFile, outputFile, userOutputFilename, timeLimit, memoryLimit, points }, j) => {
       if (options.enableInputFile) {
-        if (!testData.some(file => file.filename === inputFile)) throw ["NO_SUCH_INPUT_FILE", i + 1, j + 1, inputFile];
+        if (
+          !testData.some(
+            file => file.filename === inputFile || (inputFile == null && options.enableInputFile === "optional")
+          )
+        )
+          throw ["NO_SUCH_INPUT_FILE", i + 1, j + 1, inputFile];
       }
 
       if (options.enableOutputFile) {
-        if (!testData.some(file => file.filename === outputFile))
+        if (
+          !testData.some(
+            file => file.filename === outputFile || (outputFile == null && options.enableOutputFile === "optional")
+          )
+        )
           throw ["NO_SUCH_OUTPUT_FILE", i + 1, j + 1, outputFile];
+      }
+
+      if (options.enableUserOutputFilename) {
+        if (
+          (typeof userOutputFilename !== "string" && userOutputFilename != null) ||
+          (userOutputFilename && !validFilename(userOutputFilename))
+        )
+          throw ["INVALID_USER_OUTPUT_FILENAME", i + 1, j + 1, userOutputFilename];
+
+        const realUserOutputFilename = userOutputFilename || outputFile;
+        const duplicateIndex = userOutputFilenames.findIndex(([filename]) => filename === realUserOutputFilename);
+        if (duplicateIndex !== -1) {
+          const [, duplicateSubtaskIndex, duplicateTestcaseIndex] = userOutputFilenames[duplicateIndex];
+          throw [
+            "DUPLICATE_USER_OUTPUT_FILENAME",
+            i + 1,
+            j + 1,
+            realUserOutputFilename,
+            duplicateSubtaskIndex + 1,
+            duplicateTestcaseIndex + 1
+          ];
+        }
+
+        userOutputFilenames.push([realUserOutputFilename, i, j]);
       }
 
       if (options.enableTimeMemoryLimit) {

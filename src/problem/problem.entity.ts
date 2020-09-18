@@ -8,7 +8,8 @@ import { ProblemSampleEntity } from "./problem-sample.entity";
 
 export enum ProblemType {
   TRADITIONAL = "TRADITIONAL",
-  INTERACTION = "INTERACTION"
+  INTERACTION = "INTERACTION",
+  SUBMIT_ANSWER = "SUBMIT_ANSWER"
 }
 
 @Entity("problem")

@@ -49,6 +49,11 @@ export class GetProblemRequestDto {
   @ApiProperty({ required: false })
   @IsBoolean()
   @IsOptional()
+  readonly judgeInfoToBePreprocessed?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
   readonly testData?: boolean;
 
   @ApiProperty({ required: false })

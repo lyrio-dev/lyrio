@@ -9,7 +9,7 @@ import { ConfigService } from "@/config/config.service";
 
 import { FileEntity } from "./file.entity";
 
-import { FileUploadInfoDto } from "./dto";
+import { FileUploadInfoDto, SignedFileUploadRequestDto } from "./dto";
 
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent
 function encodeRFC5987ValueChars(str: string) {
@@ -69,7 +69,68 @@ export class FileService implements OnModuleInit {
       );
   }
 
-  async signUploadRequest(minSize?: number, maxSize?: number): Promise<FileUploadInfoDto> {
+  /**
+   * Process the client's request about uploading a file.
+   *
+   * * If the user has not uploaded the file, return a signed upload info object.
+   * * If the user has uploaded the file, check the file existance, file size and limits.
+   *
+   * @note
+   * The `checkLimit` function may return different result for each call with the same upload info.
+   *
+   * e.g. When a user uploaded other files before upload this file, the quota is enough before uploading but
+   *      not enough after uploading.
+   *
+   * If the file is checked to be exceeding the limit after uploaded, it will be deleted.
+   *
+   * @return A `SignedFileUploadRequestDto` to return to the client if the file is not uploaded.
+   * @return `string` error message if client says the file is uploaded but we do not accept it according to some errors.
+   * @return A `FileEntity` if the file is uploaded successfully and saved to the database.
+   */
+  async processUploadRequest<LimitCheckErrorType extends string>(
+    uploadInfo: FileUploadInfoDto,
+    checkLimit: (size: number) => Promise<LimitCheckErrorType> | LimitCheckErrorType,
+    transactionalEntityManager: EntityManager
+  ): Promise<FileEntity | SignedFileUploadRequestDto | LimitCheckErrorType | "FILE_UUID_EXISTS" | "FILE_NOT_UPLOADED"> {
+    const limitCheckError = await checkLimit(uploadInfo.size);
+    if (limitCheckError) {
+      this.deleteUnfinishedUploadedFile(uploadInfo.uuid);
+      return limitCheckError;
+    }
+
+    if (uploadInfo.uuid) {
+      // The client says the file is uploaded
+
+      if ((await transactionalEntityManager.count(FileEntity, { uuid: uploadInfo.uuid })) !== 0)
+        return "FILE_UUID_EXISTS";
+
+      // Check file existance
+      try {
+        await this.minioClient.statObject(this.bucket, uploadInfo.uuid);
+      } catch (e) {
+        if (e.message === "The specified key does not exist.") {
+          return "FILE_NOT_UPLOADED";
+        }
+        throw e;
+      }
+
+      // Save to the database
+      const file = new FileEntity();
+      file.uuid = uploadInfo.uuid;
+      file.size = uploadInfo.size;
+      file.uploadTime = new Date();
+
+      await transactionalEntityManager.save(FileEntity, file);
+
+      return file;
+    } else {
+      // The client says it want to upload a file for this request
+
+      return await this.signUploadRequest(uploadInfo.size, uploadInfo.size);
+    }
+  }
+
+  private async signUploadRequest(minSize?: number, maxSize?: number): Promise<SignedFileUploadRequestDto> {
     const uuid = UUID();
     const policy = this.minioClient.newPostPolicy();
     policy.setBucket(this.bucket);
@@ -87,38 +148,6 @@ export class FileService implements OnModuleInit {
       extraFormData: policyResult.formData,
       fileFieldName: "file"
     };
-  }
-
-  /**
-   * @return error
-   */
-  async finishUpload(
-    uuid: string,
-    transactionalEntityManager: EntityManager
-  ): Promise<"INVALID_OPERATION" | "NOT_UPLOADED"> {
-    // If the file has already uploaded and finished
-    if ((await this.fileRepository.count({ uuid })) !== 0) return "INVALID_OPERATION";
-
-    // Get file size
-    let size: number;
-    try {
-      const stat = await this.minioClient.statObject(this.bucket, uuid);
-      size = stat.size;
-    } catch (e) {
-      if (e.message === "The specified key does not exist.") {
-        return "NOT_UPLOADED";
-      }
-      throw e;
-    }
-
-    const file = new FileEntity();
-    file.uuid = uuid;
-    file.size = size;
-    file.uploadTime = new Date();
-
-    await transactionalEntityManager.save(FileEntity, file);
-
-    return null;
   }
 
   /**

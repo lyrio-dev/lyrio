@@ -327,7 +327,9 @@ export class ProblemController {
     }
 
     if (request.judgeInfo) {
-      result.judgeInfo = await this.problemService.getProblemJudgeInfo(problem);
+      result.judgeInfo = request.judgeInfoToBePreprocessed
+        ? await this.problemService.getProblemPreprocessedJudgeInfo(problem)
+        : await this.problemService.getProblemJudgeInfo(problem);
     }
 
     if (request.testData) {
@@ -595,8 +597,7 @@ export class ProblemController {
     const result = await this.problemService.addProblemFile(
       problem,
       request.type,
-      request.uuid,
-      request.size,
+      request.uploadInfo,
       request.filename,
       hasPrivilege
     );
@@ -606,13 +607,12 @@ export class ProblemController {
       };
     if (result)
       return {
-        uploadInfo: result
+        signedUploadRequest: result
       };
 
     await this.auditService.log("problem.upload_file", AuditLogObjectType.Problem, problem.id, {
       type: request.type,
-      uuid: request.uuid,
-      size: request.size,
+      uploadInfo: request.uploadInfo,
       filename: request.filename
     });
 

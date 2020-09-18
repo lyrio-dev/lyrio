@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 
-import { FileUploadInfoDto } from "@/file/dto";
+import { SignedFileUploadRequestDto } from "@/file/dto";
 
 export enum AddProblemFileResponseError {
   NO_SUCH_PROBLEM = "NO_SUCH_PROBLEM",
@@ -9,8 +9,8 @@ export enum AddProblemFileResponseError {
   TOTAL_SIZE_TOO_LARGE = "TOTAL_SIZE_TOO_LARGE",
 
   // Below only happen when user uploaded the file and call this API twice.
-  INVALID_OPERATION = "INVALID_OPERATION",
-  NOT_UPLOADED = "NOT_UPLOADED"
+  FILE_UUID_EXISTS = "FILE_UUID_EXISTS",
+  FILE_NOT_UPLOADED = "FILE_NOT_UPLOADED"
 }
 
 export class AddProblemFileResponseDto {
@@ -18,5 +18,5 @@ export class AddProblemFileResponseDto {
   error?: AddProblemFileResponseError;
 
   @ApiProperty()
-  uploadInfo?: FileUploadInfoDto;
+  signedUploadRequest?: SignedFileUploadRequestDto;
 }

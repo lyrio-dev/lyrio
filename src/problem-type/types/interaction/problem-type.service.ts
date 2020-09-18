@@ -10,10 +10,11 @@ import { CodeLanguageService } from "@/code-language/code-language.service";
 import { validateMetaAndSubtasks } from "@/problem-type/common/meta-and-subtasks";
 import { validateExtraSourceFiles } from "@/problem-type/common/extra-source-files";
 import { CodeLanguage } from "@/code-language/code-language.type";
+import { autoMatchInputToOutput } from "@/problem-type/common/auto-match-input-output";
 
 import { SubmissionTestcaseResultInteraction } from "./submission-testcase-result.interface";
 import { SubmissionContentInteraction } from "./submission-content.interface";
-import { ProblemJudgeInfoInteraction } from "./judge-info.interface";
+import { ProblemJudgeInfoInteraction } from "./problem-judge-info.interface";
 
 import { ProblemTypeServiceInterface } from "../../problem-type-service.interface";
 
@@ -37,6 +38,14 @@ export class ProblemTypeInteractionService
     };
   }
 
+  shouldUploadAnswerFile(): boolean {
+    return false;
+  }
+
+  enableStatistics(): boolean {
+    return true;
+  }
+
   preprocessJudgeInfo(
     judgeInfo: ProblemJudgeInfoInteraction,
     testData: ProblemFileEntity[]
@@ -45,15 +54,7 @@ export class ProblemTypeInteractionService
       ? judgeInfo
       : {
           ...judgeInfo,
-          subtasks: [
-            {
-              scoringType: "Sum",
-              testcases: testData
-                .map(file => file.filename)
-                .filter(filename => filename.toLowerCase().endsWith(".in"))
-                .map(filename => ({ inputFile: filename }))
-            }
-          ]
+          subtasks: autoMatchInputToOutput(testData, true)
         };
   }
 
@@ -71,6 +72,7 @@ export class ProblemTypeInteractionService
       enableFileIo: true,
       enableInputFile: true,
       enableOutputFile: true,
+      enableUserOutputFilename: false,
       hardTimeLimit,
       hardMemoryLimit
     });
@@ -116,7 +118,7 @@ export class ProblemTypeInteractionService
   }
 
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-  async getCodeLanguageAndAnswerSizeFromSubmissionContent(submissionContent: SubmissionContentInteraction) {
+  async getCodeLanguageAndAnswerSizeFromSubmissionContentAndFile(submissionContent: SubmissionContentInteraction) {
     return {
       language: submissionContent.language,
 

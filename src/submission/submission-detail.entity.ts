@@ -1,7 +1,6 @@
-import { Entity, PrimaryColumn, OneToOne, Column, JoinColumn } from "typeorm";
+import { Entity, PrimaryColumn, OneToOne, Column, JoinColumn, Index } from "typeorm";
 
 import { SubmissionResult } from "./submission-result.interface";
-
 import { SubmissionEntity } from "./submission.entity";
 
 @Entity("submission_detail")
@@ -15,6 +14,10 @@ export class SubmissionDetailEntity {
 
   @Column({ type: "json" })
   content: unknown;
+
+  @Column({ type: "char", length: 36, nullable: true })
+  @Index({ unique: true })
+  fileUuid: string;
 
   @Column({ type: "json", nullable: true })
   result: SubmissionResult;

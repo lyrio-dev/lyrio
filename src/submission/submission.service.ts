@@ -26,6 +26,12 @@ import { JudgeGateway } from "@/judge/judge.gateway";
 import { ProblemTypeFactoryService } from "@/problem-type/problem-type-factory.service";
 import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
 
+import { FileService } from "@/file/file.service";
+
+import { ConfigService } from "@/config/config.service";
+
+import { FileEntity } from "@/file/file.entity";
+
 import { SubmissionProgress, SubmissionProgressType } from "./submission-progress.interface";
 import { SubmissionContent } from "./submission-content.interface";
 import { SubmissionProgressService, SubmissionEventType } from "./submission-progress.service";
@@ -33,6 +39,8 @@ import { SubmissionStatisticsService } from "./submission-statistics.service";
 import { SubmissionEntity } from "./submission.entity";
 import { SubmissionDetailEntity } from "./submission-detail.entity";
 import { SubmissionStatus } from "./submission-status.enum";
+
+import { FileUploadInfoDto, SignedFileUploadRequestDto } from "@/file/dto";
 
 import { SubmissionBasicMetaDto } from "./dto";
 
@@ -42,6 +50,10 @@ interface SubmissionTaskExtraInfo extends JudgeTaskExtraInfo {
   samples?: ProblemSampleData;
   testData: Record<string, string>; // filename -> uuid
   submissionContent: SubmissionContent;
+  file?: {
+    uuid: string;
+    url: string;
+  };
 }
 
 @Injectable()
@@ -62,7 +74,9 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     private readonly submissionProgressService: SubmissionProgressService,
     private readonly submissionStatisticsService: SubmissionStatisticsService,
     private readonly judgeGateway: JudgeGateway,
-    private readonly auditService: AuditService
+    private readonly auditService: AuditService,
+    private readonly fileService: FileService,
+    private readonly configService: ConfigService
   ) {
     this.judgeQueueService.registerTaskType(JudgeTaskType.Submission, this);
 
@@ -184,18 +198,50 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
   public async createSubmission(
     submitter: UserEntity,
     problem: ProblemEntity,
-    content: SubmissionContent
-  ): Promise<[errors: ValidationError[], submission: SubmissionEntity]> {
-    const validationError = await this.problemTypeFactoryService.type(problem.type).validateSubmissionContent(content);
-    if (validationError && validationError.length > 0) return [validationError, null];
+    content: SubmissionContent,
+    uploadInfo: FileUploadInfoDto
+  ): Promise<
+    [
+      errors: ValidationError[],
+      fileUploadErrorOrRequest:
+        | "FILE_UUID_EXISTS"
+        | "FILE_NOT_UPLOADED"
+        | "FILE_TOO_LARGE"
+        | SignedFileUploadRequestDto,
+      submission: SubmissionEntity
+    ]
+  > {
+    const problemTypeService = this.problemTypeFactoryService.type(problem.type);
 
-    const submission = await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
+    const validationError = await problemTypeService.validateSubmissionContent(content);
+    if (validationError && validationError.length > 0) return [validationError, null, null];
+
+    const [fileUploadErrorOrRequest, submission] = await this.connection.transaction<
+      [
+        fileUploadErrorOrRequest:
+          | "FILE_UUID_EXISTS"
+          | "FILE_NOT_UPLOADED"
+          | "FILE_TOO_LARGE"
+          | SignedFileUploadRequestDto,
+        submission: SubmissionEntity
+      ]
+    >("READ COMMITTED", async transactionalEntityManager => {
+      let file: FileEntity = null;
+      if (problemTypeService.shouldUploadAnswerFile()) {
+        const result = await this.fileService.processUploadRequest(
+          uploadInfo,
+          size => (size <= this.configService.config.resourceLimit.submissionFileSize ? null : "FILE_TOO_LARGE"),
+          transactionalEntityManager
+        );
+
+        if (result instanceof FileEntity) file = result;
+        else return [result, null];
+      }
+
       // eslint-disable-next-line no-shadow
       const submission = new SubmissionEntity();
       submission.isPublic = problem.isPublic;
-      const pair = await this.problemTypeFactoryService
-        .type(problem.type)
-        .getCodeLanguageAndAnswerSizeFromSubmissionContent(content);
+      const pair = await problemTypeService.getCodeLanguageAndAnswerSizeFromSubmissionContentAndFile(content, file);
       submission.codeLanguage = pair.language;
       submission.answerSize = pair.answerSize;
       submission.score = null;
@@ -208,22 +254,27 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
       const submissionDetail = new SubmissionDetailEntity();
       submissionDetail.submissionId = submission.id;
       submissionDetail.content = content;
+      submissionDetail.fileUuid = uploadInfo.uuid;
       submissionDetail.result = null;
       await transactionalEntityManager.save(submissionDetail);
 
-      return submission;
+      return [null, submission];
     });
 
-    await this.problemService.updateProblemStatistics(problem.id, 1, 0);
-    await this.userService.updateUserSubmissionCount(submitter.id, 1);
+    if (submission) {
+      await this.problemService.updateProblemStatistics(problem.id, 1, 0);
+      await this.userService.updateUserSubmissionCount(submitter.id, 1);
 
-    try {
-      await this.judgeSubmission(submission);
-    } catch (e) {
-      Logger.error(`Failed to start judge for submission ${submission.id}: ${e}`);
+      try {
+        await this.judgeSubmission(submission);
+      } catch (e) {
+        Logger.error(`Failed to start judge for submission ${submission.id}: ${e}`);
+      }
+
+      return [null, null, submission];
     }
 
-    return [null, submission];
+    return [null, fileUploadErrorOrRequest, null];
   }
 
   public async getSubmissionBasicMeta(submission: SubmissionEntity): Promise<SubmissionBasicMetaDto> {
@@ -482,12 +533,10 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
       const submissionDetail = await this.getSubmissionDetail(submission);
 
       const problem = await this.problemService.findProblemById(submission.problemId);
-      const judgeInfo = await this.problemService.getProblemJudgeInfo(problem);
+      const preprocessedJudgeInfo = await this.problemService.getProblemPreprocessedJudgeInfo(problem);
       const testData = await this.problemService.getProblemFiles(problem, ProblemFileType.TestData);
 
-      const preprocessedJudgeInfo = this.problemTypeFactoryService
-        .type(problem.type)
-        .preprocessJudgeInfo(judgeInfo, testData);
+      const problemTypeService = this.problemTypeFactoryService.type(problem.type);
 
       return new JudgeTask<SubmissionTaskExtraInfo>(
         submission.taskId,
@@ -503,7 +552,15 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
               ? await this.problemService.getProblemSamples(problem)
               : null,
           testData: Object.fromEntries(testData.map(problemFile => [problemFile.filename, problemFile.uuid])),
-          submissionContent: submissionDetail.content
+          submissionContent: submissionDetail.content,
+          file: problemTypeService.shouldUploadAnswerFile()
+            ? {
+                uuid: submissionDetail.fileUuid,
+                url: problemTypeService.shouldUploadAnswerFile()
+                  ? await this.fileService.getDownloadLink(submissionDetail.fileUuid, null, true)
+                  : null
+              }
+            : null
         }
       );
     } catch (e) {

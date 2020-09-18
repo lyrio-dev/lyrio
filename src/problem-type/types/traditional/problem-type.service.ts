@@ -10,7 +10,7 @@ import { CodeLanguageService } from "@/code-language/code-language.service";
 import { validateMetaAndSubtasks } from "@/problem-type/common/meta-and-subtasks";
 import { validateChecker } from "@/problem-type/common/checker";
 import { validateExtraSourceFiles } from "@/problem-type/common/extra-source-files";
-import { autoMatchInputOutput } from "@/problem-type/common/auto-match-input-output";
+import { autoMatchInputToOutput } from "@/problem-type/common/auto-match-input-output";
 
 import { SubmissionTestcaseResultTraditional } from "./submission-testcase-result.interface";
 import { SubmissionContentTraditional } from "./submission-content.interface";
@@ -41,6 +41,14 @@ export class ProblemTypeTraditionalService
     };
   }
 
+  shouldUploadAnswerFile(): boolean {
+    return false;
+  }
+
+  enableStatistics(): boolean {
+    return true;
+  }
+
   preprocessJudgeInfo(
     judgeInfo: ProblemJudgeInfoTraditional,
     testData: ProblemFileEntity[]
@@ -49,7 +57,7 @@ export class ProblemTypeTraditionalService
       ? judgeInfo
       : {
           ...judgeInfo,
-          subtasks: autoMatchInputOutput(testData)
+          subtasks: autoMatchInputToOutput(testData)
         };
   }
 
@@ -63,6 +71,7 @@ export class ProblemTypeTraditionalService
       enableFileIo: true,
       enableInputFile: true,
       enableOutputFile: true,
+      enableUserOutputFilename: false,
       hardTimeLimit: ignoreLimits ? null : this.configService.config.resourceLimit.problemTimeLimit,
       hardMemoryLimit: ignoreLimits ? null : this.configService.config.resourceLimit.problemMemoryLimit
     });
@@ -87,7 +96,7 @@ export class ProblemTypeTraditionalService
   }
 
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-  async getCodeLanguageAndAnswerSizeFromSubmissionContent(submissionContent: SubmissionContentTraditional) {
+  async getCodeLanguageAndAnswerSizeFromSubmissionContentAndFile(submissionContent: SubmissionContentTraditional) {
     return {
       language: submissionContent.language,
 
