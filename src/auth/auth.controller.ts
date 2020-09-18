@@ -194,10 +194,14 @@ export class AuthController {
           error: SendEmailVerificationCodeResponseError.ALREADY_LOGGEDIN
         };
 
-      if (await this.userService.checkEmailAvailability(request.email))
+      const user = await this.userService.findUserByEmail(request.email);
+      if (!user)
         return {
           error: SendEmailVerificationCodeResponseError.NO_SUCH_USER
         };
+
+      // Audit logging
+      await this.auditService.log(user.id, "auth.request_reset_password");
     }
 
     if (!this.configService.config.preference.requireEmailVerification)
