@@ -48,10 +48,6 @@ export class SubmissionMetaDto extends SubmissionBasicMetaDto {
   submitter: UserMetaDto;
 
   // Only for non-finished and non-waiting submissions
-  @ApiProperty({
-    enum: Object.values(SubmissionProgressType)
-      .map(s => Number(s))
-      .filter(x => !Number.isNaN(x))
-  })
-  progressMeta?: SubmissionProgressType;
+  @ApiProperty()
+  progressType?: SubmissionProgressType;
 }

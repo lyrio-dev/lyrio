@@ -4,7 +4,7 @@ import { ValidationError } from "class-validator";
 
 import { ConfigService } from "@/config/config.service";
 import { ProblemFileEntity } from "@/problem/problem-file.entity";
-import { SubmissionResult } from "@/submission/submission-result.interface";
+import { SubmissionProgress } from "@/submission/submission-progress.interface";
 import { CodeLanguageService } from "@/code-language/code-language.service";
 import { validateMetaAndSubtasks } from "@/problem-type/common/meta-and-subtasks";
 import { validateChecker } from "@/problem-type/common/checker";
@@ -95,9 +95,11 @@ export class ProblemTypeSubmitAnswerService
     };
   }
 
-  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  getTimeAndMemoryUsedFromSubmissionResult(submissionResult: SubmissionResult<SubmissionTestcaseResultSubmitAnswer>) {
+  getTimeAndMemoryUsedFromFinishedSubmissionProgress(
+    // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    submissionProgress: SubmissionProgress<SubmissionTestcaseResultSubmitAnswer>
+  ) {
     return {
       timeUsed: null,
       memoryUsed: null

@@ -3,7 +3,7 @@ import { ValidationError } from "class-validator";
 import { ProblemJudgeInfo } from "@/problem/problem-judge-info.interface";
 import { ProblemFileEntity } from "@/problem/problem-file.entity";
 import { SubmissionContent } from "@/submission/submission-content.interface";
-import { SubmissionTestcaseResult, SubmissionResult } from "@/submission/submission-result.interface";
+import { SubmissionTestcaseResult, SubmissionProgress } from "@/submission/submission-progress.interface";
 import { FileEntity } from "@/file/file.entity";
 
 export interface ProblemTypeServiceInterface<
@@ -66,12 +66,12 @@ export interface ProblemTypeServiceInterface<
   }>;
 
   /**
-   * Get time and memory used from submission result object.
-   * @param submissionResult The result of a submission.
+   * Get time and memory used from finished submission result object.
+   * @param submissionProgress The progress of a submission, guaranteed.
    * @returns An object containing the time and memory used.
    */
-  getTimeAndMemoryUsedFromSubmissionResult(
-    submissionResult: SubmissionResult<SubmissionTestcaseResultType>
+  getTimeAndMemoryUsedFromFinishedSubmissionProgress(
+    submissionProgress: SubmissionProgress<SubmissionTestcaseResultType>
   ): {
     timeUsed: number;
     memoryUsed: number;

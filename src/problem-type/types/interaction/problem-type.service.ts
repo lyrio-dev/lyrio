@@ -5,7 +5,7 @@ import { plainToClass } from "class-transformer";
 
 import { ConfigService } from "@/config/config.service";
 import { ProblemFileEntity } from "@/problem/problem-file.entity";
-import { SubmissionResult } from "@/submission/submission-result.interface";
+import { SubmissionProgress } from "@/submission/submission-progress.interface";
 import { CodeLanguageService } from "@/code-language/code-language.service";
 import { validateMetaAndSubtasks } from "@/problem-type/common/meta-and-subtasks";
 import { validateExtraSourceFiles } from "@/problem-type/common/extra-source-files";
@@ -129,19 +129,24 @@ export class ProblemTypeInteractionService
   }
 
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-  getTimeAndMemoryUsedFromSubmissionResult(submissionResult: SubmissionResult<SubmissionTestcaseResultInteraction>) {
+  getTimeAndMemoryUsedFromFinishedSubmissionProgress(
+    submissionProgress: SubmissionProgress<SubmissionTestcaseResultInteraction>
+  ) {
     const result = {
       timeUsed: 0,
       memoryUsed: 0
     };
 
-    if (submissionResult) {
-      if (Array.isArray(submissionResult.subtasks)) {
-        for (const subtask of submissionResult.subtasks) {
-          for (const testcaseUuid of subtask.testcases) {
-            if (!testcaseUuid) continue;
-            result.timeUsed += submissionResult.testcaseResult[testcaseUuid].time;
-            result.memoryUsed = Math.max(result.memoryUsed, submissionResult.testcaseResult[testcaseUuid].memory);
+    if (submissionProgress) {
+      if (Array.isArray(submissionProgress.subtasks)) {
+        for (const subtask of submissionProgress.subtasks) {
+          for (const testcase of subtask.testcases) {
+            if (!testcase?.testcaseHash) continue;
+            result.timeUsed += submissionProgress.testcaseResult[testcase.testcaseHash].time;
+            result.memoryUsed = Math.max(
+              result.memoryUsed,
+              submissionProgress.testcaseResult[testcase.testcaseHash].memory
+            );
           }
         }
       }

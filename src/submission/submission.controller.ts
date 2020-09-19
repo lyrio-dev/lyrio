@@ -197,10 +197,10 @@ export class SubmissionController {
         // For progress reporting
         const progress =
           submission.status === SubmissionStatus.Pending &&
-          (await this.submissionProgressService.getSubmissionProgress(submission.id));
+          (await this.submissionProgressService.getPendingSubmissionProgress(submission.id));
 
         if (progress) {
-          submissionMetas[i].progressMeta = progress.progressType;
+          submissionMetas[i].progressType = progress.progressType;
         }
 
         if (submission.status === SubmissionStatus.Pending) {
@@ -249,7 +249,9 @@ export class SubmissionController {
     const titleLocale = problem.locales.includes(request.locale) ? request.locale : problem.locales[0];
 
     const pending = submission.status === SubmissionStatus.Pending;
-    const progress = !pending ? null : await this.submissionProgressService.getSubmissionProgress(submission.id);
+    const progress = !pending
+      ? submissionDetail.result
+      : await this.submissionProgressService.getPendingSubmissionProgress(submission.id);
 
     const hasPermission = await this.problemService.userHasPermission(
       currentUser,
@@ -273,7 +275,6 @@ export class SubmissionController {
         memoryUsed: submission.memoryUsed
       },
       content: submissionDetail.content,
-      result: submissionDetail.result,
       progress,
       progressSubscriptionKey: !pending
         ? null

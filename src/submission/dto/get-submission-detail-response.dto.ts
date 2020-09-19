@@ -3,7 +3,6 @@ import { ApiProperty } from "@nestjs/swagger";
 import { SubmissionMetaDto } from "./submission-meta.dto";
 
 import { SubmissionContent } from "../submission-content.interface";
-import { SubmissionResult } from "../submission-result.interface";
 import { SubmissionProgress } from "../submission-progress.interface";
 
 export enum GetSubmissionDetailResponseError {
@@ -21,10 +20,6 @@ export class GetSubmissionDetailResponseDto {
   @ApiProperty()
   content?: SubmissionContent;
 
-  @ApiProperty()
-  result?: SubmissionResult;
-
-  // Only for non-finished
   @ApiProperty()
   progress?: SubmissionProgress;
 

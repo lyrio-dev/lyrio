@@ -9,7 +9,6 @@ import { ConfigService } from "@/config/config.service";
 
 import { SubmissionProgress, SubmissionProgressType } from "./submission-progress.interface";
 import { SubmissionService } from "./submission.service";
-import { SubmissionResult } from "./submission-result.interface";
 import { SubmissionStatus } from "./submission-status.enum";
 import { SubmissionEventType } from "./submission-progress.service";
 
@@ -26,15 +25,14 @@ export interface SubmissionProgressSubscription {
 }
 
 interface SubmissionProgressMessage {
-  // These properties exist if finished
-  // "resultMeta" always exists while "resultDetail" only exists when the client subscribes the detail
-  resultMeta?: SubmissionBasicMetaDto;
-  resultDetail?: SubmissionResult;
-
   // These properties exist if NOT finished
   // "progressMeta" always exists while "progressDetail" only exists when the client subscribes the detail
   // null if the task is still waiting in queue
-  progressMeta?: SubmissionProgressType; // status and score are not pushed to reduce server load
+  progressMeta?: {
+    progressType: SubmissionProgressType;
+    resultMeta?: SubmissionBasicMetaDto;
+  };
+  // status and score are not calculated to reduce server load
   progressDetail?: SubmissionProgress;
 }
 
@@ -198,14 +196,20 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
         switch (subscription.type) {
           case SubmissionProgressSubscriptionType.Meta:
             this.sendMessage(client, submissionId, {
-              resultMeta: basicMeta
+              progressMeta: {
+                progressType: SubmissionProgressType.Finished,
+                resultMeta: basicMeta
+              }
             });
             break;
           case SubmissionProgressSubscriptionType.Detail: {
             const submissionDetail = await this.submissionService.getSubmissionDetail(submission);
             this.sendMessage(client, submissionId, {
-              resultMeta: basicMeta,
-              resultDetail: submissionDetail.result
+              progressMeta: {
+                progressType: SubmissionProgressType.Finished,
+                resultMeta: basicMeta
+              },
+              progressDetail: submissionDetail.result
             });
             break;
           }
@@ -222,33 +226,29 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
     type: SubmissionEventType,
     progress?: SubmissionProgress
   ): Promise<void> {
-    if (type === SubmissionEventType.Progress && progress.progressType !== SubmissionProgressType.Finished) {
+    const finished = progress.progressType === SubmissionProgressType.Finished;
+
+    if (type !== SubmissionEventType.Deleted) {
+      // If the progress.progressType is "Finished", it's called after database updated
+      const submission = finished && (await this.submissionService.findSubmissionById(submissionId));
+      const basicMeta = finished && (await this.submissionService.getSubmissionBasicMeta(submission));
+
       this.sendMessage(this.getRoom(SubmissionProgressSubscriptionType.Meta, submissionId), submissionId, {
-        progressMeta: progress.progressType
+        progressMeta: {
+          progressType: progress.progressType,
+          resultMeta: basicMeta
+        }
       });
       this.sendMessage(this.getRoom(SubmissionProgressSubscriptionType.Detail, submissionId), submissionId, {
-        progressMeta: progress.progressType,
+        progressMeta: {
+          progressType: progress.progressType,
+          resultMeta: basicMeta
+        },
         progressDetail: progress
       });
-    } else {
-      // This is called after database updated
+    }
 
-      if (type !== SubmissionEventType.Deleted) {
-        const submission = await this.submissionService.findSubmissionById(submissionId);
-        const submissionDetail = await this.submissionService.getSubmissionDetail(submission);
-        // If the submission has been deleted, don't attempt to send the result.
-        if (submission && submissionDetail) {
-          const basicMeta = await this.submissionService.getSubmissionBasicMeta(submission);
-          this.sendMessage(this.getRoom(SubmissionProgressSubscriptionType.Meta, submissionId), submissionId, {
-            resultMeta: basicMeta
-          });
-          this.sendMessage(this.getRoom(SubmissionProgressSubscriptionType.Detail, submissionId), submissionId, {
-            resultMeta: basicMeta,
-            resultDetail: submissionDetail.result
-          });
-        }
-      }
-
+    if (finished || type === SubmissionEventType.Deleted) {
       this.clearRoom(this.getRoom(SubmissionProgressSubscriptionType.Meta, submissionId));
       this.clearRoom(this.getRoom(SubmissionProgressSubscriptionType.Detail, submissionId));
     }

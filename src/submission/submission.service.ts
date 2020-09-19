@@ -461,19 +461,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     const oldSubmission = { ...submission };
 
     const submissionDetail = await this.getSubmissionDetail(submission);
-    submissionDetail.result = {
-      systemMessage: progress.systemMessage,
-      compile: progress.compile,
-      testcaseResult: progress.testcaseResult,
-      samples: progress.samples && progress.samples.map(sample => sample.testcaseHash),
-      subtasks:
-        progress.subtasks &&
-        progress.subtasks.map(subtask => ({
-          score: subtask.score,
-          fullScore: subtask.fullScore,
-          testcases: subtask.testcases.map(testcase => testcase.testcaseHash)
-        }))
-    };
+    submissionDetail.result = progress;
 
     submission.taskId = null;
     submission.status = progress.status;
@@ -481,7 +469,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
 
     const timeAndMemory = this.problemTypeFactoryService
       .type(problem.type)
-      .getTimeAndMemoryUsedFromSubmissionResult(submissionDetail.result);
+      .getTimeAndMemoryUsedFromFinishedSubmissionProgress(submissionDetail.result);
     submission.timeUsed = timeAndMemory.timeUsed;
     submission.memoryUsed = timeAndMemory.memoryUsed;
 

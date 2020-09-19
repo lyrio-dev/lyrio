@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { ProblemType } from "@/problem/problem.entity";
 import { SubmissionContent } from "@/submission/submission-content.interface";
-import { SubmissionTestcaseResult } from "@/submission/submission-result.interface";
+import { SubmissionTestcaseResult } from "@/submission/submission-progress.interface";
 import { ProblemJudgeInfo } from "@/problem/problem-judge-info.interface";
 
 import { ProblemTypeServiceInterface } from "./problem-type-service.interface";

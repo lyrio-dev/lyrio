@@ -1,6 +1,6 @@
 import { Entity, PrimaryColumn, OneToOne, Column, JoinColumn, Index } from "typeorm";
 
-import { SubmissionResult } from "./submission-result.interface";
+import { SubmissionProgress } from "./submission-progress.interface";
 import { SubmissionEntity } from "./submission.entity";
 
 @Entity("submission_detail")
@@ -20,5 +20,5 @@ export class SubmissionDetailEntity {
   fileUuid: string;
 
   @Column({ type: "json", nullable: true })
-  result: SubmissionResult;
+  result: SubmissionProgress;
 }

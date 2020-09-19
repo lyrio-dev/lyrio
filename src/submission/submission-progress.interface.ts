@@ -1,14 +1,15 @@
 import { JudgeTaskProgress } from "@/judge/judge-task-progress.interface";
 
-import { SubmissionTestcaseResult } from "./submission-result.interface";
 import { SubmissionStatus } from "./submission-status.enum";
 
 export enum SubmissionProgressType {
-  Preparing,
-  Compiling,
-  Running,
-  Finished
+  Preparing = "Preparing",
+  Compiling = "Compiling",
+  Running = "Running",
+  Finished = "Finished"
 }
+
+export interface SubmissionTestcaseResult {}
 
 interface TestcaseProgressReference {
   // If !waiting && !running && !testcaseHash, it's "Skipped"

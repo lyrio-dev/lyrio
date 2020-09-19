@@ -73,7 +73,7 @@ export class SubmissionProgressService {
     );
   }
 
-  public async getSubmissionProgress(submissionId: number): Promise<SubmissionProgress> {
+  public async getPendingSubmissionProgress(submissionId: number): Promise<SubmissionProgress> {
     const str = await this.redis.get(REDIS_KEY_SUBMISSION_PROGRESS.format(submissionId));
     try {
       return JSON.parse(str);
