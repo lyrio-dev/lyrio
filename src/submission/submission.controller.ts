@@ -16,7 +16,7 @@ import { SubmissionStatus } from "./submission-status.enum";
 import { SubmissionStatisticsService } from "./submission-statistics.service";
 import { SubmissionProgressService } from "./submission-progress.service";
 import { SubmissionProgressGateway, SubmissionProgressSubscriptionType } from "./submission-progress.gateway";
-import { SubmissionService } from "./submission.service";
+import { SubmissionPermissionType, SubmissionService } from "./submission.service";
 
 import {
   SubmitRequestDto,
@@ -239,7 +239,7 @@ export class SubmissionController {
       };
 
     const problem = await this.problemService.findProblemById(submission.problemId);
-    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.VIEW)))
+    if (!(await this.submissionService.userHasPermission(currentUser, submission, SubmissionPermissionType.VIEW)))
       return {
         error: GetSubmissionDetailResponseError.PERMISSION_DENIED
       };
@@ -252,12 +252,6 @@ export class SubmissionController {
     const progress = !pending
       ? submissionDetail.result
       : await this.submissionProgressService.getPendingSubmissionProgress(submission.id);
-
-    const hasPermission = await this.problemService.userHasPermission(
-      currentUser,
-      problem,
-      ProblemPermissionType.MODIFY
-    );
 
     return {
       meta: {
@@ -282,10 +276,26 @@ export class SubmissionController {
             type: SubmissionProgressSubscriptionType.Detail,
             submissionIds: [submission.id]
           }),
-      permissionRejudge: hasPermission,
-      permissionCancel: hasPermission || (currentUser && submission.submitterId === currentUser.id),
-      permissionSetPublic: hasPermission,
-      permissionDelete: hasPermission
+      permissionRejudge: await this.submissionService.userHasPermission(
+        currentUser,
+        submission,
+        SubmissionPermissionType.REJUDGE
+      ),
+      permissionCancel: await this.submissionService.userHasPermission(
+        currentUser,
+        submission,
+        SubmissionPermissionType.CANCEL
+      ),
+      permissionSetPublic: await this.submissionService.userHasPermission(
+        currentUser,
+        submission,
+        SubmissionPermissionType.MANAGE_PUBLICNESS
+      ),
+      permissionDelete: await this.submissionService.userHasPermission(
+        currentUser,
+        submission,
+        SubmissionPermissionType.DELETE
+      )
     };
   }
 
@@ -304,8 +314,7 @@ export class SubmissionController {
         error: DownloadSubmissionFileResponseError.NO_SUCH_SUBMISSION
       };
 
-    const problem = await this.problemService.findProblemById(submission.problemId);
-    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.VIEW)))
+    if (!(await this.submissionService.userHasPermission(currentUser, submission, SubmissionPermissionType.VIEW)))
       return {
         error: DownloadSubmissionFileResponseError.PERMISSION_DENIED
       };
@@ -408,9 +417,7 @@ export class SubmissionController {
         error: RejudgeSubmissionResponseError.NO_SUCH_SUBMISSION
       };
 
-    const problem = await this.problemService.findProblemById(submission.problemId);
-
-    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.MODIFY)))
+    if (!(await this.submissionService.userHasPermission(currentUser, submission, SubmissionPermissionType.REJUDGE)))
       return {
         error: RejudgeSubmissionResponseError.PERMISSION_DENIED
       };
@@ -451,14 +458,10 @@ export class SubmissionController {
         error: CancelSubmissionResponseError.NO_SUCH_SUBMISSION
       };
 
-    if (submission.submitterId !== currentUser.id) {
-      const problem = await this.problemService.findProblemById(submission.problemId);
-
-      if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.MODIFY)))
-        return {
-          error: CancelSubmissionResponseError.PERMISSION_DENIED
-        };
-    }
+    if (!(await this.submissionService.userHasPermission(currentUser, submission, SubmissionPermissionType.CANCEL)))
+      return {
+        error: CancelSubmissionResponseError.PERMISSION_DENIED
+      };
 
     const { taskId } = submission;
 
@@ -491,9 +494,13 @@ export class SubmissionController {
         error: SetSubmissionPublicResponseError.NO_SUCH_SUBMISSION
       };
 
-    const problem = await this.problemService.findProblemById(submission.problemId);
-
-    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.MODIFY)))
+    if (
+      !(await this.submissionService.userHasPermission(
+        currentUser,
+        submission,
+        SubmissionPermissionType.MANAGE_PUBLICNESS
+      ))
+    )
       return {
         error: SetSubmissionPublicResponseError.PERMISSION_DENIED
       };
@@ -530,9 +537,7 @@ export class SubmissionController {
         error: DeleteSubmissionResponseError.NO_SUCH_SUBMISSION
       };
 
-    const problem = await this.problemService.findProblemById(submission.problemId);
-
-    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.MODIFY)))
+    if (!(await this.submissionService.userHasPermission(currentUser, submission, SubmissionPermissionType.DELETE)))
       return {
         error: DeleteSubmissionResponseError.PERMISSION_DENIED
       };

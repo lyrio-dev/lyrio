@@ -6,7 +6,7 @@ import { ValidationError } from "class-validator";
 import { v4 as uuid } from "uuid";
 import moment from "moment-timezone";
 
-import { ProblemService } from "@/problem/problem.service";
+import { ProblemPermissionType, ProblemService } from "@/problem/problem.service";
 import { UserEntity } from "@/user/user.entity";
 import { ProblemEntity, ProblemType } from "@/problem/problem.entity";
 import {
@@ -25,12 +25,10 @@ import { RedisService } from "@/redis/redis.service";
 import { JudgeGateway } from "@/judge/judge.gateway";
 import { ProblemTypeFactoryService } from "@/problem-type/problem-type-factory.service";
 import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
-
 import { FileService } from "@/file/file.service";
-
 import { ConfigService } from "@/config/config.service";
-
 import { FileEntity } from "@/file/file.entity";
+import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.service";
 
 import { SubmissionProgress, SubmissionProgressType } from "./submission-progress.interface";
 import { SubmissionContent } from "./submission-content.interface";
@@ -43,6 +41,14 @@ import { SubmissionStatus } from "./submission-status.enum";
 import { FileUploadInfoDto, SignedFileUploadRequestDto } from "@/file/dto";
 
 import { SubmissionBasicMetaDto } from "./dto";
+
+export enum SubmissionPermissionType {
+  VIEW = "VIEW",
+  CANCEL = "CANCEL",
+  REJUDGE = "REJUDGE",
+  MANAGE_PUBLICNESS = "MANAGE_PUBLICNESS",
+  DELETE = "DELETE"
+}
 
 interface SubmissionTaskExtraInfo extends JudgeTaskExtraInfo {
   problemType: ProblemType;
@@ -76,7 +82,8 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     private readonly judgeGateway: JudgeGateway,
     private readonly auditService: AuditService,
     private readonly fileService: FileService,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
+    private readonly userPrivilegeService: UserPrivilegeService
   ) {
     this.judgeQueueService.registerTaskType(JudgeTaskType.Submission, this);
 
@@ -104,6 +111,55 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     const records = await this.submissionRepository.findByIds(uniqueIds);
     const map = Object.fromEntries(records.map(record => [record.id, record]));
     return submissionIds.map(submissionId => map[submissionId]);
+  }
+
+  async userHasPermission(
+    user: UserEntity,
+    submission: SubmissionEntity,
+    type: SubmissionPermissionType
+  ): Promise<boolean> {
+    switch (type) {
+      // Everyone can read a public submission
+      // Submitter and those who has the MODIFY permission of the submission's problem can VIEW a non-public submission
+      case SubmissionPermissionType.VIEW:
+        if (submission.isPublic) return true;
+        if (!user) return false;
+        if (user.id === submission.submitterId) return true;
+        return await this.problemService.userHasPermission(
+          user,
+          await this.problemService.findProblemById(submission.problemId),
+          ProblemPermissionType.MODIFY
+        );
+
+      // Submitter and those who has the MODIFY permission of the submission's problem can CANCEL a submission
+      case SubmissionPermissionType.CANCEL:
+        if (!user) return false;
+        if (user.id === submission.submitterId) return true;
+        return await this.problemService.userHasPermission(
+          user,
+          await this.problemService.findProblemById(submission.problemId),
+          ProblemPermissionType.MODIFY
+        );
+
+      // Those who has the MODIFY permission of the submission's problem can REJUDGE a submission
+      case SubmissionPermissionType.REJUDGE:
+        return await this.problemService.userHasPermission(
+          user,
+          await this.problemService.findProblemById(submission.problemId),
+          ProblemPermissionType.MODIFY
+        );
+
+      // Admins can manage a submission's publicness or delete a submission
+      case SubmissionPermissionType.MANAGE_PUBLICNESS:
+      case SubmissionPermissionType.DELETE:
+        if (!user) return false;
+        else if (user.isAdmin) return true;
+        else if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM)) return true;
+        else return false;
+
+      default:
+        return false;
+    }
   }
 
   public async querySubmissions(
