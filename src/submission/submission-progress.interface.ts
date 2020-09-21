@@ -27,14 +27,14 @@ export interface SubmissionProgress<TestcaseResult extends SubmissionTestcaseRes
   score?: number;
 
   compile?: {
+    compileTaskHash: string;
     success: boolean;
     message: string;
   };
 
   systemMessage?: string;
 
-  // testcaseHash = hash(IF, OF, TL, ML) for traditional
-  //                hash(ID, OD, TL, ML) for samples
+  // testcaseHash
   // ->
   // result
   testcaseResult?: Record<string, TestcaseResult>;
