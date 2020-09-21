@@ -310,7 +310,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
       const submissionDetail = new SubmissionDetailEntity();
       submissionDetail.submissionId = submission.id;
       submissionDetail.content = content;
-      submissionDetail.fileUuid = uploadInfo.uuid;
+      submissionDetail.fileUuid = uploadInfo?.uuid;
       submissionDetail.result = null;
       await transactionalEntityManager.save(submissionDetail);
 
