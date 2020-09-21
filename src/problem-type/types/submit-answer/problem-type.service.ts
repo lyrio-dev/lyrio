@@ -71,8 +71,8 @@ export class ProblemTypeSubmitAnswerService
     });
 
     validateChecker(judgeInfo, testData, {
-      validateLanguageOptions: (language, languageOptions) =>
-        this.codeLanguageService.validateLanguageOptions(language, languageOptions).length === 0,
+      validateCompileAndRunOptions: (language, compileAndRunOptions) =>
+        this.codeLanguageService.validateCompileAndRunOptions(language, compileAndRunOptions).length === 0,
       hardTimeLimit: ignoreLimits ? null : this.configService.config.resourceLimit.problemTimeLimit,
       hardMemoryLimit: ignoreLimits ? null : this.configService.config.resourceLimit.problemMemoryLimit
     });

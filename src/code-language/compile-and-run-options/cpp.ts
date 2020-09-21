@@ -1,6 +1,6 @@
 import { IsIn } from "class-validator";
 
-export default class LanguageOptionsCpp {
+export default class CompileAndRunOptionsCpp {
   @IsIn(["g++", "clang++"])
   compiler: string;
 

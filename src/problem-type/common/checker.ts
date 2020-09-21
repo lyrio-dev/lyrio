@@ -25,7 +25,7 @@ interface CheckerTypeCustom {
   type: "custom";
   interface: string;
   language: CodeLanguage;
-  languageOptions: unknown;
+  compileAndRunOptions: unknown;
   filename: string;
   timeLimit?: number;
   memoryLimit?: number;
@@ -54,7 +54,7 @@ interface JudgeInfoWithChecker {
 }
 
 interface ValidateCheckerOptions {
-  validateLanguageOptions: (codeLanguage: CodeLanguage, langaugeOptions: unknown) => boolean;
+  validateCompileAndRunOptions: (codeLanguage: CodeLanguage, langaugeOptions: unknown) => boolean;
   hardTimeLimit?: number;
   hardMemoryLimit?: number;
 }
@@ -81,8 +81,8 @@ export function validateChecker(
         throw ["INVALID_CHECKER_INTERFACE"];
       if (!Object.values(CodeLanguage).includes(checker.language)) throw ["INVALID_CHECKER_LANGUAGE"];
       if (!testData.some(file => file.filename === checker.filename)) throw ["NO_SUCH_CHECKER_FILE", checker.filename];
-      if (!options.validateLanguageOptions(checker.language, checker.languageOptions))
-        throw ["INVALID_CHECKER_LANGUAGE_OPTIONS"];
+      if (!options.validateCompileAndRunOptions(checker.language, checker.compileAndRunOptions))
+        throw ["INVALID_CHECKER_COMPILE_AND_RUN_OPTIONS"];
 
       const timeLimit = judgeInfo.checker.timeLimit == null ? judgeInfo.timeLimit : judgeInfo.checker.timeLimit;
       if (!Number.isSafeInteger(timeLimit) || timeLimit <= 0) throw [`INVALID_TIME_LIMIT_CHECKER`];

@@ -13,7 +13,7 @@ export class SubmissionContentInteraction implements SubmissionContent {
   code: string;
 
   @IsObject()
-  languageOptions: unknown;
+  compileAndRunOptions: unknown;
 
   @IsBoolean()
   @IsOptional()

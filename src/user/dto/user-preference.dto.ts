@@ -26,5 +26,5 @@ export class UserPreferenceDto {
 
   @IsObject()
   @IsOptional()
-  defaultCodeLanguageOptions?: Record<string, string>;
+  defaultCompileAndRunOptions?: Record<string, string>;
 }

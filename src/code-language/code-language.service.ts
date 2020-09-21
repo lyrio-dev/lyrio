@@ -5,15 +5,15 @@ import { plainToClass } from "class-transformer";
 
 import { CodeLanguage } from "./code-language.type";
 
-import LanguageOptionsCpp from "./language-options/cpp";
+import CompileAndRunOptionsCpp from "./compile-and-run-options/cpp";
 
-const LanguageOptionsClasses = {
-  [CodeLanguage.CPP]: LanguageOptionsCpp
+const CompileAndRunOptionsClasses = {
+  [CodeLanguage.CPP]: CompileAndRunOptionsCpp
 };
 
 @Injectable()
 export class CodeLanguageService {
-  validateLanguageOptions(language: CodeLanguage, languageOptions: unknown): ValidationError[] {
-    return validateSync(plainToClass(LanguageOptionsClasses[language], languageOptions));
+  validateCompileAndRunOptions(language: CodeLanguage, compileAndRunOptions: unknown): ValidationError[] {
+    return validateSync(plainToClass(CompileAndRunOptionsClasses[language], compileAndRunOptions));
   }
 }

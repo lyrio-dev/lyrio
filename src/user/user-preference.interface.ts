@@ -5,5 +5,5 @@ export interface UserPreference {
   contentLocale?: Locale;
   doNotFormatCodeByDefault?: boolean;
   defaultCodeLanguage?: string;
-  defaultCodeLanguageOptions?: Record<string, string>;
+  defaultCompileAndRunOptions?: Record<string, string>;
 }

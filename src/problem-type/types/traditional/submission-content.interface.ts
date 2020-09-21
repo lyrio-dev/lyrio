@@ -13,7 +13,7 @@ export class SubmissionContentTraditional implements SubmissionContent {
   code: string;
 
   @IsObject()
-  languageOptions: unknown;
+  compileAndRunOptions: unknown;
 
   @IsBoolean()
   @IsOptional()

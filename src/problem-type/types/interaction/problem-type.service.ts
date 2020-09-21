@@ -88,8 +88,11 @@ export class ProblemTypeInteractionService
       )
         throw ["INVALID_INTERACTOR_SHARED_MEMORY_SIZE"];
     }
-    if (this.codeLanguageService.validateLanguageOptions(interactor.language, interactor.languageOptions).length > 0)
-      throw ["INVALID_INTERACTOR_LANGUAGE_OPTIONS"];
+    if (
+      this.codeLanguageService.validateCompileAndRunOptions(interactor.language, interactor.compileAndRunOptions)
+        .length > 0
+    )
+      throw ["INVALID_INTERACTOR_COMPILE_AND_RUN_OPTIONS"];
     if (!Object.values(CodeLanguage).includes(interactor.language)) throw ["INVALID_INTERACTOR_LANGUAGE"];
     if (!testData.some(file => file.filename === interactor.filename))
       throw ["NO_SUCH_INTERACTOR_FILE", interactor.filename];
@@ -111,9 +114,9 @@ export class ProblemTypeInteractionService
   async validateSubmissionContent(submissionContent: SubmissionContentInteraction): Promise<ValidationError[]> {
     const errors = await validate(plainToClass(SubmissionContentInteraction, submissionContent));
     if (errors.length > 0) return errors;
-    return this.codeLanguageService.validateLanguageOptions(
+    return this.codeLanguageService.validateCompileAndRunOptions(
       submissionContent.language,
-      submissionContent.languageOptions
+      submissionContent.compileAndRunOptions
     );
   }
 

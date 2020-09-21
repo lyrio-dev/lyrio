@@ -77,8 +77,8 @@ export class ProblemTypeTraditionalService
     });
 
     validateChecker(judgeInfo, testData, {
-      validateLanguageOptions: (language, languageOptions) =>
-        this.codeLanguageService.validateLanguageOptions(language, languageOptions).length === 0,
+      validateCompileAndRunOptions: (language, compileAndRunOptions) =>
+        this.codeLanguageService.validateCompileAndRunOptions(language, compileAndRunOptions).length === 0,
       hardTimeLimit: ignoreLimits ? null : this.configService.config.resourceLimit.problemTimeLimit,
       hardMemoryLimit: ignoreLimits ? null : this.configService.config.resourceLimit.problemMemoryLimit
     });
@@ -89,9 +89,9 @@ export class ProblemTypeTraditionalService
   async validateSubmissionContent(submissionContent: SubmissionContentTraditional): Promise<ValidationError[]> {
     const errors = await validate(plainToClass(SubmissionContentTraditional, submissionContent));
     if (errors.length > 0) return errors;
-    return this.codeLanguageService.validateLanguageOptions(
+    return this.codeLanguageService.validateCompileAndRunOptions(
       submissionContent.language,
-      submissionContent.languageOptions
+      submissionContent.compileAndRunOptions
     );
   }
 

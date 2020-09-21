@@ -62,7 +62,7 @@ export interface ProblemJudgeInfoInteraction extends ProblemJudgeInfo {
     interface: "stdio" | "shm";
     sharedMemorySize?: number;
     language: CodeLanguage;
-    languageOptions: unknown;
+    compileAndRunOptions: unknown;
     filename: string;
     timeLimit?: number;
     memoryLimit?: number;
