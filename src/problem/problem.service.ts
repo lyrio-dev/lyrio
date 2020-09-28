@@ -8,7 +8,7 @@ import { Redis } from "ioredis";
 import { UserEntity } from "@/user/user.entity";
 import { GroupEntity } from "@/group/group.entity";
 import { LocalizedContentService } from "@/localized-content/localized-content.service";
-import { LocalizedContentType } from "@/localized-content/localized-content.entity";
+import { LocalizedContentEntity, LocalizedContentType } from "@/localized-content/localized-content.entity";
 import { Locale } from "@/common/locale.type";
 import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.service";
 import { PermissionService, PermissionObjectType } from "@/permission/permission.service";
@@ -20,8 +20,8 @@ import { RedisService } from "@/redis/redis.service";
 import { SubmissionService } from "@/submission/submission.service";
 import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
 import { ProblemTypeFactoryService } from "@/problem-type/problem-type-factory.service";
-
 import { FileEntity } from "@/file/file.entity";
+import { escapeLike } from "@/database/database.utils";
 
 import { ProblemJudgeInfo } from "./problem-judge-info.interface";
 import { ProblemSampleData } from "./problem-sample-data.interface";
@@ -234,6 +234,7 @@ export class ProblemService {
   async queryProblemsAndCount(
     user: UserEntity,
     hasPrivilege: boolean,
+    keyword: string,
     tagIds: number[],
     ownerId: number,
     nonpublic: boolean,
@@ -241,12 +242,28 @@ export class ProblemService {
     takeCount: number
   ): Promise<[problems: ProblemEntity[], count: number]> {
     const queryBuilder = this.problemRepository.createQueryBuilder("problem").select("problem.id", "id");
+    let groupByAdded = false;
+
     if (tagIds && tagIds.length > 0) {
       queryBuilder
         .innerJoin(ProblemTagMapEntity, "map", "problem.id = map.problemId")
         .andWhere("map.problemTagId IN (:...tagIds)", { tagIds })
         .groupBy("problem.id");
+      groupByAdded = true;
       if (tagIds.length > 1) queryBuilder.having("COUNT(DISTINCT map.problemTagId) = :count", { count: tagIds.length });
+    }
+
+    if (keyword) {
+      queryBuilder
+        .innerJoin(
+          LocalizedContentEntity,
+          "localizedContent",
+          "localizedContent.type = :type AND problem.id = localizedContent.objectId",
+          { type: LocalizedContentType.PROBLEM_TITLE }
+        )
+        .andWhere("localizedContent.data LIKE :like", { like: `%${escapeLike(keyword)}%` });
+
+      if (!groupByAdded) queryBuilder.groupBy("problem.id");
     }
 
     if (!hasPrivilege && !(user && ownerId === user.id)) {
@@ -280,7 +297,7 @@ export class ProblemService {
       .orderBy("problem.displayId IS NOT NULL", "DESC")
       .addOrderBy("problem.displayId", "ASC")
       .addOrderBy("problem.id", "ASC");
-    const result = await queryBuilder.skip(skipCount).take(takeCount).getRawMany();
+    const result = await queryBuilder.limit(takeCount).offset(skipCount).getRawMany();
     return [await this.findProblemsByExistingIds(result.map(row => row.id)), count];
   }
 

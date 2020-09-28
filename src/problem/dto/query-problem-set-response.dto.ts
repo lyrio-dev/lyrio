@@ -23,10 +23,10 @@ export class QueryProblemSetResponseItemDto {
   title: string;
 
   @ApiProperty({ type: [LocalizedProblemTagDto] })
-  tags: LocalizedProblemTagDto[];
+  tags?: LocalizedProblemTagDto[];
 
   @ApiProperty({ enum: Locale })
-  resultLocale: Locale;
+  resultLocale?: Locale;
 
   @ApiProperty()
   submission?: SubmissionBasicMetaDto;

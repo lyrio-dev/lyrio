@@ -9,7 +9,6 @@ export class QueryProblemSetRequestDto {
   @IsEnum(Locale)
   locale: Locale;
 
-  // not implemented
   @ApiProperty()
   @Length(0, 100)
   @IsOptional()
@@ -32,6 +31,11 @@ export class QueryProblemSetRequestDto {
   @IsBoolean()
   @IsOptional()
   nonpublic?: boolean;
+
+  @ApiProperty({
+    description: "Pass true to return problem title only. For a preview in search bar."
+  })
+  titleOnly?: boolean;
 
   @ApiProperty()
   @IsInt()

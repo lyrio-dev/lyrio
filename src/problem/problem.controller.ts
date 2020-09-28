@@ -126,6 +126,7 @@ export class ProblemController {
     const [problems, count] = await this.problemService.queryProblemsAndCount(
       currentUser,
       hasPrivilege,
+      request.keyword,
       filterTags ? filterTags.map(tag => tag.id) : [],
       filterOwner ? filterOwner.id : null,
       request.nonpublic,
@@ -134,8 +135,11 @@ export class ProblemController {
     );
 
     const acceptedSubmissions =
-      currentUser && (await this.submissionService.getUserLatestSubmissionByProblems(currentUser, problems, true));
+      !request.titleOnly &&
+      currentUser &&
+      (await this.submissionService.getUserLatestSubmissionByProblems(currentUser, problems, true));
     const nonAcceptedSubmissions =
+      !request.titleOnly &&
       currentUser &&
       (await this.submissionService.getUserLatestSubmissionByProblems(
         currentUser,
@@ -148,31 +152,37 @@ export class ProblemController {
         problems.map(async problem => {
           const titleLocale = problem.locales.includes(request.locale) ? request.locale : problem.locales[0];
           const title = await this.problemService.getProblemLocalizedTitle(problem, titleLocale);
-          const problemTags = await this.problemService.getProblemTagsByProblem(problem);
+          const problemTags = !request.titleOnly && (await this.problemService.getProblemTagsByProblem(problem));
           return {
             meta: await this.problemService.getProblemMeta(problem, true),
             title,
-            tags: await Promise.all(
-              problemTags.map(problemTag => this.problemService.getProblemTagLocalized(problemTag, request.locale))
-            ),
+            tags:
+              !request.titleOnly &&
+              (await Promise.all(
+                problemTags.map(problemTag => this.problemService.getProblemTagLocalized(problemTag, request.locale))
+              )),
             resultLocale: titleLocale,
-            submission: currentUser && (acceptedSubmissions.get(problem.id) || nonAcceptedSubmissions.get(problem.id))
+            submission:
+              !request.titleOnly &&
+              currentUser &&
+              (acceptedSubmissions.get(problem.id) || nonAcceptedSubmissions.get(problem.id))
           };
         })
       ),
-      permissions: {
+      permissions: !request.titleOnly && {
         createProblem: await this.problemService.userHasCreateProblemPermission(currentUser),
         manageTags: hasPrivilege,
         filterByOwner: hasPrivilege,
         filterNonpublic: hasPrivilege
       },
       filterTags:
+        !request.titleOnly &&
         filterTags &&
         filterTags.length &&
         (await Promise.all(
           filterTags.map(problemTag => this.problemService.getProblemTagLocalized(problemTag, request.locale))
         )),
-      filterOwner: filterOwner && (await this.userService.getUserMeta(filterOwner, currentUser))
+      filterOwner: !request.titleOnly && filterOwner && (await this.userService.getUserMeta(filterOwner, currentUser))
     };
   }
 
