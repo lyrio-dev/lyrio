@@ -16,6 +16,8 @@ import { Type } from "class-transformer";
 
 import { IsPortNumber } from "@/common/validators";
 
+import { ConfigRelation, ConfigRelationType } from "./config-relation.decorator";
+
 class ServerConfig {
   @IsIP()
   readonly hostname: string;
@@ -115,6 +117,7 @@ class SecurityConfig {
   readonly crossOrigin: SecurityConfigCrossOrigin;
 }
 
+// These config items will be sent to client
 export class PreferenceConfigSecurity {
   @IsBoolean()
   @ApiProperty()
@@ -141,7 +144,46 @@ export class PreferenceConfigSecurity {
   readonly allowOwnerDeleteProblem: boolean;
 }
 
-// This config items will be sent to client
+// These config items will be sent to client
+class PreferenceConfigPagination {
+  @IsInt()
+  @Min(1)
+  @ConfigRelation("queryLimit.problemSet", ConfigRelationType.LessThanOrEqual)
+  @ApiProperty()
+  readonly problemSet: number;
+
+  @IsInt()
+  @Min(1)
+  @ConfigRelation("queryLimit.problemSet", ConfigRelationType.LessThanOrEqual)
+  @ApiProperty()
+  readonly searchProblemsPreview: number;
+
+  @IsInt()
+  @Min(1)
+  @ConfigRelation("queryLimit.submissions", ConfigRelationType.LessThanOrEqual)
+  @ApiProperty()
+  readonly submissions: number;
+
+  @IsInt()
+  @Min(1)
+  @ConfigRelation("queryLimit.submissionStatistics", ConfigRelationType.LessThanOrEqual)
+  @ApiProperty()
+  readonly submissionStatistics: number;
+
+  @IsInt()
+  @Min(1)
+  @ConfigRelation("queryLimit.userList", ConfigRelationType.LessThanOrEqual)
+  @ApiProperty()
+  readonly userList: number;
+
+  @IsInt()
+  @Min(1)
+  @ConfigRelation("queryLimit.userAuditLogs", ConfigRelationType.LessThanOrEqual)
+  @ApiProperty()
+  readonly userAuditLogs: number;
+}
+
+// These config items will be sent to client
 export class PreferenceConfig {
   @IsString()
   @ApiProperty()
@@ -151,6 +193,11 @@ export class PreferenceConfig {
   @Type(() => PreferenceConfigSecurity)
   @ApiProperty()
   readonly security: PreferenceConfigSecurity;
+
+  @ValidateNested()
+  @Type(() => PreferenceConfigPagination)
+  @ApiProperty()
+  readonly pagination: PreferenceConfigPagination;
 }
 
 class ResourceLimitConfig {
@@ -189,27 +236,27 @@ class ResourceLimitConfig {
 
 class QueryLimitConfig {
   @IsInt()
-  @Min(0)
+  @Min(1)
   readonly problemSet: number;
 
   @IsInt()
-  @Min(0)
+  @Min(1)
   readonly submissions: number;
 
   @IsInt()
-  @Min(0)
+  @Min(1)
   readonly submissionStatistics: number;
 
   @IsInt()
-  @Min(0)
+  @Min(1)
   readonly searchUser: number;
 
   @IsInt()
-  @Min(0)
+  @Min(1)
   readonly searchGroup: number;
 
   @IsInt()
-  @Min(0)
+  @Min(1)
   readonly userList: number;
 
   @IsInt()

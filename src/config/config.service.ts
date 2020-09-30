@@ -5,6 +5,7 @@ import { plainToClass } from "class-transformer";
 import yaml from "js-yaml";
 
 import { AppConfig } from "./config.schema";
+import { checkConfigRelation } from "./config-relation.decorator";
 
 export class ConfigService {
   public readonly config: AppConfig;
@@ -30,6 +31,9 @@ export class ConfigService {
     if (errors.length > 0) {
       throw new Error(`Config validation error: ${JSON.stringify(errors, null, 2)}`);
     }
+
+    checkConfigRelation((appConfig as unknown) as Record<string, unknown>);
+
     return appConfig;
   }
 }

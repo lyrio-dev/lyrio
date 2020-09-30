@@ -38,6 +38,13 @@ preference:
     allowNonAdminEditPublicProblem: true
     allowOwnerManageProblemPermission: false
     allowOwnerDeleteProblem: true
+  pagination:
+    problemSet: 50
+    searchProblemsPreview: 7
+    submissions: 10
+    submissionStatistics: 10
+    userList: 30
+    userAuditLogs: 10
 resourceLimit:
   problemTestdataFiles: 40
   problemTestdataSize: 134217728
