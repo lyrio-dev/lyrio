@@ -161,8 +161,8 @@ export class SubmissionController {
       request.minId,
       request.maxId,
       !(hasManageProblemPrivilege || hasViewProblemPermission || isSubmissionsOwned),
-      request.takeCount > this.configService.config.queryLimit.submissionsTake
-        ? this.configService.config.queryLimit.submissionsTake
+      request.takeCount > this.configService.config.queryLimit.submissions
+        ? this.configService.config.queryLimit.submissions
         : request.takeCount
     );
 
@@ -339,7 +339,7 @@ export class SubmissionController {
     @CurrentUser() currentUser: UserEntity,
     @Body() request: QuerySubmissionStatisticsRequestDto
   ): Promise<QuerySubmissionStatisticsResponseDto> {
-    if (request.takeCount > this.configService.config.queryLimit.submissionStatisticsTake)
+    if (request.takeCount > this.configService.config.queryLimit.submissionStatistics)
       return {
         error: QuerySubmissionStatisticsResponseError.TAKE_TOO_MANY
       };

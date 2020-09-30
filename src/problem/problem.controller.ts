@@ -102,7 +102,7 @@ export class ProblemController {
     @CurrentUser() currentUser: UserEntity,
     @Body() request: QueryProblemSetRequestDto
   ): Promise<QueryProblemSetResponseDto> {
-    if (request.takeCount > this.configService.config.queryLimit.problemSetProblemsTake)
+    if (request.takeCount > this.configService.config.queryLimit.problemSet)
       return {
         error: QueryProblemSetErrorDto.TAKE_TOO_MANY
       };

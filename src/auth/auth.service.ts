@@ -49,7 +49,7 @@ export class AuthService {
     // There's a race condition on user inserting. If we do checking before inserting,
     // inserting will still fail if another with same username is inserted after we check
 
-    if (this.configService.config.preference.requireEmailVerification) {
+    if (this.configService.config.preference.security.requireEmailVerification) {
       if (!(await this.authEmailVerifactionCodeService.verify(email, emailVerificationCode)))
         return [RegisterResponseError.INVALID_EMAIL_VERIFICATION_CODE, null];
     }
@@ -91,7 +91,7 @@ export class AuthService {
         await transactionalEntityManager.save(userPreference);
       });
 
-      if (this.configService.config.preference.requireEmailVerification) {
+      if (this.configService.config.preference.security.requireEmailVerification) {
         await this.authEmailVerifactionCodeService.revoke(email, emailVerificationCode);
       }
 

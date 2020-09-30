@@ -80,7 +80,7 @@ export class UserController {
     const users = await this.userService.searchUser(
       request.query,
       request.wildcard,
-      this.configService.config.queryLimit.searchUserTake
+      this.configService.config.queryLimit.searchUser
     );
 
     return {
@@ -177,7 +177,7 @@ export class UserController {
       };
 
     if (request.username) {
-      if (!this.configService.config.preference.allowUserChangeUsername) {
+      if (!this.configService.config.preference.security.allowUserChangeUsername) {
         // Normal users are not allowed to change their usernames
         if (!hasPrivilege)
           return {
@@ -252,7 +252,7 @@ export class UserController {
     @CurrentUser() currentUser: UserEntity,
     @Body() request: GetUserListRequestDto
   ): Promise<GetUserListResponseDto> {
-    if (request.takeCount > this.configService.config.queryLimit.userListUsersTake)
+    if (request.takeCount > this.configService.config.queryLimit.userList)
       return {
         error: GetUserListResponseError.TAKE_TOO_MANY
       };
@@ -463,7 +463,7 @@ export class UserController {
     @CurrentUser() currentUser: UserEntity,
     @Body() request: QueryAuditLogsRequestDto
   ): Promise<QueryAuditLogsResponseDto> {
-    if (request.takeCount > this.configService.config.queryLimit.userAuditLogsTake)
+    if (request.takeCount > this.configService.config.queryLimit.userAuditLogs)
       return {
         error: QueryAuditLogsResponseError.TAKE_TOO_MANY
       };

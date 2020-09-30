@@ -31,12 +31,13 @@ security:
   maintainceKey: also don't leak this
 preference:
   siteName: SYZOJ NG
-  requireEmailVerification: true
-  allowUserChangeUsername: true
-  allowEveryoneCreateProblem: true
-  allowNonAdminEditPublicProblem: true
-  allowOwnerManageProblemPermission: false
-  allowOwnerDeleteProblem: true
+  security:
+    requireEmailVerification: true
+    allowUserChangeUsername: true
+    allowEveryoneCreateProblem: true
+    allowNonAdminEditPublicProblem: true
+    allowOwnerManageProblemPermission: false
+    allowOwnerDeleteProblem: true
 resourceLimit:
   problemTestdataFiles: 40
   problemTestdataSize: 134217728
@@ -47,12 +48,12 @@ resourceLimit:
   problemMemoryLimit: 512
   submissionFileSize: 10485760
 queryLimit:
-  problemSetProblemsTake: 100
-  submissionsTake: 10
-  submissionStatisticsTake: 10
-  searchUserTake: 10
-  searchGroupTake: 10
-  userListUsersTake: 100
-  userAuditLogsTake: 20
+  problemSet: 100
+  submissions: 10
+  submissionStatistics: 10
+  searchUser: 10
+  searchGroup: 10
+  userList: 100
+  userAuditLogs: 20
 vendor:
   ip2region: /opt/ip2region/ip2region.db

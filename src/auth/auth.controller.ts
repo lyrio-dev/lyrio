@@ -204,7 +204,7 @@ export class AuthController {
       await this.auditService.log(user.id, "auth.request_reset_password");
     }
 
-    if (!this.configService.config.preference.requireEmailVerification)
+    if (!this.configService.config.preference.security.requireEmailVerification)
       return {
         error: SendEmailVerificationCodeResponseError.FAILED_TO_SEND,
         errorMessage: "Email verification code disabled."

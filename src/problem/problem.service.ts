@@ -165,7 +165,7 @@ export class ProblemService {
       // Owner, admins and those who has write permission can modify a problem
       case ProblemPermissionType.MODIFY:
         if (!user) return false;
-        if (user.id === problem.ownerId && this.configService.config.preference.allowNonAdminEditPublicProblem)
+        if (user.id === problem.ownerId && this.configService.config.preference.security.allowNonAdminEditPublicProblem)
           return true;
         if (user.isAdmin) return true;
         if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM)) return true;
@@ -175,7 +175,7 @@ export class ProblemService {
             problem.id,
             PermissionObjectType.PROBLEM,
             ProblemPermissionLevel.WRITE
-          )) && this.configService.config.preference.allowNonAdminEditPublicProblem
+          )) && this.configService.config.preference.security.allowNonAdminEditPublicProblem
         );
 
       // Admins can manage a problem's permission
@@ -184,8 +184,8 @@ export class ProblemService {
         if (!user) return false;
         if (
           user.id === problem.ownerId &&
-          this.configService.config.preference.allowOwnerManageProblemPermission &&
-          this.configService.config.preference.allowNonAdminEditPublicProblem
+          this.configService.config.preference.security.allowOwnerManageProblemPermission &&
+          this.configService.config.preference.security.allowNonAdminEditPublicProblem
         )
           return true;
         else if (user.isAdmin) return true;
@@ -205,8 +205,8 @@ export class ProblemService {
         if (!user) return false;
         else if (
           user.id === problem.ownerId &&
-          this.configService.config.preference.allowOwnerDeleteProblem &&
-          this.configService.config.preference.allowNonAdminEditPublicProblem
+          this.configService.config.preference.security.allowOwnerDeleteProblem &&
+          this.configService.config.preference.security.allowNonAdminEditPublicProblem
         )
           return true;
         else if (user.isAdmin) return true;
@@ -219,7 +219,7 @@ export class ProblemService {
 
   async userHasCreateProblemPermission(user: UserEntity): Promise<boolean> {
     if (!user) return false;
-    if (this.configService.config.preference.allowEveryoneCreateProblem) return true;
+    if (this.configService.config.preference.security.allowEveryoneCreateProblem) return true;
     return await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM);
   }
 

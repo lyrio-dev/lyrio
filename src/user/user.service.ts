@@ -176,7 +176,7 @@ export class UserService {
     information: UserInformationDto
   ): Promise<UpdateUserProfileResponseError> {
     const changingUsername = username != null;
-    const changingEmail = email != null && !this.configService.config.preference.requireEmailVerification;
+    const changingEmail = email != null && !this.configService.config.preference.security.requireEmailVerification;
 
     try {
       if (changingUsername) user.username = username;
@@ -216,7 +216,7 @@ export class UserService {
     email: string,
     emailVerificationCode: string
   ): Promise<UpdateUserSelfEmailResponseError> {
-    if (this.configService.config.preference.requireEmailVerification) {
+    if (this.configService.config.preference.security.requireEmailVerification) {
       if (!(await this.authEmailVerifactionCodeService.verify(email, emailVerificationCode)))
         return UpdateUserSelfEmailResponseError.INVALID_EMAIL_VERIFICATION_CODE;
     }
@@ -229,7 +229,7 @@ export class UserService {
       throw e;
     }
 
-    if (this.configService.config.preference.requireEmailVerification) {
+    if (this.configService.config.preference.security.requireEmailVerification) {
       await this.authEmailVerifactionCodeService.revoke(email, emailVerificationCode);
     }
 

@@ -28,7 +28,7 @@ class ServerConfig {
   readonly trustProxy: string;
 }
 
-class DatabaseConfig {
+class ServicesConfigDatabase {
   @IsIn(["mysql", "mariadb"])
   readonly type: "mysql" | "mariadb";
 
@@ -48,7 +48,7 @@ class DatabaseConfig {
   readonly database: string;
 }
 
-class MinioConfig {
+class ServicesConfigMinio {
   @IsString()
   readonly endPoint: string;
 
@@ -68,7 +68,7 @@ class MinioConfig {
   readonly bucket: string;
 }
 
-class MailConfig {
+class ServicesConfigMail {
   @IsEmail()
   @IsOptional()
   readonly address: string;
@@ -78,22 +78,22 @@ class MailConfig {
 
 class ServicesConfig {
   @ValidateNested()
-  @Type(() => DatabaseConfig)
-  readonly database: DatabaseConfig;
+  @Type(() => ServicesConfigDatabase)
+  readonly database: ServicesConfigDatabase;
 
   @ValidateNested()
-  @Type(() => MinioConfig)
-  readonly minio: MinioConfig;
+  @Type(() => ServicesConfigMinio)
+  readonly minio: ServicesConfigMinio;
 
   @IsString()
   readonly redis: string;
 
   @ValidateNested()
-  @Type(() => MailConfig)
-  readonly mail: MailConfig;
+  @Type(() => ServicesConfigMail)
+  readonly mail: ServicesConfigMail;
 }
 
-class CrossOriginConfig {
+class SecurityConfigCrossOrigin {
   @IsBoolean()
   readonly enabled: boolean;
 
@@ -111,16 +111,11 @@ class SecurityConfig {
   readonly maintainceKey: string;
 
   @ValidateNested()
-  @Type(() => CrossOriginConfig)
-  readonly crossOrigin: CrossOriginConfig;
+  @Type(() => SecurityConfigCrossOrigin)
+  readonly crossOrigin: SecurityConfigCrossOrigin;
 }
 
-// This config items will be sent to client
-export class PreferenceConfig {
-  @IsString()
-  @ApiProperty()
-  readonly siteName: string;
-
+export class PreferenceConfigSecurity {
   @IsBoolean()
   @ApiProperty()
   readonly requireEmailVerification: boolean;
@@ -144,6 +139,18 @@ export class PreferenceConfig {
   @IsBoolean()
   @ApiProperty()
   readonly allowOwnerDeleteProblem: boolean;
+}
+
+// This config items will be sent to client
+export class PreferenceConfig {
+  @IsString()
+  @ApiProperty()
+  readonly siteName: string;
+
+  @ValidateNested()
+  @Type(() => PreferenceConfigSecurity)
+  @ApiProperty()
+  readonly security: PreferenceConfigSecurity;
 }
 
 class ResourceLimitConfig {
@@ -183,31 +190,31 @@ class ResourceLimitConfig {
 class QueryLimitConfig {
   @IsInt()
   @Min(0)
-  readonly problemSetProblemsTake: number;
+  readonly problemSet: number;
 
   @IsInt()
   @Min(0)
-  readonly submissionsTake: number;
+  readonly submissions: number;
 
   @IsInt()
   @Min(0)
-  readonly submissionStatisticsTake: number;
+  readonly submissionStatistics: number;
 
   @IsInt()
   @Min(0)
-  readonly searchUserTake: number;
+  readonly searchUser: number;
 
   @IsInt()
   @Min(0)
-  readonly searchGroupTake: number;
+  readonly searchGroup: number;
 
   @IsInt()
   @Min(0)
-  readonly userListUsersTake: number;
+  readonly userList: number;
 
   @IsInt()
   @Min(1)
-  readonly userAuditLogsTake: number;
+  readonly userAuditLogs: number;
 }
 
 class VendorConfig {

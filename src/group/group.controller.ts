@@ -78,7 +78,7 @@ export class GroupController {
     const groups = await this.groupService.searchGroup(
       request.query,
       request.wildcard,
-      this.configService.config.queryLimit.searchGroupTake
+      this.configService.config.queryLimit.searchGroup
     );
     return {
       groupMetas: await Promise.all(groups.map(async group => await this.groupService.getGroupMeta(group)))
