@@ -2,6 +2,8 @@ import { ApiProperty } from "@nestjs/swagger";
 
 import { IsInt, IsString, IsEnum } from "class-validator";
 
+import { IsValidFilename } from "@/common/validators";
+
 import { ProblemFileType } from "../problem-file.entity";
 
 export class RenameProblemFileRequestDto {
@@ -18,6 +20,6 @@ export class RenameProblemFileRequestDto {
   readonly filename: string;
 
   @ApiProperty()
-  @IsString()
+  @IsValidFilename()
   readonly newFilename: string;
 }

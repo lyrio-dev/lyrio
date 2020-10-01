@@ -1,8 +1,7 @@
 /* eslint-disable no-throw-literal */
 
-import validFilename from "valid-filename";
-
 import { CodeLanguage } from "@/code-language/code-language.type";
+import { isValidFilename } from "@/common/validators";
 import { ProblemFileEntity } from "@/problem/problem-file.entity";
 
 interface JudgeInfoWithExtraSourceFiles {
@@ -22,7 +21,7 @@ export function validateExtraSourceFiles(
       if (typeof files !== "object") throw ["INVALID_EXTRA_SOURCE_FILES"];
 
       Object.entries(files).forEach(([dst, src], i) => {
-        if (typeof dst !== "string" || !validFilename(dst))
+        if (typeof dst !== "string" || !isValidFilename(dst))
           throw ["INVALID_EXTRA_SOURCE_FILES_DST", codeLanguage, i + 1, dst];
         if (!testData.some(file => file.filename === src))
           throw ["NO_SUCH_EXTRA_SOURCE_FILES_SRC", codeLanguage, i + 1, src];

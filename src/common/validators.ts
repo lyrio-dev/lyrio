@@ -46,3 +46,13 @@ export function IsUsername(validationOptions?: ValidationOptions) {
 export function IsGroupName(validationOptions?: ValidationOptions) {
   return If(value => typeof value === "string" && /^[a-zA-Z0-9 :@~-_.#$/]{1,48}$/.test(value), validationOptions);
 }
+
+export function isValidFilename(filename: string): boolean {
+  const forbiddenCharacters = ["/", "\x00"];
+  const reservedFilenames = [".", ".."];
+  return forbiddenCharacters.every(ch => filename.indexOf(ch) === -1) && !reservedFilenames.includes(filename);
+}
+
+export function IsValidFilename(validationOptions?: ValidationOptions) {
+  return If(value => typeof value === "string" && isValidFilename(value), validationOptions);
+}

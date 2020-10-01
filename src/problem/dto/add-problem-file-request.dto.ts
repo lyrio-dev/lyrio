@@ -1,7 +1,9 @@
 import { ApiProperty } from "@nestjs/swagger";
 
 import { Type } from "class-transformer";
-import { IsInt, IsString, Length, IsEnum, ValidateNested } from "class-validator";
+import { IsInt, Length, IsEnum, ValidateNested } from "class-validator";
+
+import { IsValidFilename } from "@/common/validators";
 
 import { FileUploadInfoDto } from "@/file/dto";
 
@@ -17,7 +19,7 @@ export class AddProblemFileRequestDto {
   readonly type: ProblemFileType;
 
   @ApiProperty()
-  @IsString()
+  @IsValidFilename()
   @Length(1, 256)
   readonly filename: string;
 

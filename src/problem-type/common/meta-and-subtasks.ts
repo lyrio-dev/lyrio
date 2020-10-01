@@ -1,9 +1,9 @@
 /* eslint-disable no-throw-literal */
 
-import validFilename from "valid-filename";
 import toposort from "toposort";
 
 import { ProblemFileEntity } from "@/problem/problem-file.entity";
+import { isValidFilename } from "@/common/validators";
 
 interface JudgeInfoWithMetaAndSubtasks {
   timeLimit?: number;
@@ -84,9 +84,9 @@ export function validateMetaAndSubtasks(
   }
 
   if (options.enableFileIo && judgeInfo.fileIo) {
-    if (typeof judgeInfo.fileIo.inputFilename !== "string" || !validFilename(judgeInfo.fileIo.inputFilename))
+    if (typeof judgeInfo.fileIo.inputFilename !== "string" || !isValidFilename(judgeInfo.fileIo.inputFilename))
       throw ["INVALID_FILEIO_FILENAME", judgeInfo.fileIo.inputFilename];
-    if (typeof judgeInfo.fileIo.outputFilename !== "string" || !validFilename(judgeInfo.fileIo.outputFilename))
+    if (typeof judgeInfo.fileIo.outputFilename !== "string" || !isValidFilename(judgeInfo.fileIo.outputFilename))
       throw ["INVALID_FILEIO_FILENAME", judgeInfo.fileIo.outputFilename];
   }
   if (judgeInfo.subtasks && !judgeInfo.subtasks.length) throw ["NO_TESTCASES"];
@@ -142,7 +142,7 @@ export function validateMetaAndSubtasks(
       if (options.enableUserOutputFilename) {
         if (
           (typeof userOutputFilename !== "string" && userOutputFilename != null) ||
-          (userOutputFilename && !validFilename(userOutputFilename))
+          (userOutputFilename && !isValidFilename(userOutputFilename))
         )
           throw ["INVALID_USER_OUTPUT_FILENAME", i + 1, j + 1, userOutputFilename];
 
