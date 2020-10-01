@@ -1,30 +1,94 @@
-import { IsEnum, IsOptional, IsBoolean, IsString, MaxLength, IsObject } from "class-validator";
+import {
+  IsEnum,
+  IsOptional,
+  IsBoolean,
+  IsString,
+  MaxLength,
+  IsObject,
+  Length,
+  Min,
+  Max,
+  IsNumber,
+  ValidateNested
+} from "class-validator";
+import { Type } from "class-transformer";
 
 import { Locale } from "@/common/locale.type";
 
-export class UserPreferenceDto {
+import { UserPreference } from "../user-preference.interface";
+
+class UserPreferenceLocaleDto {
   @IsEnum(Locale)
   @IsOptional()
-  systemLocale?: Locale;
+  system?: Locale;
 
   @IsEnum(Locale)
   @IsOptional()
-  contentLocale?: Locale;
+  content?: Locale;
+}
+
+class UserPreferenceFontDto {
+  @IsString()
+  @Length(0, 36)
+  @IsOptional()
+  codeFontFace?: string;
+
+  @IsNumber()
+  @Min(5)
+  @Max(20)
+  @IsOptional()
+  codeFontSize?: number;
+
+  @IsNumber()
+  @Min(1)
+  @Max(2)
+  @IsOptional()
+  codeLineHeight?: number;
 
   @IsBoolean()
   @IsOptional()
-  doNotFormatCodeByDefault?: boolean;
+  codeFontLigatures?: boolean;
+}
+
+class UserPreferenceCodeFormatterDto {
+  @IsBoolean()
+  @IsOptional()
+  disableByDefault?: boolean;
 
   @IsString()
   @MaxLength(1024)
   @IsOptional()
-  codeFormatterOptions?: string;
+  options?: string;
+}
 
+class UserPreferenceCodeDto {
   @IsString()
   @MaxLength(20)
-  defaultCodeLanguage?: string;
+  defaultLanguage?: string;
 
   @IsObject()
   @IsOptional()
   defaultCompileAndRunOptions?: Record<string, string>;
+}
+
+export class UserPreferenceDto implements UserPreference {
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => UserPreferenceLocaleDto)
+  locale?: UserPreferenceLocaleDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => UserPreferenceFontDto)
+  font?: UserPreferenceFontDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => UserPreferenceCodeFormatterDto)
+  codeFormatter?: UserPreferenceCodeFormatterDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => UserPreferenceCodeDto)
+  code?: UserPreferenceCodeDto;
 }

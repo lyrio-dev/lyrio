@@ -1,9 +1,22 @@
 import { Locale } from "@/common/locale.type";
 
 export interface UserPreference {
-  systemLocale?: Locale;
-  contentLocale?: Locale;
-  doNotFormatCodeByDefault?: boolean;
-  defaultCodeLanguage?: string;
-  defaultCompileAndRunOptions?: Record<string, string>;
+  locale?: {
+    system?: Locale;
+    content?: Locale;
+  };
+  font?: {
+    codeFontFace?: string;
+    codeFontSize?: number;
+    codeLineHeight?: number;
+    codeFontLigatures?: boolean;
+  };
+  codeFormatter?: {
+    disableByDefault?: boolean;
+    options?: string;
+  };
+  code?: {
+    defaultLanguage?: string;
+    defaultCompileAndRunOptions?: Record<string, string>;
+  };
 }
