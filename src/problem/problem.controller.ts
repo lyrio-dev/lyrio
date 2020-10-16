@@ -313,7 +313,9 @@ export class ProblemController {
         ? request.localizedContentsOfLocale
         : problem.locales[0];
       const title = await this.problemService.getProblemLocalizedTitle(problem, resultLocale);
-      const contentSections = await this.problemService.getProblemLocalizedContent(problem, resultLocale);
+      const contentSections = request.localizedContentsTitleOnly
+        ? null
+        : await this.problemService.getProblemLocalizedContent(problem, resultLocale);
       result.localizedContentsOfLocale = {
         locale: resultLocale,
         title,

@@ -10,11 +10,14 @@ import {
   Min,
   IsEmail,
   IsOptional,
-  IsArray
+  IsArray,
+  ArrayNotEmpty,
+  Length,
+  ArrayUnique
 } from "class-validator";
 import { Type } from "class-transformer";
 
-import { IsPortNumber } from "@/common/validators";
+import { IsEmoji, IsPortNumber } from "@/common/validators";
 
 import { ConfigRelation, ConfigRelationType } from "./config-relation.decorator";
 
@@ -142,6 +145,18 @@ export class PreferenceConfigSecurity {
   @IsBoolean()
   @ApiProperty()
   readonly allowOwnerDeleteProblem: boolean;
+
+  @IsBoolean()
+  @ApiProperty()
+  readonly discussionDefaultPublic: boolean;
+
+  @IsBoolean()
+  @ApiProperty()
+  readonly discussionReplyDefaultPublic: boolean;
+
+  @IsBoolean()
+  @ApiProperty()
+  readonly allowEveryoneCreateDiscussion: boolean;
 }
 
 // These config items will be sent to client
@@ -181,6 +196,52 @@ class PreferenceConfigPagination {
   @ConfigRelation("queryLimit.userAuditLogs", ConfigRelationType.LessThanOrEqual)
   @ApiProperty()
   readonly userAuditLogs: number;
+
+  @IsInt()
+  @Min(1)
+  @ConfigRelation("queryLimit.discussions", ConfigRelationType.LessThanOrEqual)
+  @ApiProperty()
+  readonly discussions: number;
+
+  @IsInt()
+  @Min(1)
+  @ConfigRelation("queryLimit.discussions", ConfigRelationType.LessThanOrEqual)
+  @ApiProperty()
+  readonly searchDiscussionsPreview: number;
+
+  @IsInt()
+  @Min(1)
+  @ConfigRelation("queryLimit.discussionReplies", ConfigRelationType.LessThanOrEqual)
+  @ApiProperty()
+  readonly discussionReplies: number;
+
+  @IsInt()
+  @Min(1)
+  @ConfigRelation("preference.pagination.discussionReplies", ConfigRelationType.LessThan)
+  @ApiProperty()
+  readonly discussionRepliesHead: number;
+
+  @IsInt()
+  @Min(1)
+  @ConfigRelation("queryLimit.discussionReplies", ConfigRelationType.LessThanOrEqual)
+  @ApiProperty()
+  readonly discussionRepliesMore: number;
+}
+
+// These config items will be sent to client
+class PreferenceConfigMisc {
+  @IsEmoji({ each: true })
+  @Length(1, 5, { each: true })
+  @IsString({ each: true })
+  @ArrayUnique()
+  @ArrayNotEmpty()
+  @IsArray()
+  @ApiProperty()
+  readonly discussionReactionEmojis: string[];
+
+  @IsBoolean()
+  @ApiProperty()
+  readonly discussionReactionAllowCustomEmojis: boolean;
 }
 
 // These config items will be sent to client
@@ -198,6 +259,11 @@ export class PreferenceConfig {
   @Type(() => PreferenceConfigPagination)
   @ApiProperty()
   readonly pagination: PreferenceConfigPagination;
+
+  @ValidateNested()
+  @Type(() => PreferenceConfigMisc)
+  @ApiProperty()
+  readonly misc: PreferenceConfigMisc;
 }
 
 class ResourceLimitConfig {
@@ -262,6 +328,16 @@ class QueryLimitConfig {
   @IsInt()
   @Min(1)
   readonly userAuditLogs: number;
+
+  @IsInt()
+  @Min(1)
+  @ApiProperty()
+  readonly discussions: number;
+
+  @IsInt()
+  @Min(1)
+  @ApiProperty()
+  readonly discussionReplies: number;
 }
 
 class VendorConfig {

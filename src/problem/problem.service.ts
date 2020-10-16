@@ -56,6 +56,7 @@ export enum ProblemPermissionLevel {
   READ = 1,
   WRITE = 2
 }
+
 /**
  * See `ProblemService.getPreprocessedJudgeInfo()`
  */
@@ -147,71 +148,71 @@ export class ProblemService {
 
   async userHasPermission(user: UserEntity, problem: ProblemEntity, type: ProblemPermissionType): Promise<boolean> {
     switch (type) {
-      // Everyone can read a public problem
+      // Everyone can view a public problem
       // Owner, admins and those who has read permission can view a non-public problem
       case ProblemPermissionType.VIEW:
         if (problem.isPublic) return true;
-        if (!user) return false;
-        if (user.id === problem.ownerId) return true;
-        if (user.isAdmin) return true;
+        if (user && user.id === problem.ownerId) return true;
         if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM)) return true;
-        return await this.permissionService.userOrItsGroupsHavePermission(
-          user,
-          problem.id,
-          PermissionObjectType.PROBLEM,
-          ProblemPermissionLevel.READ
-        );
+        else
+          return await this.permissionService.userOrItsGroupsHavePermission(
+            user,
+            problem.id,
+            PermissionObjectType.Problem,
+            ProblemPermissionLevel.READ
+          );
 
       // Owner, admins and those who has write permission can modify a problem
       case ProblemPermissionType.MODIFY:
-        if (!user) return false;
-        if (user.id === problem.ownerId && this.configService.config.preference.security.allowNonAdminEditPublicProblem)
+        if (
+          user &&
+          user.id === problem.ownerId &&
+          this.configService.config.preference.security.allowNonAdminEditPublicProblem
+        )
           return true;
-        if (user.isAdmin) return true;
         if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM)) return true;
-        return (
-          (await this.permissionService.userOrItsGroupsHavePermission(
-            user,
-            problem.id,
-            PermissionObjectType.PROBLEM,
-            ProblemPermissionLevel.WRITE
-          )) && this.configService.config.preference.security.allowNonAdminEditPublicProblem
-        );
+        else
+          return (
+            (await this.permissionService.userOrItsGroupsHavePermission(
+              user,
+              problem.id,
+              PermissionObjectType.Problem,
+              ProblemPermissionLevel.WRITE
+            )) &&
+            (!problem.isPublic || this.configService.config.preference.security.allowNonAdminEditPublicProblem)
+          );
 
       // Admins can manage a problem's permission
       // Controlled by the application preference, the owner may have the permission
       case ProblemPermissionType.MANAGE_PERMISSION:
-        if (!user) return false;
         if (
+          user &&
           user.id === problem.ownerId &&
           this.configService.config.preference.security.allowOwnerManageProblemPermission &&
           this.configService.config.preference.security.allowNonAdminEditPublicProblem
         )
           return true;
-        else if (user.isAdmin) return true;
         else if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM)) return true;
         else return false;
 
       // Admins can manage a problem's publicness (set display id / make public or non-public)
       case ProblemPermissionType.MANAGE_PUBLICNESS:
-        if (!user) return false;
-        else if (user.isAdmin) return true;
-        else if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM)) return true;
+        if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM)) return true;
         else return false;
 
       // Admins can delete a problem
       // Controlled by the application preference, the owner may have the permission
       case ProblemPermissionType.DELETE:
-        if (!user) return false;
-        else if (
+        if (
+          user &&
           user.id === problem.ownerId &&
           this.configService.config.preference.security.allowOwnerDeleteProblem &&
           this.configService.config.preference.security.allowNonAdminEditPublicProblem
         )
           return true;
-        else if (user.isAdmin) return true;
         else if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM)) return true;
         else return false;
+
       default:
         return false;
     }
@@ -232,7 +233,7 @@ export class ProblemService {
    * Sort: problems with display ID first (by displayId asc), then without display ID (by id asc).
    */
   async queryProblemsAndCount(
-    user: UserEntity,
+    currentUser: UserEntity,
     hasPrivilege: boolean,
     keyword: string,
     tagIds: number[],
@@ -266,11 +267,11 @@ export class ProblemService {
       if (!groupByAdded) queryBuilder.groupBy("problem.id");
     }
 
-    if (!hasPrivilege && !(user && ownerId === user.id)) {
-      if (user)
+    if (!hasPrivilege && !(currentUser && ownerId === currentUser.id)) {
+      if (currentUser)
         queryBuilder.andWhere(
           new Brackets(brackets =>
-            brackets.where("problem.isPublic = 1").orWhere("problem.ownerId = :ownerId", { ownerId: user.id })
+            brackets.where("problem.isPublic = 1").orWhere("problem.ownerId = :ownerId", { ownerId: currentUser.id })
           )
         );
       else queryBuilder.andWhere("problem.isPublic = 1");
@@ -501,14 +502,20 @@ export class ProblemService {
    */
   async setProblemPermissions(
     problem: ProblemEntity,
-    userPermissions: [UserEntity, ProblemPermissionLevel][],
-    groupPermissions: [GroupEntity, ProblemPermissionLevel][]
+    userPermissions: [user: UserEntity, permission: ProblemPermissionLevel][],
+    groupPermissions: [group: GroupEntity, permission: ProblemPermissionLevel][]
   ): Promise<void> {
-    await this.permissionService.replaceUsersAndGroupsPermissionForObject(
+    await this.lockProblemById(
       problem.id,
-      PermissionObjectType.PROBLEM,
-      userPermissions,
-      groupPermissions
+      "READ",
+      // eslint-disable-next-line no-shadow
+      async problem =>
+        await this.permissionService.replaceUsersAndGroupsPermissionForObject(
+          problem.id,
+          PermissionObjectType.Problem,
+          userPermissions,
+          groupPermissions
+        )
     );
   }
 
@@ -519,7 +526,7 @@ export class ProblemService {
   > {
     return await this.permissionService.getUserAndGroupPermissionListOfObject<ProblemPermissionLevel>(
       problem.id,
-      PermissionObjectType.PROBLEM
+      PermissionObjectType.Problem
     );
   }
 
@@ -961,10 +968,10 @@ export class ProblemService {
       );
       await transactionalEntityManager.remove(problemFiles);
 
-      // delete permission
+      // delete permissions
       await this.permissionService.replaceUsersAndGroupsPermissionForObject(
         problem.id,
-        PermissionObjectType.PROBLEM,
+        PermissionObjectType.Problem,
         [],
         [],
         transactionalEntityManager

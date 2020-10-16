@@ -187,6 +187,7 @@ export class PermissionService {
     objectType: PermissionObjectType,
     permissionLevelRequired: PermissionLevel
   ): Promise<boolean> {
+    if (!user) return false;
     if ((await this.getPermissionLevel(user, objectId, objectType)) >= permissionLevelRequired) return true;
 
     const groupIdsOfUser = await this.groupService.getGroupIdsByUserId(user.id);

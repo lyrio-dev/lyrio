@@ -1,3 +1,4 @@
 export enum PermissionObjectType {
-  PROBLEM = "PROBLEM"
+  Problem = "Problem",
+  Discussion = "Discussion"
 }

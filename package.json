@@ -33,6 +33,7 @@
     "class-transformer": "^0.3.1",
     "class-validator": "^0.12.1",
     "ejs": "^3.1.5",
+    "emoji-regex": "^9.0.0",
     "fs-extra": "^9.0.1",
     "git-repo-info": "^2.1.1",
     "ioredis": "^4.17.3",

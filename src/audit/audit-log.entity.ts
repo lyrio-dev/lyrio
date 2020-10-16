@@ -7,7 +7,9 @@ export enum AuditLogObjectType {
   Group = "Group",
   Problem = "Problem",
   ProblemTag = "ProblemTag",
-  Submission = "Submission"
+  Submission = "Submission",
+  Discussion = "Discussion",
+  DiscussionReply = "DiscussionReply"
 }
 
 @Entity("audit_log")

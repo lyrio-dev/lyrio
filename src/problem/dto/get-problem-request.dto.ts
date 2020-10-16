@@ -29,6 +29,11 @@ export class GetProblemRequestDto {
   @ApiProperty({ required: false })
   @IsBoolean()
   @IsOptional()
+  readonly localizedContentsTitleOnly?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
   readonly localizedContentsOfAllLocales?: boolean;
 
   @ApiProperty({ required: false })

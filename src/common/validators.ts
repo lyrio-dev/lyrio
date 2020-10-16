@@ -1,4 +1,5 @@
 import { registerDecorator, ValidationOptions } from "class-validator";
+import emojiRegex from "emoji-regex";
 
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 
@@ -55,4 +56,14 @@ export function isValidFilename(filename: string): boolean {
 
 export function IsValidFilename(validationOptions?: ValidationOptions) {
   return If(value => typeof value === "string" && isValidFilename(value), validationOptions);
+}
+
+const singleEmojiRegex = new RegExp(`^(${emojiRegex()})$`);
+export const MAX_EMOJI_LENGTH = 28;
+export function isEmoji(str: string) {
+  return singleEmojiRegex.test(str) && str.length >= 1 && Buffer.byteLength(str, "utf-8") <= MAX_EMOJI_LENGTH;
+}
+
+export function IsEmoji(validationOptions?: ValidationOptions) {
+  return If(value => typeof value === "string" && isEmoji(value), validationOptions);
 }
