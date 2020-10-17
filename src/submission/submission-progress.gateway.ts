@@ -224,31 +224,37 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
   public async onSubmissionEvent(
     submissionId: number,
     type: SubmissionEventType,
+    // progress == null only when type === SubmissionEventType.(Deleted or Canceled)
     progress?: SubmissionProgress
   ): Promise<void> {
-    const finished = progress.progressType === SubmissionProgressType.Finished;
+    const isDeleted = type === SubmissionEventType.Deleted;
+    const isCanceled = !isDeleted && !progress;
 
-    if (type !== SubmissionEventType.Deleted) {
-      // If the progress.progressType is "Finished", it's called after database updated
-      const submission = finished && (await this.submissionService.findSubmissionById(submissionId));
-      const basicMeta = finished && (await this.submissionService.getSubmissionBasicMeta(submission));
+    const progressType = isDeleted || isCanceled ? SubmissionProgressType.Finished : progress.progressType;
+
+    const isFinished = progressType === SubmissionProgressType.Finished;
+
+    if (!isDeleted) {
+      // If the progressType is "Finished", it's called after database updated
+      const submission = isFinished && (await this.submissionService.findSubmissionById(submissionId));
+      const basicMeta = isFinished && (await this.submissionService.getSubmissionBasicMeta(submission));
 
       this.sendMessage(this.getRoom(SubmissionProgressSubscriptionType.Meta, submissionId), submissionId, {
         progressMeta: {
-          progressType: progress.progressType,
+          progressType,
           resultMeta: basicMeta
         }
       });
       this.sendMessage(this.getRoom(SubmissionProgressSubscriptionType.Detail, submissionId), submissionId, {
         progressMeta: {
-          progressType: progress.progressType,
+          progressType,
           resultMeta: basicMeta
         },
         progressDetail: progress
       });
     }
 
-    if (finished || type === SubmissionEventType.Deleted) {
+    if (isFinished) {
       this.clearRoom(this.getRoom(SubmissionProgressSubscriptionType.Meta, submissionId));
       this.clearRoom(this.getRoom(SubmissionProgressSubscriptionType.Detail, submissionId));
     }
