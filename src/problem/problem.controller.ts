@@ -39,7 +39,7 @@ import {
   SetProblemPublicResponseError,
   QueryProblemSetRequestDto,
   QueryProblemSetResponseDto,
-  QueryProblemSetErrorDto,
+  QueryProblemSetResponseError,
   AddProblemFileRequestDto,
   AddProblemFileResponseDto,
   AddProblemFileResponseError,
@@ -104,7 +104,7 @@ export class ProblemController {
   ): Promise<QueryProblemSetResponseDto> {
     if (request.takeCount > this.configService.config.queryLimit.problemSet)
       return {
-        error: QueryProblemSetErrorDto.TAKE_TOO_MANY
+        error: QueryProblemSetResponseError.TAKE_TOO_MANY
       };
 
     const hasPrivilege = await this.userPrivilegeService.userHasPrivilege(
@@ -116,7 +116,7 @@ export class ProblemController {
     // This will NOT be reported as true in "permissions"
     if ((request.ownerId || request.nonpublic) && !hasPrivilege && (!currentUser || currentUser.id !== request.ownerId))
       return {
-        error: QueryProblemSetErrorDto.PERMISSION_DENIED
+        error: QueryProblemSetResponseError.PERMISSION_DENIED
       };
 
     const filterTags = !request.tagIds

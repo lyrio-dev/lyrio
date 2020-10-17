@@ -10,8 +10,8 @@ export * from "./send-email-verification-code-response.dto";
 export * from "./register-request.dto";
 export * from "./register-response.dto";
 
-export * from "./get-session-info-request-dto";
-export * from "./get-session-info-response-dto";
+export * from "./get-session-info-request.dto";
+export * from "./get-session-info-response.dto";
 
 export * from "./reset-password-request.dto";
 export * from "./reset-password-response.dto";

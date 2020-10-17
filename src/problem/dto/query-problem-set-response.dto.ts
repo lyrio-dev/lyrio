@@ -10,7 +10,7 @@ import { UserMetaDto } from "@/user/dto";
 
 import { SubmissionBasicMetaDto } from "@/submission/dto";
 
-export enum QueryProblemSetErrorDto {
+export enum QueryProblemSetResponseError {
   PERMISSION_DENIED = "PERMISSION_DENIED",
   TAKE_TOO_MANY = "TAKE_TOO_MANY"
 }
@@ -47,8 +47,8 @@ export class QueryProblemSetResponsePermissionDto {
 }
 
 export class QueryProblemSetResponseDto {
-  @ApiProperty({ enum: QueryProblemSetErrorDto })
-  error?: QueryProblemSetErrorDto;
+  @ApiProperty({ enum: QueryProblemSetResponseError })
+  error?: QueryProblemSetResponseError;
 
   @ApiProperty({ type: QueryProblemSetResponseItemDto, isArray: true })
   result?: QueryProblemSetResponseItemDto[];
