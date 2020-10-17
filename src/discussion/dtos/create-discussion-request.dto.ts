@@ -9,7 +9,7 @@ export class CreateDiscussionRequestDto {
   problemId?: number;
 
   @IsString()
-  @Length(1, 80)
+  @Length(0, 80)
   @ApiProperty()
   title: string;
 

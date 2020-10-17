@@ -8,7 +8,7 @@ export class UpdateDiscussionRequestDto {
   discussionId: number;
 
   @IsString()
-  @Length(1, 80)
+  @Length(0, 80)
   @ApiProperty()
   title: string;
 
