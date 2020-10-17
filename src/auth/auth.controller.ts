@@ -101,15 +101,24 @@ export class AuthController {
         error: LoginResponseError.ALREADY_LOGGEDIN
       };
 
-    const [error, user] = await this.authService.login(request.username, request.password);
+    const user = await this.userService.findUserByUsername(request.username);
+    if (!user)
+      return {
+        error: LoginResponseError.NO_SUCH_USER
+      };
 
-    if (error) {
-      if (user && error === LoginResponseError.WRONG_PASSWORD) {
-        await this.auditService.log(user.id, "auth.login_failed.wrong_password");
-      }
+    const userAuth = await this.authService.findUserAuthByUserId(user.id);
+
+    if (!this.authService.checkUserMigrated(userAuth))
+      return {
+        error: LoginResponseError.USER_NOT_MIGRATED
+      };
+
+    if (!(await this.authService.checkPassword(userAuth, request.password))) {
+      await this.auditService.log(user.id, "auth.login_failed.wrong_password");
 
       return {
-        error
+        error: LoginResponseError.WRONG_PASSWORD
       };
     }
 
@@ -198,6 +207,12 @@ export class AuthController {
       if (!user)
         return {
           error: SendEmailVerificationCodeResponseError.NO_SUCH_USER
+        };
+
+      const userAuth = await this.authService.findUserAuthByUserId(user.id);
+      if (!this.authService.checkUserMigrated(userAuth))
+        return {
+          error: SendEmailVerificationCodeResponseError.USER_NOT_MIGRATED
         };
 
       // Audit logging

@@ -19,6 +19,7 @@ import { FileModule } from "./file/file.module";
 import { SubmissionModule } from "./submission/submission.module";
 import { JudgeModule } from "./judge/judge.module";
 import { DiscussionModule } from "./discussion/discussion.module";
+import { MigrationModule } from "./migration/migration.module";
 
 @Module({
   imports: [
@@ -36,7 +37,8 @@ import { DiscussionModule } from "./discussion/discussion.module";
     forwardRef(() => FileModule),
     forwardRef(() => SubmissionModule),
     forwardRef(() => JudgeModule),
-    forwardRef(() => DiscussionModule)
+    forwardRef(() => DiscussionModule),
+    forwardRef(() => MigrationModule)
   ],
   controllers: [AppController],
   providers: [AppService]

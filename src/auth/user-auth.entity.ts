@@ -11,6 +11,6 @@ export class UserAuthEntity {
   @PrimaryColumn()
   userId: number;
 
-  @Column({ type: "char", length: 60 })
+  @Column({ type: "char", length: 60, nullable: true })
   password: string;
 }

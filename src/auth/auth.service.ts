@@ -112,6 +112,10 @@ export class AuthService {
     return await bcrypt.compare(password, userAuth.password);
   }
 
+  checkUserMigrated(userAuth: UserAuthEntity): boolean {
+    return userAuth.password != null;
+  }
+
   async changePassword(
     userAuth: UserAuthEntity,
     password: string,
@@ -120,16 +124,5 @@ export class AuthService {
     userAuth.password = await this.hashPassword(password);
     if (transactionalEntityManager) await transactionalEntityManager.save(userAuth);
     else await this.userAuthRepository.save(userAuth);
-  }
-
-  async login(username: string, password: string): Promise<[LoginResponseError, UserEntity]> {
-    const user: UserEntity = await this.userService.findUserByUsername(username);
-
-    if (!user) return [LoginResponseError.NO_SUCH_USER, null];
-
-    const userAuth: UserAuthEntity = await user.userAuth;
-    if (!(await this.checkPassword(userAuth, password))) return [LoginResponseError.WRONG_PASSWORD, user];
-
-    return [null, user];
   }
 }
