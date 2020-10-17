@@ -639,7 +639,9 @@ export class DiscussionController {
       }
     );
 
-    return {};
+    return {
+      editTime: discussionReply.editTime
+    };
   }
 
   @Post("deleteDiscussion")

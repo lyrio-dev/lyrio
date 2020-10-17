@@ -8,4 +8,7 @@ export enum UpdateDiscussionReplyResponseError {
 export class UpdateDiscussionReplyResponseDto {
   @ApiProperty()
   error?: UpdateDiscussionReplyResponseError;
+
+  @ApiProperty()
+  editTime?: Date;
 }
