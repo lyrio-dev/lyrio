@@ -1,5 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
 
+import { Locale } from "@/common/locale.type";
+
 import { DiscussionOrReplyReactionsDto } from "./discussion-or-reply-reactions.dto";
 
 import { DiscussionMetaDto } from "./discussion-meta.dto";
@@ -21,6 +23,9 @@ export class GetDiscussionAndRepliesResponseProblemDto {
 
   @ApiProperty()
   title: string;
+
+  @ApiProperty()
+  titleLocale: Locale;
 }
 
 export class DiscussionDto {

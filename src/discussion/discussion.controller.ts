@@ -273,13 +273,18 @@ export class DiscussionController {
             ))
           ]
             .filter(problem => problem)
-            .map(async problem => [
-              problem.id,
-              <QueryDiscussionsResponseProblemDto>{
-                meta: problem,
-                title: await this.problemService.getProblemLocalizedTitle(problem, request.locale)
-              }
-            ])
+            .map(async problem => {
+              const titleLocale = problem.locales.includes(request.locale) ? request.locale : problem.locales[0];
+              const title = await this.problemService.getProblemLocalizedTitle(problem, titleLocale);
+              return [
+                problem.id,
+                <QueryDiscussionsResponseProblemDto>{
+                  meta: problem,
+                  title,
+                  titleLocale
+                }
+              ];
+            })
         )
       );
 
@@ -513,11 +518,18 @@ export class DiscussionController {
             this.discussionService.getDiscussionContent(discussion),
             // problem
             discussionProblem &&
-              (async () =>
-                <GetDiscussionAndRepliesResponseProblemDto>{
+              (async () => {
+                const titleLocale = discussionProblem.locales.includes(request.locale)
+                  ? request.locale
+                  : discussionProblem.locales[0];
+                const title = await this.problemService.getProblemLocalizedTitle(discussionProblem, titleLocale);
+
+                return <GetDiscussionAndRepliesResponseProblemDto>{
                   meta: await this.problemService.getProblemMeta(discussionProblem),
-                  title: await this.problemService.getProblemLocalizedTitle(discussionProblem, request.locale)
-                })(),
+                  title,
+                  titleLocale
+                };
+              })(),
             // publisher
             this.userService
               .findUserById(discussion.publisherId)
