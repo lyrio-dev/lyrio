@@ -71,7 +71,7 @@ export class ProblemTypeInteractionService
       enableTimeMemoryLimit: true,
       enableFileIo: true,
       enableInputFile: true,
-      enableOutputFile: true,
+      enableOutputFile: false,
       enableUserOutputFilename: false,
       hardTimeLimit,
       hardMemoryLimit
