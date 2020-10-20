@@ -36,6 +36,9 @@ export class ProblemEntity {
   @Column({ type: "boolean" })
   isPublic: boolean;
 
+  @Column({ type: "datetime", nullable: true })
+  publicTime: Date;
+
   @ManyToOne(() => UserEntity)
   @JoinColumn()
   owner: Promise<UserEntity>;

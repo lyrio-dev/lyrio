@@ -18,6 +18,9 @@ export class ProblemMetaDto {
   isPublic: boolean;
 
   @ApiProperty()
+  publicTime: Date;
+
+  @ApiProperty()
   ownerId: number;
 
   @ApiProperty({ enum: Locale, isArray: true })

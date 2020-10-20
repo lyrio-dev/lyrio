@@ -133,6 +133,7 @@ export class ProblemService {
       id: problem.id,
       displayId: problem.displayId,
       type: problem.type,
+      publicTime: problem.publicTime,
       isPublic: problem.isPublic,
       ownerId: problem.ownerId,
       locales: problem.locales
@@ -581,6 +582,7 @@ export class ProblemService {
 
   async setProblemPublic(problem: ProblemEntity, isPublic: boolean): Promise<void> {
     problem.isPublic = isPublic;
+    if (isPublic) problem.publicTime = new Date();
     await this.problemRepository.save(problem);
   }
 
