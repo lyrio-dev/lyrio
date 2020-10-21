@@ -2,7 +2,6 @@ import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 
 import { Repository, EntityManager, FindConditions } from "typeorm";
-import { Redis } from "ioredis";
 
 import { Locale } from "@/common/locale.type";
 import { RedisService } from "@/redis/redis.service";
@@ -13,15 +12,11 @@ const REDIS_KEY_LOCALIZED_CONTENT = "localized-content:%s:%d:%s";
 
 @Injectable()
 export class LocalizedContentService {
-  private readonly redis: Redis;
-
   constructor(
     @InjectRepository(LocalizedContentEntity)
     private readonly localizedContentRepository: Repository<LocalizedContentEntity>,
     private readonly redisService: RedisService
-  ) {
-    this.redis = this.redisService.getClient();
-  }
+  ) {}
 
   async createOrUpdate(
     objectId: number,
@@ -40,13 +35,14 @@ export class LocalizedContentService {
       ? transactionalEntityManager.createQueryBuilder()
       : this.localizedContentRepository.createQueryBuilder();
 
+    await this.redisService.cacheDelete(REDIS_KEY_LOCALIZED_CONTENT.format(type, objectId, locale));
     await queryBuilder
       .insert()
       .into(LocalizedContentEntity)
       .values(localizedContent)
       .orUpdate({ overwrite: ["data"] })
       .execute();
-    await this.redis.del(REDIS_KEY_LOCALIZED_CONTENT.format(type, objectId, locale));
+    await this.redisService.cacheDelete(REDIS_KEY_LOCALIZED_CONTENT.format(type, objectId, locale));
   }
 
   // If locale is null, deletes all matching (objectId, type)
@@ -63,14 +59,15 @@ export class LocalizedContentService {
 
     if (locale) match.locale = locale;
 
+    await this.redisService.cacheDelete(REDIS_KEY_LOCALIZED_CONTENT.format(type, objectId, locale));
     if (transactionalEntityManager) await transactionalEntityManager.delete(LocalizedContentEntity, match);
     else await this.localizedContentRepository.delete(match);
-    await this.redis.del(REDIS_KEY_LOCALIZED_CONTENT.format(type, objectId, locale));
+    await this.redisService.cacheDelete(REDIS_KEY_LOCALIZED_CONTENT.format(type, objectId, locale));
   }
 
   async get(objectId: number, type: LocalizedContentType, locale: Locale): Promise<string> {
     const key = REDIS_KEY_LOCALIZED_CONTENT.format(type, objectId, locale);
-    const cachedResult = await this.redis.get(key);
+    const cachedResult = await this.redisService.cacheGet(key);
     if (cachedResult) return cachedResult;
 
     const localizedContent = await this.localizedContentRepository.findOne({
@@ -81,7 +78,7 @@ export class LocalizedContentService {
 
     if (!localizedContent) return null;
 
-    await this.redis.set(key, localizedContent.data);
+    await this.redisService.cacheSet(key, localizedContent.data);
     return localizedContent.data;
   }
 

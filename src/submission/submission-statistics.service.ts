@@ -2,7 +2,6 @@ import { Injectable, Logger, Inject, forwardRef } from "@nestjs/common";
 import { InjectConnection } from "@nestjs/typeorm";
 
 import { Connection } from "typeorm";
-import { Redis } from "ioredis";
 
 import { RedisService } from "@/redis/redis.service";
 import { ProblemEntity } from "@/problem/problem.entity";
@@ -57,20 +56,16 @@ const SUBMISSION_STATISTICS_TOP_COUNT = 100;
 
 @Injectable()
 export class SubmissionStatisticsService {
-  private redis: Redis;
-
   constructor(
     @InjectConnection()
     private readonly connection: Connection,
     @Inject(forwardRef(() => SubmissionService))
     private readonly submissionService: SubmissionService,
     private readonly redisService: RedisService
-  ) {
-    this.redis = this.redisService.getClient();
-  }
+  ) {}
 
   private async parseFromRedis<T>(key: string): Promise<T> {
-    const str = await this.redis.get(key);
+    const str = await this.redisService.cacheGet(key);
     try {
       return JSON.parse(str);
     } catch (e) {
@@ -122,7 +117,7 @@ export class SubmissionStatisticsService {
         .orderBy("fieldValue", sort)
         .getRawMany();
       tuples = queryResult.map(result => [result.submissionId, result.submitterId, Number(result.fieldValue)]);
-      await this.redis.set(key, JSON.stringify(tuples));
+      await this.redisService.cacheSet(key, JSON.stringify(tuples));
     }
 
     const resultIds = tuples.filter((_, i) => i >= skipCount && i < skipCount + takeCount).map(([id]) => id);
@@ -149,7 +144,7 @@ export class SubmissionStatisticsService {
     const result = new Array(101).fill(0);
     for (const item of queryResult) result[item.score] = Number(item.count);
 
-    await this.redis.set(key, JSON.stringify(result));
+    await this.redisService.cacheSet(key, JSON.stringify(result));
 
     return result;
   }
@@ -162,7 +157,7 @@ export class SubmissionStatisticsService {
   public async onSubmissionUpdated(oldSubmission: SubmissionEntity, submission?: SubmissionEntity): Promise<void> {
     // Submission score statistics
     if (!submission || oldSubmission.score !== submission.score) {
-      await this.redis.del(REDIS_KEY_SUBMISSION_STATISTICS.format(oldSubmission.problemId));
+      await this.redisService.cacheDelete(REDIS_KEY_SUBMISSION_STATISTICS.format(oldSubmission.problemId));
     }
 
     // Submission statistics
@@ -208,7 +203,7 @@ export class SubmissionStatisticsService {
           Logger.log(
             `Purging submission statistics cache: problemId = ${oldSubmission.problemId}, statisticsType = ${statisticsType}`
           );
-          await this.redis.del(key);
+          await this.redisService.cacheDelete(key);
         }
       })
     );
@@ -217,9 +212,9 @@ export class SubmissionStatisticsService {
   public async onProblemDeleted(problemId: number): Promise<void> {
     await Promise.all([
       ...Object.values(SubmissionStatisticsType).map(type =>
-        this.redis.del(REDIS_KEY_SUBMISSION_SCORE_STATISTICS.format(problemId, type))
+        this.redisService.cacheDelete(REDIS_KEY_SUBMISSION_SCORE_STATISTICS.format(problemId, type))
       ),
-      this.redis.del(REDIS_KEY_SUBMISSION_STATISTICS.format(problemId))
+      this.redisService.cacheDelete(REDIS_KEY_SUBMISSION_STATISTICS.format(problemId))
     ]);
   }
 }

@@ -3,8 +3,6 @@ import { InjectConnection, InjectRepository } from "@nestjs/typeorm";
 
 import { Connection, Repository, EntityManager, Brackets, In } from "typeorm";
 
-import { Redis } from "ioredis";
-
 import { UserEntity } from "@/user/user.entity";
 import { GroupEntity } from "@/group/group.entity";
 import { LocalizedContentService } from "@/localized-content/localized-content.service";
@@ -64,8 +62,6 @@ const REDIS_KEY_PROBLEM_PREPROCESSED_JUDGE_INFO = "problem-preprocessed-judge-in
 
 @Injectable()
 export class ProblemService {
-  private readonly redis: Redis;
-
   constructor(
     @InjectConnection()
     private readonly connection: Connection,
@@ -106,8 +102,6 @@ export class ProblemService {
       const problemTag = await this.findProblemTagById(problemTagId);
       return !problemTag ? null : await this.getProblemTagLocalized(problemTag, locale);
     });
-
-    this.redis = this.redisService.getClient();
   }
 
   async findProblemById(id: number): Promise<ProblemEntity> {
@@ -438,7 +432,7 @@ export class ProblemService {
     problemJudgeInfo.judgeInfo = judgeInfo;
     await this.problemJudgeInfoRepository.save(problemJudgeInfo);
 
-    await this.redis.del(REDIS_KEY_PROBLEM_PREPROCESSED_JUDGE_INFO.format(problem.id));
+    await this.redisService.cacheDelete(REDIS_KEY_PROBLEM_PREPROCESSED_JUDGE_INFO.format(problem.id));
 
     return null;
   }
@@ -484,7 +478,7 @@ export class ProblemService {
    */
   async getProblemPreprocessedJudgeInfo(problem: ProblemEntity): Promise<ProblemJudgeInfo> {
     const key = REDIS_KEY_PROBLEM_PREPROCESSED_JUDGE_INFO.format(problem.id);
-    const cachedResult: ProblemJudgeInfo = JSON.parse(await this.redis.get(key));
+    const cachedResult: ProblemJudgeInfo = JSON.parse(await this.redisService.cacheGet(key));
     if (cachedResult) return cachedResult;
 
     const result = this.problemTypeFactoryService
@@ -493,7 +487,7 @@ export class ProblemService {
         await this.getProblemJudgeInfo(problem),
         await this.getProblemFiles(problem, ProblemFileType.TestData)
       );
-    await this.redis.setnx(key, JSON.stringify(result));
+    await this.redisService.cacheSet(key, JSON.stringify(result));
 
     return result;
   }
@@ -698,7 +692,7 @@ export class ProblemService {
 
       if (deleteOldFileActually) deleteOldFileActually();
       if (type === ProblemFileType.TestData)
-        await this.redis.del(REDIS_KEY_PROBLEM_PREPROCESSED_JUDGE_INFO.format(problem.id));
+        await this.redisService.cacheDelete(REDIS_KEY_PROBLEM_PREPROCESSED_JUDGE_INFO.format(problem.id));
 
       return ret;
     });
@@ -731,7 +725,7 @@ export class ProblemService {
 
       if (deleteFilesActually) deleteFilesActually();
       if (type === ProblemFileType.TestData)
-        await this.redis.del(REDIS_KEY_PROBLEM_PREPROCESSED_JUDGE_INFO.format(problem.id));
+        await this.redisService.cacheDelete(REDIS_KEY_PROBLEM_PREPROCESSED_JUDGE_INFO.format(problem.id));
     });
   }
 
@@ -782,7 +776,7 @@ export class ProblemService {
       });
 
       if (type === ProblemFileType.TestData)
-        await this.redis.del(REDIS_KEY_PROBLEM_PREPROCESSED_JUDGE_INFO.format(problem.id));
+        await this.redisService.cacheDelete(REDIS_KEY_PROBLEM_PREPROCESSED_JUDGE_INFO.format(problem.id));
 
       return true;
     });

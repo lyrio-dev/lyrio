@@ -5,6 +5,7 @@ import Redlock from "redlock";
 
 import { ConfigService } from "@/config/config.service";
 
+const REDIS_CACHE_EXPIRE_TIME = 60 * 60 * 24 * 30; // 7 days
 const REDIS_KEY_RWLOCK_NUM_READERS_ACTIVE = "%s_NUM_READERS_ACTIVE";
 const REDIS_KEY_RWLOCK_NUM_WRITERS_WAITING = "%s_NUM_WRITERS_WAITING";
 const REDIS_KEY_RWLOCK_WRITER_ACTIVE = "%s_WRITER_ACTIVE";
@@ -43,6 +44,23 @@ export class RedisService implements OnModuleInit {
     }
   }
 
+  public async cacheSet(key: string, value: string): Promise<void> {
+    await this.client.setex(key, REDIS_CACHE_EXPIRE_TIME, value);
+  }
+
+  public async cacheGet(key: string): Promise<string> {
+    return await this.client.get(key);
+  }
+
+  public async cacheDelete(key: string): Promise<void> {
+    await this.client.del(key);
+  }
+
+  /**
+   * Get a Redis client object to execute Redis commands directly.
+   *
+   * Please use `cacheGet` and `cacheSet` for caching since they handle the expire time automatically.
+   */
   public getClient(): Redis.Redis {
     return this.client.duplicate();
   }
