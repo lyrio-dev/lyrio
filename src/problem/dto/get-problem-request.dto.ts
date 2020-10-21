@@ -71,6 +71,11 @@ export class GetProblemRequestDto {
   @IsOptional()
   readonly statistics?: boolean;
 
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  readonly discussionCount?: boolean;
+
   @ApiProperty({ required: false, enum: ProblemPermissionType, isArray: true })
   @IsEnum(ProblemPermissionType, { each: true })
   @ArrayUnique()

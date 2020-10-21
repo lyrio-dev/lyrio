@@ -105,6 +105,9 @@ export class GetProblemResponseDto {
   additionalFiles?: ProblemFileDto[];
 
   @ApiProperty()
+  discussionCount?: number;
+
+  @ApiProperty()
   permissionOfCurrentUser?: ProblemPermissionOfCurrentUserDto;
 
   @ApiProperty()

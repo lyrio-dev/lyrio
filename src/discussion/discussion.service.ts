@@ -624,4 +624,8 @@ export class DiscussionService {
       await transactionalEntityManager.remove(discussion);
     });
   }
+
+  async getDiscussionCountOfProblem(problem: ProblemEntity): Promise<number> {
+    return await this.discussionRepository.count({ problemId: problem.id });
+  }
 }

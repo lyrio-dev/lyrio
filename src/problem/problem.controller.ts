@@ -13,6 +13,7 @@ import { Locale } from "@/common/locale.type";
 import { SubmissionService } from "@/submission/submission.service";
 import { SubmissionStatus } from "@/submission/submission-status.enum";
 import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
+import { DiscussionService } from "@/discussion/discussion.service";
 
 import { ProblemFileType } from "./problem-file.entity";
 import { ProblemEntity } from "./problem.entity";
@@ -90,7 +91,8 @@ export class ProblemController {
     private readonly groupService: GroupService,
     private readonly fileService: FileService,
     private readonly submissionService: SubmissionService,
-    private readonly auditService: AuditService
+    private readonly auditService: AuditService,
+    private readonly discussionService: DiscussionService
   ) {}
 
   @Post("queryProblemSet")
@@ -352,6 +354,9 @@ export class ProblemController {
         true
       );
     }
+
+    if (request.discussionCount)
+      result.discussionCount = await this.discussionService.getDiscussionCountOfProblem(problem);
 
     if (request.permissionOfCurrentUser) {
       result.permissionOfCurrentUser = {};

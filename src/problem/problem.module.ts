@@ -11,6 +11,7 @@ import { RedisModule } from "@/redis/redis.module";
 import { SubmissionModule } from "@/submission/submission.module";
 import { ProblemTypeModule } from "@/problem-type/problem-type.module";
 import { AuditModule } from "@/audit/audit.module";
+import { DiscussionModule } from "@/discussion/discussion.module";
 
 import { ProblemService } from "./problem.service";
 import { ProblemController } from "./problem.controller";
@@ -38,7 +39,8 @@ import { ProblemEntity } from "./problem.entity";
     forwardRef(() => RedisModule),
     forwardRef(() => SubmissionModule),
     forwardRef(() => ProblemTypeModule),
-    forwardRef(() => AuditModule)
+    forwardRef(() => AuditModule),
+    forwardRef(() => DiscussionModule)
   ],
   providers: [ProblemService],
   controllers: [ProblemController],
