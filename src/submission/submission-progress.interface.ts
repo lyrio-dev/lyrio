@@ -1,6 +1,7 @@
 import { JudgeTaskProgress } from "@/judge/judge-task-progress.interface";
 
 import { SubmissionStatus } from "./submission-status.enum";
+import { SubmissionResultOmittableString } from "./submission-testcase-result-omittable-string.interface";
 
 export enum SubmissionProgressType {
   Preparing = "Preparing",
@@ -29,10 +30,10 @@ export interface SubmissionProgress<TestcaseResult extends SubmissionTestcaseRes
   compile?: {
     compileTaskHash: string;
     success: boolean;
-    message: string;
+    message: SubmissionResultOmittableString;
   };
 
-  systemMessage?: string;
+  systemMessage?: SubmissionResultOmittableString;
 
   // testcaseHash
   // ->

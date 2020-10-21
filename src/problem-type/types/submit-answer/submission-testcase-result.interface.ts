@@ -1,4 +1,5 @@
 import { SubmissionTestcaseResult } from "@/submission/submission-progress.interface";
+import { SubmissionResultOmittableString } from "@/submission/submission-testcase-result-omittable-string.interface";
 
 // For subtasks and testcasese
 export enum SubmissionTestcaseStatusSubmitAnswer {
@@ -21,10 +22,10 @@ export interface SubmissionTestcaseResultSubmitAnswer extends SubmissionTestcase
   };
   status: SubmissionTestcaseStatusSubmitAnswer;
   score: number;
-  input?: string;
-  output?: string;
-  userOutput?: string;
+  input?: SubmissionResultOmittableString;
+  output?: SubmissionResultOmittableString;
+  userOutput?: SubmissionResultOmittableString;
   userOutputLength?: number;
-  checkerMessage?: string;
-  systemMessage?: string;
+  checkerMessage?: SubmissionResultOmittableString;
+  systemMessage?: SubmissionResultOmittableString;
 }
