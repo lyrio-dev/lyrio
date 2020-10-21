@@ -274,7 +274,9 @@ export class UserController {
     @CurrentUser() currentUser: UserEntity,
     @Body() request: GetUserDetailRequestDto
   ): Promise<GetUserDetailResponseDto> {
-    const user = await this.userService.findUserById(request.userId);
+    const user = request.username
+      ? await this.userService.findUserByUsername(request.username)
+      : await this.userService.findUserById(request.userId);
     if (!user)
       return {
         error: GetUserDetailResponseError.NO_SUCH_USER
