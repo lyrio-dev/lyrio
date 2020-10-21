@@ -354,7 +354,7 @@ export class AuthController {
     if (
       !(
         (currentUser && currentUser.id === request.userId) ||
-        (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER))
+        (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.ManageUser))
       )
     )
       return {
@@ -385,7 +385,7 @@ export class AuthController {
     if (
       !(
         (currentUser && currentUser.id === request.userId) ||
-        (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER))
+        (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.ManageUser))
       )
     )
       return {

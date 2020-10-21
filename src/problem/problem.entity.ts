@@ -7,9 +7,9 @@ import { ProblemJudgeInfoEntity } from "./problem-judge-info.entity";
 import { ProblemSampleEntity } from "./problem-sample.entity";
 
 export enum ProblemType {
-  TRADITIONAL = "TRADITIONAL",
-  INTERACTION = "INTERACTION",
-  SUBMIT_ANSWER = "SUBMIT_ANSWER"
+  Traditional = "Traditional",
+  Interaction = "Interaction",
+  SubmitAnswer = "SubmitAnswer"
 }
 
 @Entity("problem")

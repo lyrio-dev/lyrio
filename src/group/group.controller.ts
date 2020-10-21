@@ -97,7 +97,7 @@ export class GroupController {
     if (
       !(
         currentUser &&
-        (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER_GROUP))
+        (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.ManageUserGroup))
       )
     )
       return {
@@ -132,7 +132,7 @@ export class GroupController {
     if (
       !(
         currentUser &&
-        (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER_GROUP))
+        (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.ManageUserGroup))
       )
     )
       return {
@@ -166,7 +166,7 @@ export class GroupController {
     if (
       !(
         currentUser &&
-        (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER_GROUP))
+        (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.ManageUserGroup))
       )
     )
       return {
@@ -219,7 +219,7 @@ export class GroupController {
 
     if (
       !(
-        (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER_GROUP)) ||
+        (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.ManageUserGroup)) ||
         (await this.groupService.isGroupAdmin(currentUser.id, group.id))
       )
     )
@@ -266,7 +266,7 @@ export class GroupController {
 
     if (
       !(
-        (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER_GROUP)) ||
+        (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.ManageUserGroup)) ||
         (await this.groupService.isGroupAdmin(currentUser.id, group.id))
       )
     )
@@ -311,7 +311,7 @@ export class GroupController {
         error: SetGroupAdminResponseError.NO_SUCH_GROUP
       };
 
-    if (!(await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER_GROUP)))
+    if (!(await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.ManageUserGroup)))
       return {
         error: SetGroupAdminResponseError.PERMISSION_DENIED
       };
@@ -345,7 +345,7 @@ export class GroupController {
         groupsWithAdminPermission: []
       };
 
-    if (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER_GROUP)) {
+    if (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.ManageUserGroup)) {
       const groups = await this.groupService.getAllGroups();
       return {
         groups: await Promise.all(groups.map(async group => await this.groupService.getGroupMeta(group))),
@@ -381,7 +381,7 @@ export class GroupController {
 
     const memberships = await this.groupService.getGroupMemberList(group);
     if (!memberships.some(membership => membership.userId === currentUser.id)) {
-      if (!(await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER_GROUP))) {
+      if (!(await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.ManageUserGroup))) {
         return {
           error: GetGroupMemberListResponseError.PERMISSION_DENIED
         };

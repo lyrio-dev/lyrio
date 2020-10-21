@@ -94,10 +94,10 @@ export const migrationUser: MigrationInterface = {
 
       switch (oldUserPrivilege.privilege) {
         case "manage_problem":
-          userPrivilegeEntity.privilegeType = UserPrivilegeType.MANAGE_PROBLEM;
+          userPrivilegeEntity.privilegeType = UserPrivilegeType.ManageProblem;
           break;
         case "manage_user":
-          userPrivilegeEntity.privilegeType = UserPrivilegeType.MANAGE_USER;
+          userPrivilegeEntity.privilegeType = UserPrivilegeType.ManageUser;
           break;
         default:
       }

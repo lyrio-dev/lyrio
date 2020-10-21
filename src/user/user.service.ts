@@ -129,7 +129,7 @@ export class UserService {
         user.publicEmail ||
         (currentUser &&
           (currentUser.id === user.id ||
-            (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER))))
+            (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.ManageUser))))
           ? user.email
           : null,
       avatar: this.getUserAvatar(user),
@@ -236,10 +236,10 @@ export class UserService {
     return null;
   }
 
-  async searchUser(query: string, wildcard: "START" | "END" | "BOTH", maxTakeCount: number): Promise<UserEntity[]> {
+  async searchUser(query: string, wildcard: "Start" | "End" | "Both", maxTakeCount: number): Promise<UserEntity[]> {
     query = escapeLike(query);
-    if (wildcard === "START" || wildcard === "BOTH") query = `%${query}`;
-    if (wildcard === "END" || wildcard === "BOTH") query += "%";
+    if (wildcard === "Start" || wildcard === "Both") query = `%${query}`;
+    if (wildcard === "End" || wildcard === "Both") query += "%";
 
     return await this.userRepository.find({
       where: {

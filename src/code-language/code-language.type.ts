@@ -1,3 +1,3 @@
 export enum CodeLanguage {
-  CPP = "cpp"
+  Cpp = "cpp"
 }

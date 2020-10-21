@@ -169,7 +169,7 @@ export class UserController {
       };
 
     const isUserSelf = currentUser.id === user.id;
-    const hasPrivilege = await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER);
+    const hasPrivilege = await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.ManageUser);
 
     if (!(isUserSelf || hasPrivilege))
       return {
@@ -307,7 +307,7 @@ export class UserController {
       hasPrivilege:
         currentUser &&
         (currentUser.id === user.id ||
-          (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER)))
+          (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.ManageUser)))
     };
   }
 
@@ -333,7 +333,7 @@ export class UserController {
 
     if (
       currentUser.id !== user.id &&
-      !(await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER))
+      !(await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.ManageUser))
     )
       return {
         error: GetUserProfileResponseError.PERMISSION_DENIED
@@ -378,7 +378,7 @@ export class UserController {
 
     if (
       currentUser.id !== user.id &&
-      !(await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER))
+      !(await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.ManageUser))
     )
       return {
         error: GetUserPreferenceResponseError.PERMISSION_DENIED
@@ -412,7 +412,7 @@ export class UserController {
 
     if (
       currentUser.id !== user.id &&
-      !(await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER))
+      !(await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.ManageUser))
     )
       return {
         error: UpdateUserPreferenceResponseError.PERMISSION_DENIED
@@ -445,7 +445,7 @@ export class UserController {
 
     if (
       currentUser.id !== user.id &&
-      !(await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER))
+      !(await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.ManageUser))
     )
       return {
         error: GetUserSecuritySettingsResponseError.PERMISSION_DENIED
@@ -477,7 +477,7 @@ export class UserController {
 
     if (
       currentUser.id !== request.userId &&
-      !(await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER))
+      !(await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.ManageUser))
     )
       return {
         error: QueryAuditLogsResponseError.PERMISSION_DENIED
@@ -546,7 +546,7 @@ export class UserController {
       };
 
     const isUserSelf = currentUser.id === user.id;
-    const hasPrivilege = await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.MANAGE_USER);
+    const hasPrivilege = await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.ManageUser);
 
     if (!(isUserSelf || hasPrivilege))
       return {

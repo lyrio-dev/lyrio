@@ -71,7 +71,7 @@ export class DiscussionReplyDto {
   reactions: DiscussionOrReplyReactionsDto;
 
   @ApiProperty({
-    description: "MANAGE_PERMISSION is not valid for replies.",
+    description: "ManagePermission is not valid for replies.",
     enum: DiscussionPermissionType,
     isArray: true
   })

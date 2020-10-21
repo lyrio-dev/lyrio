@@ -23,19 +23,19 @@ export enum GetProblemResponseError {
 
 export class ProblemPermissionOfCurrentUserDto {
   @ApiProperty({ required: false })
-  [ProblemPermissionType.VIEW]?: boolean;
+  [ProblemPermissionType.View]?: boolean;
 
   @ApiProperty({ required: false })
-  [ProblemPermissionType.MODIFY]?: boolean;
+  [ProblemPermissionType.Modify]?: boolean;
 
   @ApiProperty({ required: false })
-  [ProblemPermissionType.MANAGE_PERMISSION]?: boolean;
+  [ProblemPermissionType.ManagePermission]?: boolean;
 
   @ApiProperty({ required: false })
-  [ProblemPermissionType.MANAGE_PUBLICNESS]?: boolean;
+  [ProblemPermissionType.ManagePublicness]?: boolean;
 
   @ApiProperty({ required: false })
-  [ProblemPermissionType.DELETE]?: boolean;
+  [ProblemPermissionType.Delete]?: boolean;
 }
 
 class ProblemUserPermissionDto {

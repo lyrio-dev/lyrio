@@ -94,11 +94,11 @@ export class RedisService implements OnModuleInit {
    * Multiple readers can hold the same lock at the same time with no writer.
    * Only one writer can hold the same lock at the same time with no reader.
    * @param name The lock name.
-   * @param type The operation type, `"READ"` or `"WRITE"`.
+   * @param type The operation type, `"Read"` or `"Write"`.
    * @param callback The function to execute while the lock is held.
    * @return The value returned in `callback`.
    */
-  public async lockReadWrite<T>(name: string, type: "READ" | "WRITE", callback: () => Promise<T>): Promise<T> {
+  public async lockReadWrite<T>(name: string, type: "Read" | "Write", callback: () => Promise<T>): Promise<T> {
     const lockRead = async () => {
       let unlock: () => Promise<void>;
       try {
@@ -179,7 +179,7 @@ export class RedisService implements OnModuleInit {
         await this.client.del(REDIS_KEY_RWLOCK_WRITER_ACTIVE.format(name));
       });
 
-    if (type === "READ") {
+    if (type === "Read") {
       try {
         await lockRead();
         return await callback();

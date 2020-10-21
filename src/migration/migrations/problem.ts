@@ -111,12 +111,12 @@ function parseSamples(sample: string): [sample: ProblemSampleDataMember, text: s
 export function parseProblemType(type: OldDatabaseProblemEntity["type"]) {
   switch (type) {
     case "interaction":
-      return ProblemType.INTERACTION;
+      return ProblemType.Interaction;
     case "submit-answer":
-      return ProblemType.SUBMIT_ANSWER;
+      return ProblemType.SubmitAnswer;
     case "traditional":
     default:
-      return ProblemType.TRADITIONAL;
+      return ProblemType.Traditional;
   }
 }
 
@@ -134,7 +134,7 @@ export function getLanguageAndOptions(
     const isClang = oldLanguageName.indexOf("clang") !== -1;
 
     return {
-      language: CodeLanguage.CPP,
+      language: CodeLanguage.Cpp,
       compileAndRunOptions: <CompileAndRunOptionsCpp>{
         compiler: isClang ? "clang++" : "g++",
         std: `c++${stdVersion}`,
@@ -150,7 +150,7 @@ export function getLanguageAndOptions(
 
   Logger.warn(`Unspported language "${oldLanguageName}" while processing ${errorObjectDescription}`);
   return {
-    language: CodeLanguage.CPP,
+    language: CodeLanguage.Cpp,
     compileAndRunOptions: <CompileAndRunOptionsCpp>{
       compiler: "g++",
       std: "c++17",
@@ -357,7 +357,7 @@ export const migrationProblem: MigrationInterface = {
 
       await localizedContentService.createOrUpdate(
         problemTag.id,
-        LocalizedContentType.PROBLEM_TAG_NAME,
+        LocalizedContentType.ProblemTagName,
         Locale.zh_CN,
         oldProblemTag.name
       );
@@ -547,7 +547,7 @@ export const migrationProblem: MigrationInterface = {
                 for (const [, text] of samples) {
                   results.push({
                     sectionTitle: samples.length === 1 ? "样例" : `样例 ${i + 1}`,
-                    type: ProblemContentSectionType.SAMPLE,
+                    type: ProblemContentSectionType.Sample,
                     sampleId: i,
                     text: text.trim()
                   });
@@ -562,7 +562,7 @@ export const migrationProblem: MigrationInterface = {
 
             return <ProblemContentSection>{
               sectionTitle: sectionNames[section],
-              type: ProblemContentSectionType.TEXT,
+              type: ProblemContentSectionType.Text,
               text: content
             };
           })
@@ -571,14 +571,14 @@ export const migrationProblem: MigrationInterface = {
 
         await localizedContentService.createOrUpdate(
           problem.id,
-          LocalizedContentType.PROBLEM_TITLE,
+          LocalizedContentType.ProblemTitle,
           Locale.zh_CN,
           oldProblem.title
         );
 
         await localizedContentService.createOrUpdate(
           problem.id,
-          LocalizedContentType.PROBLEM_CONTENT,
+          LocalizedContentType.ProblemContent,
           Locale.zh_CN,
           JSON.stringify(contentSections)
         );

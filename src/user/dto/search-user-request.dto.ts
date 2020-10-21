@@ -7,8 +7,8 @@ export class SearchUserRequestDto {
   @Length(1, 24)
   readonly query: string;
 
-  @ApiProperty({ enum: ["START", "END", "BOTH"] })
-  @IsIn(["START", "END", "BOTH"])
+  @ApiProperty({ enum: ["Start", "End", "Both"] })
+  @IsIn(["Start", "End", "Both"])
   @IsOptional()
-  readonly wildcard?: "START" | "END" | "BOTH";
+  readonly wildcard?: "Start" | "End" | "Both";
 }

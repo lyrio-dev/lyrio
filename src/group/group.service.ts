@@ -183,10 +183,10 @@ export class GroupService {
     return null;
   }
 
-  async searchGroup(query: string, wildcard: "START" | "END" | "BOTH", maxTakeCount: number): Promise<GroupEntity[]> {
+  async searchGroup(query: string, wildcard: "Start" | "End" | "Both", maxTakeCount: number): Promise<GroupEntity[]> {
     query = escapeLike(query);
-    if (wildcard === "START" || wildcard === "BOTH") query = `%${query}`;
-    if (wildcard === "END" || wildcard === "BOTH") query += "%";
+    if (wildcard === "Start" || wildcard === "Both") query = `%${query}`;
+    if (wildcard === "End" || wildcard === "Both") query += "%";
 
     return await this.groupRepository.find({
       where: {

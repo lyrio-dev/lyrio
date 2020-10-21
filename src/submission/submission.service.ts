@@ -43,11 +43,11 @@ import { FileUploadInfoDto, SignedFileUploadRequestDto } from "@/file/dto";
 import { SubmissionBasicMetaDto } from "./dto";
 
 export enum SubmissionPermissionType {
-  VIEW = "VIEW",
-  CANCEL = "CANCEL",
-  REJUDGE = "REJUDGE",
-  MANAGE_PUBLICNESS = "MANAGE_PUBLICNESS",
-  DELETE = "DELETE"
+  View = "View",
+  Cancel = "Cancel",
+  Rejudge = "Rejudge",
+  ManagePublicness = "ManagePublicness",
+  Delete = "Delete"
 }
 
 interface SubmissionTaskExtraInfo extends JudgeTaskExtraInfo {
@@ -120,41 +120,41 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
   ): Promise<boolean> {
     switch (type) {
       // Everyone can read a public submission
-      // Submitter and those who has the MODIFY permission of the submission's problem can VIEW a non-public submission
-      case SubmissionPermissionType.VIEW:
+      // Submitter and those who has the Modify permission of the submission's problem can View a non-public submission
+      case SubmissionPermissionType.View:
         if (submission.isPublic) return true;
         if (!user) return false;
         if (user.id === submission.submitterId) return true;
         return await this.problemService.userHasPermission(
           user,
           await this.problemService.findProblemById(submission.problemId),
-          ProblemPermissionType.MODIFY
+          ProblemPermissionType.Modify
         );
 
-      // Submitter and those who has the MODIFY permission of the submission's problem can CANCEL a submission
-      case SubmissionPermissionType.CANCEL:
+      // Submitter and those who has the Modify permission of the submission's problem can Cancel a submission
+      case SubmissionPermissionType.Cancel:
         if (!user) return false;
         if (user.id === submission.submitterId) return true;
         return await this.problemService.userHasPermission(
           user,
           await this.problemService.findProblemById(submission.problemId),
-          ProblemPermissionType.MODIFY
+          ProblemPermissionType.Modify
         );
 
-      // Those who has the MODIFY permission of the submission's problem can REJUDGE a submission
-      case SubmissionPermissionType.REJUDGE:
+      // Those who has the Modify permission of the submission's problem can Rejudge a submission
+      case SubmissionPermissionType.Rejudge:
         return await this.problemService.userHasPermission(
           user,
           await this.problemService.findProblemById(submission.problemId),
-          ProblemPermissionType.MODIFY
+          ProblemPermissionType.Modify
         );
 
       // Admins can manage a submission's publicness or delete a submission
-      case SubmissionPermissionType.MANAGE_PUBLICNESS:
-      case SubmissionPermissionType.DELETE:
+      case SubmissionPermissionType.ManagePublicness:
+      case SubmissionPermissionType.Delete:
         if (!user) return false;
         else if (user.isAdmin) return true;
-        else if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM)) return true;
+        else if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageProblem)) return true;
         else return false;
 
       default:
@@ -249,7 +249,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
   }
 
   /**
-   * @param problem Should be locked by `ProblemService.lockProblemById(id, "READ")`.
+   * @param problem Should be locked by `ProblemService.lockProblemById(id, "Read")`.
    */
   public async createSubmission(
     submitter: UserEntity,
@@ -468,7 +468,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
   }
 
   public async deleteSubmission(submission: SubmissionEntity): Promise<void> {
-    // This function updates related info, lock the problem for READ first, then lock the submission
+    // This function updates related info, lock the problem for Read first, then lock the submission
     // eslint-disable-next-line no-shadow
     await this.lockSubmission(submission, true, async submission => {
       if (!submission) return;
@@ -490,7 +490,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
   }
 
   /**
-   * This function updates related info, the problem must be locked for READ first, then the submission must be locked.
+   * This function updates related info, the problem must be locked for Read first, then the submission must be locked.
    */
   private async onSubmissionUpdated(oldSubmission: SubmissionEntity, submission: SubmissionEntity): Promise<void> {
     await this.submissionStatisticsService.onSubmissionUpdated(oldSubmission, submission);
@@ -507,7 +507,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
   }
 
   /**
-   * This function updates related info, the problem must be locked for READ first, then the submission must be locked.
+   * This function updates related info, the problem must be locked for Read first, then the submission must be locked.
    */
   private async onSubmissionFinished(
     submission: SubmissionEntity,
@@ -622,7 +622,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     callback: (submission: SubmissionEntity, problem?: ProblemEntity) => Promise<T>
   ): Promise<T> {
     if (lockProblem) {
-      return await this.problemService.lockProblemById(submission.problemId, "READ", async problem => {
+      return await this.problemService.lockProblemById(submission.problemId, "Read", async problem => {
         if (!problem) return await callback(null);
         return await this.redisService.lock(
           `Submission_${submission.id}`,

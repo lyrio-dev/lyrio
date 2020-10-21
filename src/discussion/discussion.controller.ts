@@ -104,7 +104,7 @@ export class DiscussionController {
         };
 
       // Should we add a permission type "publish discussion"?
-      if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.VIEW)))
+      if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.View)))
         return {
           error: CreateDiscussionResponseError.PERMISSION_DENIED
         };
@@ -141,7 +141,7 @@ export class DiscussionController {
     // Should we add a permission type "reply/reaction"?
     if (
       !currentUser ||
-      !(await this.discussionService.userHasPermission(currentUser, discussion, DiscussionPermissionType.VIEW))
+      !(await this.discussionService.userHasPermission(currentUser, discussion, DiscussionPermissionType.View))
     )
       return {
         error: CreateDiscussionReplyResponseError.PERMISSION_DENIED
@@ -149,7 +149,7 @@ export class DiscussionController {
 
     const hasPrivilege = await this.userPrivilegeService.userHasPrivilege(
       currentUser,
-      UserPrivilegeType.MANAGE_DISCUSSION
+      UserPrivilegeType.ManageDiscussion
     );
 
     const reply = await this.discussionService.addReply(currentUser, discussion, request.content);
@@ -169,9 +169,9 @@ export class DiscussionController {
         // XXX: move to DiscussionService?
         permissions: [
           (await this.discussionService.userHasModifyDiscussionReplyPermission(currentUser, reply, hasPrivilege))
-            ? [DiscussionPermissionType.MODIFY, DiscussionPermissionType.DELETE]
+            ? [DiscussionPermissionType.Modify, DiscussionPermissionType.Delete]
             : [],
-          hasPrivilege ? [DiscussionPermissionType.MANAGE_PUBLICNESS] : []
+          hasPrivilege ? [DiscussionPermissionType.ManagePublicness] : []
         ].flat()
       }
     };
@@ -206,7 +206,7 @@ export class DiscussionController {
     // Should we add a permission type "reply/reaction"?
     if (
       !currentUser ||
-      !(await this.discussionService.userHasPermission(currentUser, discussion, DiscussionPermissionType.VIEW))
+      !(await this.discussionService.userHasPermission(currentUser, discussion, DiscussionPermissionType.View))
     )
       return {
         error: ToggleReactionResponseError.PERMISSION_DENIED
@@ -246,7 +246,7 @@ export class DiscussionController {
 
     const hasPrivilege = await this.userPrivilegeService.userHasPrivilege(
       currentUser,
-      UserPrivilegeType.MANAGE_DISCUSSION
+      UserPrivilegeType.ManageDiscussion
     );
 
     const filterProblem = !request.problemId ? null : await this.problemService.findProblemById(request.problemId);
@@ -337,7 +337,7 @@ export class DiscussionController {
         error: GetDiscussionPermissionsResponseError.NO_SUCH_DISCUSSION
       };
 
-    if (!(await this.discussionService.userHasPermission(currentUser, discussion, DiscussionPermissionType.VIEW)))
+    if (!(await this.discussionService.userHasPermission(currentUser, discussion, DiscussionPermissionType.View)))
       return {
         error: GetDiscussionPermissionsResponseError.PERMISSION_DENIED
       };
@@ -362,7 +362,7 @@ export class DiscussionController {
       haveManagePermissionsPermission: await this.discussionService.userHasPermission(
         currentUser,
         discussion,
-        DiscussionPermissionType.MANAGE_PERMISSION
+        DiscussionPermissionType.ManagePermission
       )
     };
   }
@@ -402,7 +402,7 @@ export class DiscussionController {
       !(await this.discussionService.userHasPermission(
         currentUser,
         discussion,
-        DiscussionPermissionType.VIEW,
+        DiscussionPermissionType.View,
         discussionProblem
       ))
     )
@@ -412,7 +412,7 @@ export class DiscussionController {
 
     const hasPrivilege = await this.userPrivilegeService.userHasPrivilege(
       currentUser,
-      UserPrivilegeType.MANAGE_DISCUSSION
+      UserPrivilegeType.ManageDiscussion
     );
 
     const result: GetDiscussionAndRepliesResponseDto = {};
@@ -450,9 +450,9 @@ export class DiscussionController {
                     reply,
                     hasPrivilege
                   ))
-                    ? [DiscussionPermissionType.MODIFY, DiscussionPermissionType.DELETE]
+                    ? [DiscussionPermissionType.Modify, DiscussionPermissionType.Delete]
                     : [],
-                  hasPrivilege ? [DiscussionPermissionType.MANAGE_PUBLICNESS] : []
+                  hasPrivilege ? [DiscussionPermissionType.ManagePublicness] : []
                 ].flat()
               )
             )
@@ -545,10 +545,10 @@ export class DiscussionController {
             // permissions
             (async () => {
               const requestedTypes = [
-                DiscussionPermissionType.MODIFY,
-                DiscussionPermissionType.MANAGE_PERMISSION,
-                DiscussionPermissionType.MANAGE_PUBLICNESS,
-                DiscussionPermissionType.DELETE
+                DiscussionPermissionType.Modify,
+                DiscussionPermissionType.ManagePermission,
+                DiscussionPermissionType.ManagePublicness,
+                DiscussionPermissionType.Delete
               ];
 
               const has = await Promise.all(
@@ -592,7 +592,7 @@ export class DiscussionController {
         error: UpdateDiscussionResponseError.NO_SUCH_DISCUSSION
       };
 
-    if (!(await this.discussionService.userHasPermission(currentUser, discussion, DiscussionPermissionType.MODIFY)))
+    if (!(await this.discussionService.userHasPermission(currentUser, discussion, DiscussionPermissionType.Modify)))
       return {
         error: UpdateDiscussionResponseError.PERMISSION_DENIED
       };
@@ -671,7 +671,7 @@ export class DiscussionController {
         error: DeleteDiscussionResponseError.NO_SUCH_DISCUSSION
       };
 
-    if (!(await this.discussionService.userHasPermission(currentUser, discussion, DiscussionPermissionType.DELETE)))
+    if (!(await this.discussionService.userHasPermission(currentUser, discussion, DiscussionPermissionType.Delete)))
       return {
         error: DeleteDiscussionResponseError.PERMISSION_DENIED
       };
@@ -679,7 +679,7 @@ export class DiscussionController {
     // Lock the discussion after permission check to avoid DDoS attacks.
     return await this.discussionService.lockDiscussionById<DeleteDiscussionResponseDto>(
       request.discussionId,
-      "WRITE",
+      "Write",
       // eslint-disable-next-line no-shadow
       async discussion => {
         if (!discussion)
@@ -763,7 +763,7 @@ export class DiscussionController {
       !(await this.discussionService.userHasPermission(
         currentUser,
         discussion,
-        DiscussionPermissionType.MANAGE_PUBLICNESS
+        DiscussionPermissionType.ManagePublicness
       ))
     )
       return {
@@ -800,7 +800,7 @@ export class DiscussionController {
       !(await this.discussionService.userHasPermission(
         currentUser,
         await this.discussionService.findDiscussionById(discussionReply.id),
-        DiscussionPermissionType.MANAGE_PUBLICNESS
+        DiscussionPermissionType.ManagePublicness
       ))
     )
       return {
@@ -836,7 +836,7 @@ export class DiscussionController {
 
     return await this.discussionService.lockDiscussionById<SetDiscussionPermissionsResponseDto>(
       request.discussionId,
-      "READ",
+      "Read",
       async discussion => {
         if (!discussion)
           return {
@@ -848,7 +848,7 @@ export class DiscussionController {
           !(await this.discussionService.userHasPermission(
             currentUser,
             discussion,
-            DiscussionPermissionType.MANAGE_PERMISSION
+            DiscussionPermissionType.ManagePermission
           ))
         )
           return {

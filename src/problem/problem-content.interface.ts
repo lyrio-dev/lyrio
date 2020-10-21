@@ -1,6 +1,6 @@
 export enum ProblemContentSectionType {
-  TEXT = "TEXT",
-  SAMPLE = "SAMPLE"
+  Text = "Text",
+  Sample = "Sample"
 }
 
 export interface ProblemContentSection {

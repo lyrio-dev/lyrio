@@ -24,9 +24,9 @@ export class ProblemTypeFactoryService {
     private readonly problemTypeSubmitAnswerService: ProblemTypeSubmitAnswerService
   ) {
     this.typeServices = {
-      [ProblemType.TRADITIONAL]: this.problemTypeTraditionalService,
-      [ProblemType.INTERACTION]: this.problemTypeInteractionService,
-      [ProblemType.SUBMIT_ANSWER]: this.problemTypeSubmitAnswerService
+      [ProblemType.Traditional]: this.problemTypeTraditionalService,
+      [ProblemType.Interaction]: this.problemTypeInteractionService,
+      [ProblemType.SubmitAnswer]: this.problemTypeSubmitAnswerService
     };
   }
 

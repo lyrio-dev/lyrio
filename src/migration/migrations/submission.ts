@@ -282,7 +282,7 @@ export const migrationSubmission: MigrationInterface = {
           return;
         }
 
-        const isSubmitAnswer = problemInfo.type === ProblemType.SUBMIT_ANSWER;
+        const isSubmitAnswer = problemInfo.type === ProblemType.SubmitAnswer;
 
         const languageAndOptions =
           !isSubmitAnswer && getLanguageAndOptions(oldSubmission.language, `submission ${oldSubmission.id}`, false);
@@ -395,7 +395,7 @@ export const migrationSubmission: MigrationInterface = {
                   testcaseHash: pseudoHash
                 });
 
-                if (problemInfo.type === ProblemType.TRADITIONAL) {
+                if (problemInfo.type === ProblemType.Traditional) {
                   result.testcaseResult[pseudoHash] = <SubmissionTestcaseResultTraditional>{
                     testcaseInfo: {
                       timeLimit: problemInfo.timeLimit,
@@ -414,7 +414,7 @@ export const migrationSubmission: MigrationInterface = {
                     checkerMessage: parseOmittedString(oldCaseResult.spjMessage),
                     systemMessage: parseOmittedString(oldCaseResult.systemMessage)
                   };
-                } else if (problemInfo.type === ProblemType.INTERACTION) {
+                } else if (problemInfo.type === ProblemType.Interaction) {
                   result.testcaseResult[pseudoHash] = <SubmissionTestcaseResultInteraction>{
                     testcaseInfo: {
                       timeLimit: problemInfo.timeLimit,
@@ -430,7 +430,7 @@ export const migrationSubmission: MigrationInterface = {
                     interactorMessage: parseOmittedString(oldCaseResult.spjMessage),
                     systemMessage: parseOmittedString(oldCaseResult.systemMessage)
                   };
-                } else if (problemInfo.type === ProblemType.SUBMIT_ANSWER) {
+                } else if (problemInfo.type === ProblemType.SubmitAnswer) {
                   result.testcaseResult[pseudoHash] = <SubmissionTestcaseResultSubmitAnswer>{
                     testcaseInfo: {
                       inputFile: oldCaseResult.input?.name,

@@ -8,7 +8,7 @@ import { CodeLanguage } from "./code-language.type";
 import CompileAndRunOptionsCpp from "./compile-and-run-options/cpp";
 
 const CompileAndRunOptionsClasses = {
-  [CodeLanguage.CPP]: CompileAndRunOptionsCpp
+  [CodeLanguage.Cpp]: CompileAndRunOptionsCpp
 };
 
 @Injectable()

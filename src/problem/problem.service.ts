@@ -45,16 +45,16 @@ import {
 } from "./dto";
 
 export enum ProblemPermissionType {
-  VIEW = "VIEW",
-  MODIFY = "MODIFY",
-  MANAGE_PERMISSION = "MANAGE_PERMISSION",
-  MANAGE_PUBLICNESS = "MANAGE_PUBLICNESS",
-  DELETE = "DELETE"
+  View = "View",
+  Modify = "Modify",
+  ManagePermission = "ManagePermission",
+  ManagePublicness = "ManagePublicness",
+  Delete = "Delete"
 }
 
 export enum ProblemPermissionLevel {
-  READ = 1,
-  WRITE = 2
+  Read = 1,
+  Write = 2
 }
 
 /**
@@ -151,41 +151,41 @@ export class ProblemService {
     switch (type) {
       // Everyone can view a public problem
       // Owner, admins and those who has read permission can view a non-public problem
-      case ProblemPermissionType.VIEW:
+      case ProblemPermissionType.View:
         if (problem.isPublic) return true;
         if (user && user.id === problem.ownerId) return true;
-        if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM)) return true;
+        if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageProblem)) return true;
         else
           return await this.permissionService.userOrItsGroupsHavePermission(
             user,
             problem.id,
             PermissionObjectType.Problem,
-            ProblemPermissionLevel.READ
+            ProblemPermissionLevel.Read
           );
 
       // Owner, admins and those who has write permission can modify a problem
-      case ProblemPermissionType.MODIFY:
+      case ProblemPermissionType.Modify:
         if (
           user &&
           user.id === problem.ownerId &&
           this.configService.config.preference.security.allowNonAdminEditPublicProblem
         )
           return true;
-        if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM)) return true;
+        if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageProblem)) return true;
         else
           return (
             (await this.permissionService.userOrItsGroupsHavePermission(
               user,
               problem.id,
               PermissionObjectType.Problem,
-              ProblemPermissionLevel.WRITE
+              ProblemPermissionLevel.Write
             )) &&
             (!problem.isPublic || this.configService.config.preference.security.allowNonAdminEditPublicProblem)
           );
 
       // Admins can manage a problem's permission
       // Controlled by the application preference, the owner may have the permission
-      case ProblemPermissionType.MANAGE_PERMISSION:
+      case ProblemPermissionType.ManagePermission:
         if (
           user &&
           user.id === problem.ownerId &&
@@ -193,17 +193,17 @@ export class ProblemService {
           this.configService.config.preference.security.allowNonAdminEditPublicProblem
         )
           return true;
-        else if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM)) return true;
+        else if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageProblem)) return true;
         else return false;
 
       // Admins can manage a problem's publicness (set display id / make public or non-public)
-      case ProblemPermissionType.MANAGE_PUBLICNESS:
-        if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM)) return true;
+      case ProblemPermissionType.ManagePublicness:
+        if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageProblem)) return true;
         else return false;
 
       // Admins can delete a problem
       // Controlled by the application preference, the owner may have the permission
-      case ProblemPermissionType.DELETE:
+      case ProblemPermissionType.Delete:
         if (
           user &&
           user.id === problem.ownerId &&
@@ -211,7 +211,7 @@ export class ProblemService {
           this.configService.config.preference.security.allowNonAdminEditPublicProblem
         )
           return true;
-        else if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM)) return true;
+        else if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageProblem)) return true;
         else return false;
 
       default:
@@ -222,7 +222,7 @@ export class ProblemService {
   async userHasCreateProblemPermission(user: UserEntity): Promise<boolean> {
     if (!user) return false;
     if (this.configService.config.preference.security.allowEveryoneCreateProblem) return true;
-    return await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_PROBLEM);
+    return await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageProblem);
   }
 
   /**
@@ -261,7 +261,7 @@ export class ProblemService {
           LocalizedContentEntity,
           "localizedContent",
           "localizedContent.type = :type AND problem.id = localizedContent.objectId",
-          { type: LocalizedContentType.PROBLEM_TITLE }
+          { type: LocalizedContentType.ProblemTitle }
         )
         .andWhere("localizedContent.data LIKE :like", { like: `%${escapeLike(keyword)}%` });
 
@@ -335,7 +335,7 @@ export class ProblemService {
         // eslint-disable-next-line no-await-in-loop
         await this.localizedContentService.createOrUpdate(
           problem.id,
-          LocalizedContentType.PROBLEM_TITLE,
+          LocalizedContentType.ProblemTitle,
           localizedContent.locale,
           localizedContent.title,
           transactionalEntityManager
@@ -343,7 +343,7 @@ export class ProblemService {
         // eslint-disable-next-line no-await-in-loop
         await this.localizedContentService.createOrUpdate(
           problem.id,
-          LocalizedContentType.PROBLEM_CONTENT,
+          LocalizedContentType.ProblemContent,
           localizedContent.locale,
           JSON.stringify(localizedContent.contentSections),
           transactionalEntityManager
@@ -376,14 +376,14 @@ export class ProblemService {
         // eslint-disable-next-line no-await-in-loop
         await this.localizedContentService.delete(
           problem.id,
-          LocalizedContentType.PROBLEM_TITLE,
+          LocalizedContentType.ProblemTitle,
           deletingLocale,
           transactionalEntityManager
         );
         // eslint-disable-next-line no-await-in-loop
         await this.localizedContentService.delete(
           problem.id,
-          LocalizedContentType.PROBLEM_CONTENT,
+          LocalizedContentType.ProblemContent,
           deletingLocale,
           transactionalEntityManager
         );
@@ -395,14 +395,14 @@ export class ProblemService {
         // eslint-disable-next-line no-await-in-loop
         await this.localizedContentService.createOrUpdate(
           problem.id,
-          LocalizedContentType.PROBLEM_TITLE,
+          LocalizedContentType.ProblemTitle,
           localizedContent.locale,
           localizedContent.title
         );
         // eslint-disable-next-line no-await-in-loop
         await this.localizedContentService.createOrUpdate(
           problem.id,
-          LocalizedContentType.PROBLEM_CONTENT,
+          LocalizedContentType.ProblemContent,
           localizedContent.locale,
           JSON.stringify(localizedContent.contentSections)
         );
@@ -444,20 +444,20 @@ export class ProblemService {
   }
 
   async getProblemLocalizedTitle(problem: ProblemEntity, locale: Locale): Promise<string> {
-    return await this.localizedContentService.get(problem.id, LocalizedContentType.PROBLEM_TITLE, locale);
+    return await this.localizedContentService.get(problem.id, LocalizedContentType.ProblemTitle, locale);
   }
 
   async getProblemLocalizedContent(problem: ProblemEntity, locale: Locale): Promise<ProblemContentSection[]> {
-    const data = await this.localizedContentService.get(problem.id, LocalizedContentType.PROBLEM_CONTENT, locale);
+    const data = await this.localizedContentService.get(problem.id, LocalizedContentType.ProblemContent, locale);
     if (data != null) return JSON.parse(data);
     return null;
   }
 
   async getProblemAllLocalizedContents(problem: ProblemEntity): Promise<ProblemLocalizedContentDto[]> {
-    const titles = await this.localizedContentService.getOfAllLocales(problem.id, LocalizedContentType.PROBLEM_TITLE);
+    const titles = await this.localizedContentService.getOfAllLocales(problem.id, LocalizedContentType.ProblemTitle);
     const contents = await this.localizedContentService.getOfAllLocales(
       problem.id,
-      LocalizedContentType.PROBLEM_CONTENT
+      LocalizedContentType.ProblemContent
     );
     return Object.keys(titles).map((locale: Locale) => ({
       locale,
@@ -499,7 +499,7 @@ export class ProblemService {
   }
 
   /**
-   * @param problem Should be locked by `ProblemService.lockProblemById(id, "READ")`.
+   * @param problem Should be locked by `ProblemService.lockProblemById(id, "Read")`.
    */
   async setProblemPermissions(
     problem: ProblemEntity,
@@ -508,7 +508,7 @@ export class ProblemService {
   ): Promise<void> {
     await this.lockProblemById(
       problem.id,
-      "READ",
+      "Read",
       // eslint-disable-next-line no-shadow
       async problem =>
         await this.permissionService.replaceUsersAndGroupsPermissionForObject(
@@ -631,7 +631,7 @@ export class ProblemService {
   ): Promise<T> {
     return await this.lockProblemById(
       problemId,
-      "READ",
+      "Read",
       async problem =>
         await this.redisService.lock(`ManageProblemFile_${type}_${problem.id}`, async () => await callback(problem))
     );
@@ -829,7 +829,7 @@ export class ProblemService {
         // eslint-disable-next-line no-await-in-loop
         await this.localizedContentService.createOrUpdate(
           problemTag.id,
-          LocalizedContentType.PROBLEM_TAG_NAME,
+          LocalizedContentType.ProblemTagName,
           locale,
           name,
           transactionalEntityManager
@@ -852,7 +852,7 @@ export class ProblemService {
 
       await this.localizedContentService.delete(
         problemTag.id,
-        LocalizedContentType.PROBLEM_TAG_NAME,
+        LocalizedContentType.ProblemTagName,
         null,
         transactionalEntityManager
       );
@@ -860,7 +860,7 @@ export class ProblemService {
         // eslint-disable-next-line no-await-in-loop
         await this.localizedContentService.createOrUpdate(
           problemTag.id,
-          LocalizedContentType.PROBLEM_TAG_NAME,
+          LocalizedContentType.ProblemTagName,
           locale,
           name,
           transactionalEntityManager
@@ -877,7 +877,7 @@ export class ProblemService {
 
       await this.localizedContentService.delete(
         problemTag.id,
-        LocalizedContentType.PROBLEM_TAG_NAME,
+        LocalizedContentType.ProblemTagName,
         null,
         transactionalEntityManager
       );
@@ -885,7 +885,7 @@ export class ProblemService {
   }
 
   async getProblemTagLocalizedName(problemTag: ProblemTagEntity, locale: Locale): Promise<string> {
-    return await this.localizedContentService.get(problemTag.id, LocalizedContentType.PROBLEM_TAG_NAME, locale);
+    return await this.localizedContentService.get(problemTag.id, LocalizedContentType.ProblemTagName, locale);
   }
 
   /**
@@ -903,7 +903,7 @@ export class ProblemService {
   }
 
   async getProblemTagAllLocalizedNames(problemTag: ProblemTagEntity): Promise<Partial<Record<Locale, string>>> {
-    return await this.localizedContentService.getOfAllLocales(problemTag.id, LocalizedContentType.PROBLEM_TAG_NAME);
+    return await this.localizedContentService.getOfAllLocales(problemTag.id, LocalizedContentType.ProblemTagName);
   }
 
   async setProblemTags(
@@ -937,11 +937,11 @@ export class ProblemService {
 
   /**
    * Lock a problem by ID with Read/Write Lock.
-   * @param type `"READ"` to ensure the problem exists while holding the lock, `"WRITE"` is for deleting the problem.
+   * @param type `"Read"` to ensure the problem exists while holding the lock, `"Write"` is for deleting the problem.
    */
   async lockProblemById<T>(
     id: number,
-    type: "READ" | "WRITE",
+    type: "Read" | "Write",
     callback: (problem: ProblemEntity) => Promise<T>
   ): Promise<T> {
     return await this.redisService.lockReadWrite(
@@ -952,7 +952,7 @@ export class ProblemService {
   }
 
   /**
-   * @param problem Must be locked by `ProblemService.lockProblemById(id, "WRITE")`.
+   * @param problem Must be locked by `ProblemService.lockProblemById(id, "Write")`.
    */
   async deleteProblem(problem: ProblemEntity): Promise<void> {
     let deleteFilesActually: () => void = null;
@@ -990,7 +990,7 @@ export class ProblemService {
   }
 
   /**
-   * @param problem Must be locked by `ProblemService.lockProblemById(id, "WRITE")`.
+   * @param problem Must be locked by `ProblemService.lockProblemById(id, "Write")`.
    */
   async changeProblemType(problem: ProblemEntity, type: ProblemType): Promise<boolean> {
     if (await this.submissionService.problemHasAnySubmission(problem)) return false;

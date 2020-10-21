@@ -30,16 +30,16 @@ export enum DiscussionReactionType {
 }
 
 export enum DiscussionPermissionType {
-  VIEW = "VIEW",
-  MODIFY = "MODIFY",
-  MANAGE_PERMISSION = "MANAGE_PERMISSION",
-  MANAGE_PUBLICNESS = "MANAGE_PUBLICNESS",
-  DELETE = "DELETE"
+  View = "View",
+  Modify = "Modify",
+  ManagePermission = "ManagePermission",
+  ManagePublicness = "ManagePublicness",
+  Delete = "Delete"
 }
 
 export enum DiscussionPermissionLevel {
-  READ = 1,
-  WRITE = 2
+  Read = 1,
+  Write = 2
 }
 
 @Injectable()
@@ -126,7 +126,7 @@ export class DiscussionService {
     const hasViewProblemPermission = async () => {
       if (discussion.problemId) {
         if (!discussionProblem) discussionProblem = await this.problemService.findProblemById(discussion.problemId);
-        return await this.problemService.userHasPermission(user, discussionProblem, ProblemPermissionType.VIEW);
+        return await this.problemService.userHasPermission(user, discussionProblem, ProblemPermissionType.View);
       }
       return true;
     };
@@ -134,10 +134,10 @@ export class DiscussionService {
     switch (type) {
       // Everyone can view a public discussion
       // Owner, admins and those who has read permission can view a non-public discussion
-      case DiscussionPermissionType.VIEW:
+      case DiscussionPermissionType.View:
         if (discussion.isPublic) return true;
         if (user && user.id === discussion.publisherId) return true;
-        if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_DISCUSSION)) return true;
+        if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageDiscussion)) return true;
         else
           return (
             await Promise.all([
@@ -146,15 +146,15 @@ export class DiscussionService {
                 user,
                 discussion.id,
                 PermissionObjectType.Discussion,
-                DiscussionPermissionLevel.READ
+                DiscussionPermissionLevel.Read
               )
             ])
           ).every(f => f);
 
       // Owner, admins and those who has write permission can modify a discussion
-      case DiscussionPermissionType.MODIFY:
+      case DiscussionPermissionType.Modify:
         if (user && user.id === discussion.publisherId) return true;
-        if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_DISCUSSION)) return true;
+        if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageDiscussion)) return true;
         else
           return (
             await Promise.all([
@@ -163,25 +163,25 @@ export class DiscussionService {
                 user,
                 discussion.id,
                 PermissionObjectType.Discussion,
-                DiscussionPermissionLevel.WRITE
+                DiscussionPermissionLevel.Write
               )
             ])
           ).every(f => f);
 
       // Admins can manage a discussion's permission
-      case DiscussionPermissionType.MANAGE_PERMISSION:
-        if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_DISCUSSION)) return true;
+      case DiscussionPermissionType.ManagePermission:
+        if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageDiscussion)) return true;
         else return false;
 
       // Admins can manage a discussion's publicness
-      case DiscussionPermissionType.MANAGE_PUBLICNESS:
-        if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_DISCUSSION)) return true;
+      case DiscussionPermissionType.ManagePublicness:
+        if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageDiscussion)) return true;
         else return false;
 
       // Admins and the publisher can delete a discussion
-      case DiscussionPermissionType.DELETE:
+      case DiscussionPermissionType.Delete:
         if (user && user.id === discussion.publisherId) return true;
-        else if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_DISCUSSION))
+        else if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageDiscussion))
           return true;
         else return false;
 
@@ -198,16 +198,14 @@ export class DiscussionService {
     return (
       user &&
       (discussionReply.publisherId === user.id ||
-        (hasPrivilege ?? (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_DISCUSSION))))
+        (hasPrivilege ?? (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageDiscussion))))
     );
   }
 
   async userHasCreateDiscussionPermission(user: UserEntity, hasPrivilege?: boolean): Promise<boolean> {
     if (!user) return false;
     if (this.configService.config.preference.security.allowEveryoneCreateDiscussion) return true;
-    return (
-      hasPrivilege ?? (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.MANAGE_DISCUSSION))
-    );
+    return hasPrivilege ?? (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageDiscussion));
   }
 
   async createDiscussion(
@@ -385,11 +383,11 @@ export class DiscussionService {
 
   /**
    * Lock a discussion by ID with Read/Write Lock.
-   * @param type `"READ"` to ensure the problem exists while holding the lock, `"WRITE"` is for deleting the problem.
+   * @param type `"Read"` to ensure the problem exists while holding the lock, `"Write"` is for deleting the problem.
    */
   async lockDiscussionById<T>(
     id: number,
-    type: "READ" | "WRITE",
+    type: "Read" | "Write",
     callback: (discussion: DiscussionEntity) => Promise<T>
   ): Promise<T> {
     return await this.redisService.lockReadWrite(
@@ -406,7 +404,7 @@ export class DiscussionService {
   ): Promise<void> {
     await this.lockDiscussionById(
       discussion.id,
-      "READ",
+      "Read",
       // eslint-disable-next-line no-shadow
       async discussion =>
         await this.permissionService.replaceUsersAndGroupsPermissionForObject(
