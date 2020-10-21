@@ -9,6 +9,7 @@ import { MailService, MailTemplate } from "@/mail/mail.service";
 import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.service";
 import { GroupService } from "@/group/group.service";
 import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
+import { UserMigrationService } from "@/migration/user-migration.service";
 
 import { AuthEmailVerifactionCodeService, EmailVerifactionCodeType } from "./auth-email-verifaction-code.service";
 import { AuthSessionService } from "./auth-session.service";
@@ -56,7 +57,8 @@ export class AuthController {
     private readonly mailService: MailService,
     private readonly authSessionService: AuthSessionService,
     private readonly authIpLocationService: AuthIpLocationService,
-    private readonly auditService: AuditService
+    private readonly auditService: AuditService,
+    private readonly userMigrationService: UserMigrationService
   ) {}
 
   @Get("getSessionInfo")
@@ -102,10 +104,18 @@ export class AuthController {
       };
 
     const user = await this.userService.findUserByUsername(request.username);
-    if (!user)
+    if (!user) {
+      // The username may be a non-migrated old user
+      const userMigrationInfo = await this.userMigrationService.findUserMigrationInfoByOldUsername(request.username);
+      if (userMigrationInfo)
+        return {
+          error: LoginResponseError.USER_NOT_MIGRATED
+        };
+
       return {
         error: LoginResponseError.NO_SUCH_USER
       };
+    }
 
     const userAuth = await this.authService.findUserAuthByUserId(user.id);
 

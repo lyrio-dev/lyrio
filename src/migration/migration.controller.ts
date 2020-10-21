@@ -10,7 +10,7 @@ import { RequestWithSession } from "@/auth/auth.middleware";
 import { UserService } from "@/user/user.service";
 import { AuthSessionService } from "@/auth/auth-session.service";
 
-import { MigrationService } from "./migration.service";
+import { UserMigrationService } from "./user-migration.service";
 import {
   MigrateUserRequestDto,
   MigrateUserResponseDto,
@@ -27,7 +27,7 @@ export class MigrationController {
     private readonly auditService: AuditService,
     private readonly authSessionService: AuthSessionService,
     private readonly userService: UserService,
-    private readonly migrationService: MigrationService
+    private readonly userMigrationService: UserMigrationService
   ) {}
 
   @Post("migrateUser")
@@ -45,7 +45,7 @@ export class MigrationController {
         error: MigrateUserResponseError.ALREADY_LOGGEDIN
       };
 
-    const userMigrationInfo = await this.migrationService.findUserMigrationInfoByOldUsername(request.oldUsername);
+    const userMigrationInfo = await this.userMigrationService.findUserMigrationInfoByOldUsername(request.oldUsername);
     if (!userMigrationInfo)
       return {
         error: MigrateUserResponseError.NO_SUCH_USER
@@ -57,9 +57,7 @@ export class MigrationController {
       };
 
     // The magic salt of SYZOJ 2 -- "syzoj2_xxx"
-    const oldPasswordHash = createHash("md5")
-      .update(request.oldPassword + "syzoj2_xxx")
-      .digest("hex");
+    const oldPasswordHash = createHash("md5").update(`${request.oldPassword}syzoj2_xxx`).digest("hex");
     if (oldPasswordHash.toLowerCase() !== userMigrationInfo.oldPasswordHash.toLowerCase())
       return {
         error: MigrateUserResponseError.WRONG_PASSWORD
@@ -71,7 +69,11 @@ export class MigrationController {
           error: MigrateUserResponseError.DUPLICATE_USERNAME
         };
 
-    const user = await this.migrationService.migrateUser(userMigrationInfo, request.newUsername, request.newPassword);
+    const user = await this.userMigrationService.migrateUser(
+      userMigrationInfo,
+      request.newUsername,
+      request.newPassword
+    );
 
     await this.auditService.log(
       user.id,
@@ -102,7 +104,7 @@ export class MigrationController {
         error: QueryUserMigrationInfoResponseError.ALREADY_LOGGEDIN
       };
 
-    const userMigrationInfo = await this.migrationService.findUserMigrationInfoByOldUsername(request.oldUsername);
+    const userMigrationInfo = await this.userMigrationService.findUserMigrationInfoByOldUsername(request.oldUsername);
     if (!userMigrationInfo)
       return {
         error: QueryUserMigrationInfoResponseError.NO_SUCH_USER

@@ -13,7 +13,7 @@ import { ConfigService } from "@/config/config.service";
 import { UserAuthEntity } from "./user-auth.entity";
 import { AuthEmailVerifactionCodeService } from "./auth-email-verifaction-code.service";
 
-import { LoginResponseError, RegisterResponseError } from "./dto";
+import { RegisterResponseError } from "./dto";
 
 @Injectable()
 export class AuthService {

@@ -33,17 +33,17 @@ export function IsPortNumber(validationOptions?: ValidationOptions) {
 // A username is a string of 3 ~ 24 ASCII characters, and each character
 // is a uppercase / lowercase letter or a number or any of '-_.#$' and is
 // NOT '%'.
-//
-// TODO: Add Chinese support
+export function isUsername(str: string) {
+  return /^[a-zA-Z0-9\-_.#$]{3,24}$/.test(str);
+}
+
 export function IsUsername(validationOptions?: ValidationOptions) {
-  return If(value => typeof value === "string" && /^[a-zA-Z0-9\-_.#$]{3,24}$/.test(value), validationOptions);
+  return If(value => typeof value === "string" && isUsername(value), validationOptions);
 }
 
 // A group name is a string of 1 ~ 48 ASCII characters, and each character
 // is a uppercase / lowercase letter or a number or any of ' :@~-_.#$/'
 // and is NOT '%'.
-//
-// TODO: Add Chinese support
 export function IsGroupName(validationOptions?: ValidationOptions) {
   return If(value => typeof value === "string" && /^[a-zA-Z0-9 :@~-_.#$/]{1,48}$/.test(value), validationOptions);
 }

@@ -7,6 +7,7 @@ import { GroupModule } from "@/group/group.module";
 import { RedisModule } from "@/redis/redis.module";
 import { MailModule } from "@/mail/mail.module";
 import { AuditModule } from "@/audit/audit.module";
+import { MigrationModule } from "@/migration/migration.module";
 
 import { UserAuthEntity } from "./user-auth.entity";
 import { AuthService } from "./auth.service";
@@ -23,7 +24,8 @@ import { AuthIpLocationService } from "./auth-ip-location.service";
     forwardRef(() => GroupModule),
     forwardRef(() => RedisModule),
     forwardRef(() => MailModule),
-    forwardRef(() => AuditModule)
+    forwardRef(() => AuditModule),
+    forwardRef(() => MigrationModule)
   ],
   providers: [AuthService, AuthEmailVerifactionCodeService, AuthSessionService, AuthIpLocationService],
   controllers: [AuthController],

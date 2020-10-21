@@ -4,20 +4,23 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { AuthModule } from "@/auth/auth.module";
 import { UserModule } from "@/user/user.module";
 import { AuditModule } from "@/audit/audit.module";
+import { RedisModule } from "@/redis/redis.module";
 
 import { MigrationController } from "./migration.controller";
-import { MigrationService } from "./migration.service";
+import { UserMigrationService } from "./user-migration.service";
 import { UserMigrationInfoEntity } from "./user-migration-info.entity";
+import { MigrationService } from "./migration.service";
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([UserMigrationInfoEntity]),
     forwardRef(() => AuthModule),
     forwardRef(() => UserModule),
-    forwardRef(() => AuditModule)
+    forwardRef(() => AuditModule),
+    forwardRef(() => RedisModule)
   ],
-  providers: [MigrationService],
+  providers: [UserMigrationService, MigrationService],
   controllers: [MigrationController],
-  exports: [MigrationService]
+  exports: [UserMigrationService]
 })
 export class MigrationModule {}

@@ -1,12 +1,13 @@
 import { ApiProperty } from "@nestjs/swagger";
 
-import { Length } from "class-validator";
-
-import { IsUsername } from "@/common/validators";
+import { IsString, Length, MaxLength } from "class-validator";
 
 export class LoginRequestDto {
-  @ApiProperty()
-  @IsUsername()
+  @ApiProperty({
+    description: "A SYZOJ 2 username is allowed to check if a user is not migrated."
+  })
+  @IsString()
+  @MaxLength(80)
   readonly username: string;
 
   @ApiProperty()

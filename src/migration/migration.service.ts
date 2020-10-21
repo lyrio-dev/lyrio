@@ -1,53 +1,107 @@
-import { Injectable, Inject, forwardRef } from "@nestjs/common";
-import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
+import fs from "fs-extra";
 
-import { Repository, Connection } from "typeorm";
+import { Injectable, Logger } from "@nestjs/common";
+import { InjectConnection } from "@nestjs/typeorm";
+import { NestExpressApplication } from "@nestjs/platform-express";
+
+import { Connection, EntityManager } from "typeorm";
+import yaml from "js-yaml";
+import MariaDB from "mariadb";
+import { Redis } from "ioredis";
 
 import { UserEntity } from "@/user/user.entity";
-import { UserService } from "@/user/user.service";
-import { AuthService } from "@/auth/auth.service";
+import { RedisService } from "@/redis/redis.service";
 
-import { UserMigrationInfoEntity } from "./user-migration-info.entity";
+import { MigrationConfig } from "./migration-config.schema";
+
+import { migrationUser } from "./migrations/user";
+import { migrationProblem } from "./migrations/problem";
+import { migrationSubmission } from "./migrations/submission";
+import { migrationDiscussion } from "./migrations/discussion";
 
 @Injectable()
 export class MigrationService {
+  private entityManager: EntityManager;
+
+  private config: MigrationConfig;
+
+  private oldDatabase: MariaDB.Connection;
+
+  private redis: Redis;
+
   constructor(
     @InjectConnection()
     private readonly connection: Connection,
-    @InjectRepository(UserMigrationInfoEntity)
-    private readonly userMigrationInfoRepository: Repository<UserMigrationInfoEntity>,
-    @Inject(forwardRef(() => AuthService))
-    private readonly authService: AuthService,
-    @Inject(forwardRef(() => UserService))
-    private readonly userService: UserService
-  ) {}
-
-  async findUserMigrationInfoByOldUsername(oldUsername: string): Promise<UserMigrationInfoEntity> {
-    return await this.userMigrationInfoRepository.findOne({
-      oldUsername
-    });
+    private readonly redisService: RedisService
+  ) {
+    this.redis = this.redisService.getClient();
   }
 
-  async migrateUser(
-    userMigrationInfo: UserMigrationInfoEntity,
-    newUsername: string,
-    newPassword: string
-  ): Promise<UserEntity> {
-    const user = await this.userService.findUserById(userMigrationInfo.userId);
-    const userAuth = await this.authService.findUserAuthByUserId(user.id);
-
-    await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
-      if (userMigrationInfo.usernameMustChange) {
-        user.username = newUsername;
-        await transactionalEntityManager.save(user);
-      }
-
-      await this.authService.changePassword(userAuth, newPassword, transactionalEntityManager);
-
-      userMigrationInfo.migrated = true;
-      await transactionalEntityManager.save(userMigrationInfo);
+  async migrate(configFilename: string, app: NestExpressApplication): Promise<void> {
+    this.entityManager = this.connection.createEntityManager();
+    this.config = yaml.safeLoad(await fs.readFile(configFilename, "utf-8")) as MigrationConfig;
+    this.oldDatabase = await MariaDB.createConnection({
+      host: this.config.database.host,
+      port: this.config.database.port,
+      user: this.config.database.username,
+      password: this.config.database.password,
+      database: this.config.database.database
     });
 
-    return user;
+    // Check if the database is empty
+    if ((await this.entityManager.count(UserEntity)) !== 0) {
+      Logger.error("Can't do migration on a non-empty database.");
+      process.exit(-1);
+    }
+
+    Logger.log("Migration started");
+
+    const queryTablePaged = this.queryTablePaged.bind(this);
+
+    await this.redis.flushdb();
+
+    await migrationUser.migrate(this.entityManager, this.config, this.oldDatabase, queryTablePaged, app);
+    await migrationProblem.migrate(this.entityManager, this.config, this.oldDatabase, queryTablePaged, app);
+    await migrationSubmission.migrate(this.entityManager, this.config, this.oldDatabase, queryTablePaged, app);
+    await migrationDiscussion.migrate(this.entityManager, this.config, this.oldDatabase, queryTablePaged, app);
+
+    await this.redis.flushdb();
+
+    Logger.log("Congratulations! Migration finished!");
+
+    process.exit(0);
+  }
+
+  private async queryTablePaged<T>(
+    tableName: string,
+    orderByColumn: string,
+    onRecord: (record: T) => Promise<void>,
+    maxConcurrency = 1000
+  ): Promise<void> {
+    Logger.log(`Started processing table "${tableName}"`);
+
+    const pageSize = Math.max(1000, maxConcurrency);
+    const { count } = (await this.oldDatabase.query(`SELECT COUNT(*) AS \`count\` FROM \`${tableName}\``))[0];
+    let processedCount = 0;
+
+    /* eslint-disable no-await-in-loop */
+    for (let i = 0; i < count; i += pageSize) {
+      const results: T[] = await this.oldDatabase.query(
+        `SELECT * FROM \`${tableName}\` ORDER BY \`${orderByColumn}\` LIMIT ${i}, ${pageSize}`
+      );
+      const resultsLength = results.length;
+
+      while (results.length > 0) {
+        const promises: Promise<void>[] = [];
+        for (let j = 0; j < maxConcurrency && results.length > 0; j++) promises.push(onRecord(results.shift()));
+        await Promise.all(promises);
+      }
+
+      processedCount += resultsLength;
+      Logger.log(`Processing table "${tableName}" ${processedCount}/${count}`);
+    }
+    /* eslint-enable no-await-in-loop */
+
+    Logger.log(`Finished processing table "${tableName}"`);
   }
 }

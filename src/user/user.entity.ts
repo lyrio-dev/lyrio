@@ -44,7 +44,7 @@ export class UserEntity {
   @Column({ type: "boolean" })
   publicEmail: boolean;
 
-  @Column({ type: "datetime" })
+  @Column({ type: "datetime", nullable: true })
   registrationTime: Date;
 
   @OneToOne(() => UserAuthEntity, userAuth => userAuth.user)
