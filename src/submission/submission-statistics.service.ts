@@ -84,7 +84,7 @@ export class SubmissionStatisticsService {
     const key = REDIS_KEY_SUBMISSION_SCORE_STATISTICS.format(problem.id, statisticsType);
     let tuples = await this.parseFromRedis<SubmissionStatisticsCache[]>(key);
 
-    if (!tuples) {
+    const rebuildCache = async () => {
       const aggregateFunction = sort === "ASC" ? "MIN" : "MAX";
       const queryResult: { submissionId: number; submitterId: number; fieldValue: unknown }[] = await this.connection
         .createQueryBuilder()
@@ -118,10 +118,22 @@ export class SubmissionStatisticsService {
         .getRawMany();
       tuples = queryResult.map(result => [result.submissionId, result.submitterId, Number(result.fieldValue)]);
       await this.redisService.cacheSet(key, JSON.stringify(tuples));
+    };
+
+    if (!tuples) await rebuildCache();
+
+    const query = async () => {
+      const ids = tuples.filter((_, i) => i >= skipCount && i < skipCount + takeCount).map(([id]) => id);
+      return await this.submissionService.findSubmissionsByExistingIds(ids);
+    };
+
+    let submissions = await query();
+    if (submissions.some(submission => !submission)) {
+      await rebuildCache();
+      submissions = await query();
     }
 
-    const resultIds = tuples.filter((_, i) => i >= skipCount && i < skipCount + takeCount).map(([id]) => id);
-    return [await this.submissionService.findSubmissionsByExistingIds(resultIds), tuples.length];
+    return [submissions.filter(submission => submission), tuples.length];
   }
 
   /**
@@ -189,8 +201,9 @@ export class SubmissionStatisticsService {
           if (!submission || submission.status !== SubmissionStatus.Accepted) return false;
 
           // If the new submission is Accepted, check if it's better than the submitter's best
-          const submitterBestValue = tuples.find(([, submitterId]) => submitterId === oldSubmission.submitterId)[2];
-          if (submitterBestValue != null) {
+          const submitterBest = tuples.find(([, submitterId]) => submitterId === oldSubmission.submitterId);
+          if (submitterBest != null) {
+            const [, , submitterBestValue] = submitterBest;
             return newValue != null && isFirstBetter(newValue, submitterBestValue);
           }
 
