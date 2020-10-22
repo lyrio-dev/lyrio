@@ -469,6 +469,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
 
   public async deleteSubmission(submission: SubmissionEntity): Promise<void> {
     // This function updates related info, lock the problem for Read first, then lock the submission
+    let deleteFileActually: () => void = null;
     // eslint-disable-next-line no-shadow
     await this.lockSubmission(submission, true, async submission => {
       if (!submission) return;
@@ -478,7 +479,14 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
         await this.submissionProgressService.emitSubmissionEvent(submission.id, SubmissionEventType.Deleted);
       }
 
-      await this.submissionRepository.remove(submission);
+      await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
+        const submissionDetail = await this.getSubmissionDetail(submission);
+        if (submissionDetail.fileUuid)
+          deleteFileActually = await this.fileService.deleteFile(submissionDetail.fileUuid, transactionalEntityManager);
+
+        await transactionalEntityManager.remove(submission);
+      });
+
       await this.submissionStatisticsService.onSubmissionUpdated(submission, null);
       if (submission.status === SubmissionStatus.Accepted) {
         await this.problemService.updateProblemStatistics(submission.problemId, -1, -1);
@@ -487,6 +495,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
         await this.problemService.updateProblemStatistics(submission.problemId, -1, 0);
       }
     });
+    if (deleteFileActually) deleteFileActually();
   }
 
   /**
