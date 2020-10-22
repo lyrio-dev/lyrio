@@ -77,7 +77,7 @@ export class AuthController {
       result.userPreference = await this.userService.getUserPreference(user);
     }
 
-    result.serverPreference = this.configService.config.preference;
+    result.serverPreference = this.configService.preferenceConfigToBeSentToUser;
 
     if (request.jsonp)
       return `(window.getSessionInfoCallback || (function (sessionInfo) { window.sessionInfo = sessionInfo; }))(${JSON.stringify(

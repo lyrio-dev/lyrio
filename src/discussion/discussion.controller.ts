@@ -72,6 +72,8 @@ import { UserMetaDto } from "@/user/dto";
 @ApiTags("Discussion")
 @Controller("discussion")
 export class DiscussionController {
+  readonly reactionEmojisBlacklist: (string | RegExp)[];
+
   constructor(
     private readonly discussionService: DiscussionService,
     private readonly problemService: ProblemService,
@@ -80,7 +82,13 @@ export class DiscussionController {
     private readonly userPrivilegeService: UserPrivilegeService,
     private readonly groupService: GroupService,
     private readonly auditService: AuditService
-  ) {}
+  ) {
+    this.reactionEmojisBlacklist = [
+      this.configService.config.preference.serverSideOnly.discussionReactionCustomEmojisBlacklist
+    ]
+      .flat()
+      .map((value: string) => (value.startsWith("/") && value.endsWith("/") ? new RegExp(value.slice(1, -1)) : value));
+  }
 
   @Post("createDiscussion")
   @ApiBearerAuth()
@@ -214,7 +222,10 @@ export class DiscussionController {
 
     if (
       !(
-        this.configService.config.preference.misc.discussionReactionAllowCustomEmojis ||
+        (this.configService.config.preference.misc.discussionReactionAllowCustomEmojis &&
+          this.reactionEmojisBlacklist.every(value =>
+            value instanceof RegExp ? !value.test(request.emoji) : value !== request.emoji
+          )) ||
         this.configService.config.preference.misc.discussionReactionEmojis.includes(request.emoji)
       ) ||
       !isEmoji(request.emoji)

@@ -12,12 +12,11 @@ import {
   IsOptional,
   IsArray,
   ArrayNotEmpty,
-  Length,
   ArrayUnique
 } from "class-validator";
 import { Type } from "class-transformer";
 
-import { IsEmoji, IsPortNumber } from "@/common/validators";
+import { If, isEmoji, IsEmoji, IsPortNumber } from "@/common/validators";
 
 import { ConfigRelation, ConfigRelationType } from "./config-relation.decorator";
 
@@ -231,7 +230,6 @@ class PreferenceConfigPagination {
 // These config items will be sent to client
 class PreferenceConfigMisc {
   @IsEmoji({ each: true })
-  @Length(1, 5, { each: true })
   @IsString({ each: true })
   @ArrayUnique()
   @ArrayNotEmpty()
@@ -242,6 +240,17 @@ class PreferenceConfigMisc {
   @IsBoolean()
   @ApiProperty()
   readonly discussionReactionAllowCustomEmojis: boolean;
+}
+
+class PreferenceConfigServerSideOnly {
+  @If((blacklist: string | unknown[]) =>
+    (function validate(value: string | unknown[]) {
+      if (typeof value === "string") return (value.startsWith("/") && value.endsWith("/")) || isEmoji(value);
+      else if (Array.isArray(value)) return value.every(validate);
+      else return false;
+    })(blacklist)
+  )
+  discussionReactionCustomEmojisBlacklist: string | unknown[];
 }
 
 // These config items will be sent to client
@@ -264,6 +273,10 @@ export class PreferenceConfig {
   @Type(() => PreferenceConfigMisc)
   @ApiProperty()
   readonly misc: PreferenceConfigMisc;
+
+  @ValidateNested()
+  @Type(() => PreferenceConfigServerSideOnly)
+  serverSideOnly: PreferenceConfigServerSideOnly;
 }
 
 class ResourceLimitConfig {

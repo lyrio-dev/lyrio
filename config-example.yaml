@@ -56,6 +56,8 @@ preference:
   misc:
     discussionReactionEmojis: [👍, 👎, 😄, 😕, ❤️, 🤔, 🤣, 🌿, 🍋, 🕊️]
     discussionReactionAllowCustomEmojis: true
+  serverSideOnly:
+    discussionReactionCustomEmojisBlacklist: /(\uD83C[\uDDE6-\uDDFF]){2}/
 resourceLimit:
   problemTestdataFiles: 40
   problemTestdataSize: 134217728

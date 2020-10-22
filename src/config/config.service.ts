@@ -1,14 +1,16 @@
 import fs from "fs-extra";
 
 import { validateSync } from "class-validator";
-import { plainToClass } from "class-transformer";
+import { classToClass, plainToClass } from "class-transformer";
 import yaml from "js-yaml";
 
-import { AppConfig } from "./config.schema";
+import { AppConfig, PreferenceConfig } from "./config.schema";
 import { checkConfigRelation } from "./config-relation.decorator";
 
 export class ConfigService {
   public readonly config: AppConfig;
+
+  public readonly preferenceConfigToBeSentToUser: PreferenceConfig;
 
   constructor() {
     const filePath = process.env.SYZOJ_NG_CONFIG_FILE;
@@ -18,6 +20,8 @@ export class ConfigService {
 
     const config = yaml.safeLoad(fs.readFileSync(filePath).toString());
     this.config = this.validateInput(config);
+
+    this.preferenceConfigToBeSentToUser = this.getPreferenceConfigToBeSentToUser();
   }
 
   private validateInput(inputConfig: unknown): AppConfig {
@@ -35,5 +39,14 @@ export class ConfigService {
     checkConfigRelation((appConfig as unknown) as Record<string, unknown>);
 
     return appConfig;
+  }
+
+  private getPreferenceConfigToBeSentToUser(): PreferenceConfig {
+    const preference = classToClass(this.config.preference);
+
+    // Delete some properties unnessesary to send to user to save bandwidth
+    delete preference.serverSideOnly;
+
+    return preference;
   }
 }
