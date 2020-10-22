@@ -5,6 +5,8 @@ import toposort from "toposort";
 import { ProblemFileEntity } from "@/problem/problem-file.entity";
 import { isValidFilename } from "@/common/validators";
 
+import { restrictProperties } from "./restrict-properties";
+
 interface JudgeInfoWithMetaAndSubtasks {
   timeLimit?: number;
   memoryLimit?: number;
@@ -96,10 +98,15 @@ export function validateMetaAndSubtasks(
 
   // [A, B] means B depends on A
   const edges: [number, number][] = [];
-  (judgeInfo.subtasks || []).forEach(({ timeLimit, memoryLimit, scoringType, points, dependencies, testcases }, i) => {
+  (judgeInfo.subtasks || []).forEach((subtask, i) => {
+    const { timeLimit, memoryLimit, scoringType, points, dependencies, testcases } = subtask;
+
     if (options.enableTimeMemoryLimit) {
       if (timeLimit != null) validateTimeLimit(timeLimit, "SUBTASK", i);
       if (memoryLimit != null) validateMemoryLimit(memoryLimit, "SUBTASK", i);
+    } else {
+      delete subtask.timeLimit;
+      delete subtask.memoryLimit;
     }
 
     if (!["Sum", "GroupMin", "GroupMul"].includes(scoringType)) {
@@ -115,29 +122,35 @@ export function validateMetaAndSubtasks(
           throw ["INVALID_DEPENDENCY", i + 1, dependency];
         edges.push([dependency, i]);
       });
-    }
+    } else delete subtask.dependencies;
 
     if (!Array.isArray(testcases) || testcases.length === 0) throw ["SUBTASK_HAS_NO_TESTCASES", i + 1];
 
-    // eslint-disable-next-line no-shadow
-    testcases.forEach(({ inputFile, outputFile, userOutputFilename, timeLimit, memoryLimit, points }, j) => {
+    restrictProperties(subtask, ["timeLimit", "memoryLimit", "scoringType", "points", "dependencies", "testcases"]);
+
+    testcases.forEach((testcase, j) => {
+      // eslint-disable-next-line no-shadow
+      const { inputFile, outputFile, userOutputFilename, timeLimit, memoryLimit, points } = testcase;
+
       if (options.enableInputFile) {
         if (
-          !testData.some(
-            file => file.filename === inputFile || (inputFile == null && options.enableInputFile === "optional")
+          !(
+            testData.some(file => file.filename === inputFile) ||
+            (inputFile == null && options.enableInputFile === "optional")
           )
         )
           throw ["NO_SUCH_INPUT_FILE", i + 1, j + 1, inputFile];
-      }
+      } else delete testcase.inputFile;
 
       if (options.enableOutputFile) {
         if (
-          !testData.some(
-            file => file.filename === outputFile || (outputFile == null && options.enableOutputFile === "optional")
+          !(
+            testData.some(file => file.filename === outputFile) ||
+            (outputFile == null && options.enableOutputFile === "optional")
           )
         )
           throw ["NO_SUCH_OUTPUT_FILE", i + 1, j + 1, outputFile];
-      }
+      } else delete testcase.outputFile;
 
       if (options.enableUserOutputFilename) {
         if (
@@ -161,15 +174,27 @@ export function validateMetaAndSubtasks(
         }
 
         userOutputFilenames.push([realUserOutputFilename, i, j]);
-      }
+      } else delete testcase.userOutputFilename;
 
       if (options.enableTimeMemoryLimit) {
         if (timeLimit != null) validateTimeLimit(timeLimit, "TESTCASE", i, j);
         if (memoryLimit != null) validateMemoryLimit(memoryLimit, "TESTCASE", i, j);
+      } else {
+        delete testcase.timeLimit;
+        delete testcase.memoryLimit;
       }
 
       if (points != null && (typeof points !== "number" || points < 0 || points > 100))
         throw ["INVALID_POINTS_TESTCASE", i + 1, j + 1, points];
+
+      restrictProperties(testcase, [
+        "inputFile",
+        "outputFile",
+        "userOutputFilename",
+        "timeLimit",
+        "memoryLimit",
+        "points"
+      ]);
     });
 
     // eslint-disable-next-line no-shadow

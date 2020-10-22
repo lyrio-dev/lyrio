@@ -11,6 +11,7 @@ import { validateMetaAndSubtasks } from "@/problem-type/common/meta-and-subtasks
 import { validateExtraSourceFiles } from "@/problem-type/common/extra-source-files";
 import { CodeLanguage } from "@/code-language/code-language.type";
 import { autoMatchInputToOutput } from "@/problem-type/common/auto-match-input-output";
+import { restrictProperties } from "@/problem-type/common/restrict-properties";
 
 import { SubmissionTestcaseResultInteraction } from "./submission-testcase-result.interface";
 import { SubmissionContentInteraction } from "./submission-content.interface";
@@ -59,7 +60,7 @@ export class ProblemTypeInteractionService
   }
 
   /* eslint-disable no-throw-literal */
-  validateJudgeInfo(
+  validateAndFilterJudgeInfo(
     judgeInfo: ProblemJudgeInfoInteraction,
     testData: ProblemFileEntity[],
     ignoreLimits: boolean
@@ -107,12 +108,34 @@ export class ProblemTypeInteractionService
     if (hardMemoryLimit != null && memoryLimit > hardMemoryLimit)
       throw [`MEMORY_LIMIT_TOO_LARGE_INTERACTOR`, memoryLimit];
 
+    restrictProperties(judgeInfo.interactor, [
+      "interface",
+      "sharedMemorySize",
+      "language",
+      "compileAndRunOptions",
+      "filename",
+      "timeLimit",
+      "memoryLimit"
+    ]);
+
     validateExtraSourceFiles(judgeInfo, testData);
+
+    restrictProperties(judgeInfo, [
+      "timeLimit",
+      "memoryLimit",
+      "runSamples",
+      "subtasks",
+      "interactor",
+      "extraSourceFiles"
+    ]);
   }
   /* eslint-enable no-throw-literal */
 
   async validateSubmissionContent(submissionContent: SubmissionContentInteraction): Promise<ValidationError[]> {
-    const errors = await validate(plainToClass(SubmissionContentInteraction, submissionContent));
+    const errors = await validate(plainToClass(SubmissionContentInteraction, submissionContent), {
+      whitelist: true,
+      forbidNonWhitelisted: true
+    });
     if (errors.length > 0) return errors;
     return this.codeLanguageService.validateCompileAndRunOptions(
       submissionContent.language,

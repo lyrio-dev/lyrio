@@ -35,7 +35,7 @@ async function initialize(): Promise<[packageInfo: any, configService: ConfigSer
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const configService = app.get(ConfigService);
   app.setGlobalPrefix("api");
-  app.useGlobalPipes(new ValidationPipe({ transform: true }));
+  app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }));
   app.set("trust proxy", configService.config.server.trustProxy);
 
   // Configure swagger

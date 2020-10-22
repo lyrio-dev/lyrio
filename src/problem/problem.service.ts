@@ -419,7 +419,7 @@ export class ProblemService {
     try {
       this.problemTypeFactoryService
         .type(problem.type)
-        .validateJudgeInfo(judgeInfo, testData, ignoreLimitsOnValidation);
+        .validateAndFilterJudgeInfo(judgeInfo, testData, ignoreLimitsOnValidation);
     } catch (e) {
       if (Array.isArray(e)) return e;
       throw e;

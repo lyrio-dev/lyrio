@@ -10,6 +10,7 @@ import { validateMetaAndSubtasks } from "@/problem-type/common/meta-and-subtasks
 import { validateChecker } from "@/problem-type/common/checker";
 import { autoMatchOutputToInput } from "@/problem-type/common/auto-match-input-output";
 import { FileEntity } from "@/file/file.entity";
+import { restrictProperties } from "@/problem-type/common/restrict-properties";
 
 import { SubmissionTestcaseResultSubmitAnswer } from "./submission-testcase-result.interface";
 import { SubmissionContentSubmitAnswer } from "./submission-content.interface";
@@ -57,7 +58,7 @@ export class ProblemTypeSubmitAnswerService
         };
   }
 
-  validateJudgeInfo(
+  validateAndFilterJudgeInfo(
     judgeInfo: ProblemJudgeInfoSubmitAnswer,
     testData: ProblemFileEntity[],
     ignoreLimits: boolean
@@ -76,6 +77,8 @@ export class ProblemTypeSubmitAnswerService
       hardTimeLimit: ignoreLimits ? null : this.configService.config.resourceLimit.problemTimeLimit,
       hardMemoryLimit: ignoreLimits ? null : this.configService.config.resourceLimit.problemMemoryLimit
     });
+
+    restrictProperties(judgeInfo, ["subtasks", "checker"]);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

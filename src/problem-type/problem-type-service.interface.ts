@@ -35,14 +35,14 @@ export interface ProblemTypeServiceInterface<
   preprocessJudgeInfo(judgeInfo: JudgeInfoType, testData: ProblemFileEntity[]): JudgeInfoType;
 
   /**
-   * Validate a preprocessed judge info, return if valid and
-   * throw an array of error info if invalid.
-   * @param judgeInfo The preprocessed judge info to be sent to judge.
+   * Validate a preprocessed judge info and remove non-whitelisted properties from it.
+   * Return if valid and throw an array of error info if invalid.
+   * @param judgeInfo The preprocessed judge info to be sent to judge. Non-whitelisted properties will be removed.
    * @param testData The problem's testdata files.
    * @param ignoreLimits Ignore the limits in the config (e.g. the judge info is submitted by a privileged user).
    * @throws An array of error info `[error, arg1, arg2, ...]` if failed.
    */
-  validateJudgeInfo(judgeInfo: JudgeInfoType, testData: ProblemFileEntity[], ignoreLimits: boolean): void;
+  validateAndFilterJudgeInfo(judgeInfo: JudgeInfoType, testData: ProblemFileEntity[], ignoreLimits: boolean): void;
 
   /**
    * Validate a submission content submitted by user. Return the validation errors by class-validator.

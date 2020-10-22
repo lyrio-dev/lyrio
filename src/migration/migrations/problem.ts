@@ -316,7 +316,7 @@ async function parseJudgeInfo(
         }
       }
 
-      typeService.validateJudgeInfo(judgeInfo, migratedTestDataFiles, true);
+      typeService.validateAndFilterJudgeInfo(judgeInfo, migratedTestDataFiles, true);
     } catch (e) {
       Logger.error(`Failed to parse config of problem ${displayProblem(oldProblem)}, ${e}`);
     }

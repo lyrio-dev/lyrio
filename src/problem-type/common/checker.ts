@@ -3,6 +3,8 @@
 import { CodeLanguage } from "@/code-language/code-language.type";
 import { ProblemFileEntity } from "@/problem/problem-file.entity";
 
+import { restrictProperties } from "./restrict-properties";
+
 interface CheckerTypeIntegers {
   type: "integers";
 }
@@ -68,12 +70,22 @@ export function validateChecker(
     throw ["INVALID_CHECKER_TYPE"];
   }
   switch (judgeInfo.checker.type) {
+    case "integers":
+      restrictProperties(judgeInfo.checker, ["type"]);
+      break;
     case "floats":
       if (!(Number.isSafeInteger(judgeInfo.checker.precision) && judgeInfo.checker.precision > 0))
         throw ["INVALID_CHECKER_OPTIONS"];
+
+      restrictProperties(judgeInfo.checker, ["type", "precision"]);
       break;
     case "lines":
       if (typeof judgeInfo.checker.caseSensitive !== "boolean") throw ["INVALID_CHECKER_OPTIONS"];
+
+      restrictProperties(judgeInfo.checker, ["type", "caseSensitive"]);
+      break;
+    case "binary":
+      restrictProperties(judgeInfo.checker, ["type"]);
       break;
     case "custom": {
       const { checker } = judgeInfo;
@@ -94,6 +106,15 @@ export function validateChecker(
       if (options.hardMemoryLimit != null && memoryLimit > options.hardMemoryLimit)
         throw [`MEMORY_LIMIT_TOO_LARGE_CHECKER`, memoryLimit];
 
+      restrictProperties(judgeInfo.checker, [
+        "type",
+        "interface",
+        "language",
+        "compileAndRunOptions",
+        "filename",
+        "timeLimit",
+        "memoryLimit"
+      ]);
       break;
     }
     default:

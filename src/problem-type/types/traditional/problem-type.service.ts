@@ -11,6 +11,7 @@ import { validateMetaAndSubtasks } from "@/problem-type/common/meta-and-subtasks
 import { validateChecker } from "@/problem-type/common/checker";
 import { validateExtraSourceFiles } from "@/problem-type/common/extra-source-files";
 import { autoMatchInputToOutput } from "@/problem-type/common/auto-match-input-output";
+import { restrictProperties } from "@/problem-type/common/restrict-properties";
 
 import { SubmissionTestcaseResultTraditional } from "./submission-testcase-result.interface";
 import { SubmissionContentTraditional } from "./submission-content.interface";
@@ -61,7 +62,7 @@ export class ProblemTypeTraditionalService
         };
   }
 
-  validateJudgeInfo(
+  validateAndFilterJudgeInfo(
     judgeInfo: ProblemJudgeInfoTraditional,
     testData: ProblemFileEntity[],
     ignoreLimits: boolean
@@ -84,10 +85,24 @@ export class ProblemTypeTraditionalService
     });
 
     validateExtraSourceFiles(judgeInfo, testData);
+
+    restrictProperties(judgeInfo, [
+      "timeLimit",
+      "memoryLimit",
+      "fileIo",
+      "runSamples",
+      "subtasks",
+      "checker",
+      "extraSourceFiles"
+    ]);
+    restrictProperties(judgeInfo.fileIo, ["inputFilename", "outputFilename"]);
   }
 
   async validateSubmissionContent(submissionContent: SubmissionContentTraditional): Promise<ValidationError[]> {
-    const errors = await validate(plainToClass(SubmissionContentTraditional, submissionContent));
+    const errors = await validate(plainToClass(SubmissionContentTraditional, submissionContent), {
+      whitelist: true,
+      forbidNonWhitelisted: true
+    });
     if (errors.length > 0) return errors;
     return this.codeLanguageService.validateCompileAndRunOptions(
       submissionContent.language,
