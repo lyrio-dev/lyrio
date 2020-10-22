@@ -139,7 +139,7 @@ export function getLanguageAndOptions(
         compiler: isClang ? "clang++" : "g++",
         std: `c++${stdVersion}`,
         O: "2",
-        m: "64"
+        m: "x32"
       }
     };
   }
