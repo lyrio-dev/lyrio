@@ -373,22 +373,24 @@ export class SubmissionController {
     const submitters = await this.userService.findUsersByExistingIds(
       submissions.map(submission => submission.submitterId)
     );
-    submissions.map(async (submission, i) => {
-      submissionMetas[i] = {
-        id: submission.id,
-        isPublic: submission.isPublic,
-        codeLanguage: submission.codeLanguage,
-        answerSize: submission.answerSize,
-        score: submission.score,
-        status: submission.status,
-        submitTime: submission.submitTime,
-        problem: await this.problemService.getProblemMeta(problem),
-        problemTitle,
-        submitter: await this.userService.getUserMeta(submitters[i], currentUser),
-        timeUsed: submission.timeUsed,
-        memoryUsed: submission.memoryUsed
-      };
-    });
+    await Promise.all(
+      submissions.map(async (submission, i) => {
+        submissionMetas[i] = {
+          id: submission.id,
+          isPublic: submission.isPublic,
+          codeLanguage: submission.codeLanguage,
+          answerSize: submission.answerSize,
+          score: submission.score,
+          status: submission.status,
+          submitTime: submission.submitTime,
+          problem: await this.problemService.getProblemMeta(problem),
+          problemTitle,
+          submitter: await this.userService.getUserMeta(submitters[i], currentUser),
+          timeUsed: submission.timeUsed,
+          memoryUsed: submission.memoryUsed
+        };
+      })
+    );
 
     return {
       submissions: submissionMetas,
