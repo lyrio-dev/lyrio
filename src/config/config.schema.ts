@@ -12,7 +12,8 @@ import {
   IsOptional,
   IsArray,
   ArrayNotEmpty,
-  ArrayUnique
+  ArrayUnique,
+  IsUrl
 } from "class-validator";
 import { Type } from "class-transformer";
 
@@ -353,6 +354,24 @@ class QueryLimitConfig {
   readonly discussionReplies: number;
 }
 
+class ErrorReportingConfig {
+  @IsString()
+  @IsOptional()
+  readonly telegramBotToken?: string;
+
+  @IsUrl()
+  @IsOptional()
+  readonly telegramApiRoot?: string;
+
+  @If(value => typeof value === "string" || typeof value === "number")
+  @IsOptional()
+  readonly sentTo?: string | number;
+
+  @IsString()
+  @IsOptional()
+  readonly proxyUrl?: string;
+}
+
 class VendorConfig {
   @IsString()
   @IsOptional()
@@ -383,6 +402,10 @@ export class AppConfig {
   @ValidateNested()
   @Type(() => QueryLimitConfig)
   readonly queryLimit: QueryLimitConfig;
+
+  @ValidateNested()
+  @Type(() => ErrorReportingConfig)
+  readonly errorReporting: ErrorReportingConfig;
 
   @ValidateNested()
   @Type(() => VendorConfig)

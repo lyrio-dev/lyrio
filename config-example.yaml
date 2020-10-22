@@ -77,5 +77,10 @@ queryLimit:
   userAuditLogs: 20
   discussions: 20
   discussionReplies: 50
+errorReporting:
+  telegramBotToken: null
+  telegramApiRoot: null
+  sentTo: "@example"
+  proxyUrl: null
 vendor:
   ip2region: /opt/ip2region/ip2region.db

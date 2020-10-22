@@ -2,6 +2,7 @@ import { Module, forwardRef, NestModule, MiddlewareConsumer, RequestMethod } fro
 
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
+import { ErrorFilter } from "./error.filter";
 import { AuthMiddleware } from "./auth/auth.middleware";
 
 import { ConfigModule } from "./config/config.module";
@@ -41,7 +42,7 @@ import { MigrationModule } from "./migration/migration.module";
     forwardRef(() => MigrationModule)
   ],
   controllers: [AppController],
-  providers: [AppService]
+  providers: [AppService, ErrorFilter]
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {

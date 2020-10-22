@@ -48,6 +48,8 @@ function checkConfigRelationRecursively(
   currentPath: string,
   configRoot: Record<string, unknown>
 ) {
+  if (!configSubtree) return;
+
   Object.keys(configSubtree).forEach(key => {
     const metadata = Reflect.getMetadata(CONFIG_RELATION_METADATA_KEY, configSubtree, key) as ConfigRelationMetadata;
     const item = configSubtree[key];

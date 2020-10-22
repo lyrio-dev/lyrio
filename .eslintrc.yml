@@ -25,10 +25,12 @@ rules:
   indent: off
   max-len: off
   newline-per-chained-call: off
+  no-confusing-arrow: off
   nonblock-statement-body-position: off
   object-curly-newline: off
   operator-linebreak: off
   quotes: off
+  wrap-iife: off
 
   # Some rules in the preset is for JS only, we need the corresponding TS ones.
   global-require: off
