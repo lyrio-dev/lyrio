@@ -14,11 +14,6 @@ import { RedisService } from "@/redis/redis.service";
 
 import { MigrationConfig } from "./migration-config.schema";
 
-import { migrationUser } from "./migrations/user";
-import { migrationProblem } from "./migrations/problem";
-import { migrationSubmission } from "./migrations/submission";
-import { migrationDiscussion } from "./migrations/discussion";
-
 @Injectable()
 export class MigrationService {
   private entityManager: EntityManager;
@@ -53,6 +48,13 @@ export class MigrationService {
       Logger.error("Can't do migration on a non-empty database.");
       process.exit(-1);
     }
+
+    /* eslint-disable @typescript-eslint/no-var-requires */
+    const { migrationUser } = require("./migrations/user");
+    const { migrationProblem } = require("./migrations/problem");
+    const { migrationSubmission } = require("./migrations/submission");
+    const { migrationDiscussion } = require("./migrations/discussion");
+    /* eslint-enable @typescript-eslint/no-var-requires */
 
     Logger.log("Migration started");
 
