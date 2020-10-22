@@ -59,9 +59,15 @@ export function IsValidFilename(validationOptions?: ValidationOptions) {
 }
 
 const singleEmojiRegex = new RegExp(`^(${emojiRegex()})$`);
+const regionalFlagEmojiRegex = /[🇦-🇿]{2}/u;
 export const MAX_EMOJI_LENGTH = 28;
 export function isEmoji(str: string) {
-  return singleEmojiRegex.test(str) && str.length >= 1 && Buffer.byteLength(str, "utf-8") <= MAX_EMOJI_LENGTH;
+  return (
+    singleEmojiRegex.test(str) &&
+    !regionalFlagEmojiRegex.test(str) &&
+    str.length >= 1 &&
+    Buffer.byteLength(str, "utf-8") <= MAX_EMOJI_LENGTH
+  );
 }
 
 export function IsEmoji(validationOptions?: ValidationOptions) {
