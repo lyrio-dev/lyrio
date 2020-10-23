@@ -31,6 +31,12 @@ export class UserMigrationService {
     });
   }
 
+  async findUserMigrationInfoByUserId(userId: number): Promise<UserMigrationInfoEntity> {
+    return await this.userMigrationInfoRepository.findOne({
+      userId
+    });
+  }
+
   async migrateUser(
     userMigrationInfo: UserMigrationInfoEntity,
     newUsername: string,

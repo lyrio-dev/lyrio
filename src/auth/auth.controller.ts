@@ -11,6 +11,7 @@ import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.s
 import { GroupService } from "@/group/group.service";
 import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
 import { UserMigrationService } from "@/migration/user-migration.service";
+import { UserMigrationInfoEntity } from "@/migration/user-migration-info.entity";
 
 import { AuthEmailVerifactionCodeService, EmailVerifactionCodeType } from "./auth-email-verifaction-code.service";
 import { AuthSessionService } from "./auth-session.service";
@@ -109,13 +110,25 @@ export class AuthController {
         error: LoginResponseError.ALREADY_LOGGEDIN
       };
 
+    const checkNonMigratedUserPassword = async (
+      userMigrationInfo: UserMigrationInfoEntity
+    ): Promise<LoginResponseError> => {
+      if (!(await this.userMigrationService.checkOldPassword(userMigrationInfo, request.password))) {
+        await this.auditService.log(userMigrationInfo.userId, "auth.login_failed.wrong_password");
+
+        return LoginResponseError.WRONG_PASSWORD;
+      }
+
+      return LoginResponseError.USER_NOT_MIGRATED;
+    };
+
     const user = await this.userService.findUserByUsername(request.username);
     if (!user) {
       // The username may be a non-migrated old user
       const userMigrationInfo = await this.userMigrationService.findUserMigrationInfoByOldUsername(request.username);
       if (userMigrationInfo)
         return {
-          error: LoginResponseError.USER_NOT_MIGRATED
+          error: await checkNonMigratedUserPassword(userMigrationInfo)
         };
 
       return {
@@ -127,7 +140,9 @@ export class AuthController {
 
     if (!this.authService.checkUserMigrated(userAuth))
       return {
-        error: LoginResponseError.USER_NOT_MIGRATED
+        error: await checkNonMigratedUserPassword(
+          await this.userMigrationService.findUserMigrationInfoByUserId(user.id)
+        )
       };
 
     if (!(await this.authService.checkPassword(userAuth, request.password))) {
