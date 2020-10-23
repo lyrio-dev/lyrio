@@ -30,7 +30,7 @@ export class ErrorFilter implements ExceptionFilter {
           }
         })
       : null;
-    this.telegramBot.launch();
+    if (this.telegramBot) this.telegramBot.launch();
   }
 
   catch(error: Error, host: ArgumentsHost) {
