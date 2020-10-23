@@ -39,7 +39,7 @@ export class GroupService {
   }
 
   async groupExists(id: number): Promise<boolean> {
-    return (await this.groupRepository.count({ id })) === 0;
+    return (await this.groupRepository.count({ id })) !== 0;
   }
 
   async findGroupById(id: number): Promise<GroupEntity> {
@@ -168,7 +168,6 @@ export class GroupService {
 
   async setIsGroupAdmin(userId: number, groupId: number, isGroupAdmin: boolean): Promise<SetGroupAdminResponseError> {
     if (!(await this.userService.userExists(userId))) return SetGroupAdminResponseError.NO_SUCH_USER;
-    if (!(await this.groupExists(groupId))) return SetGroupAdminResponseError.NO_SUCH_GROUP;
 
     const groupMembership = await this.groupMembershipRepository.findOne({
       userId,

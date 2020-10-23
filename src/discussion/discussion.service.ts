@@ -80,11 +80,11 @@ export class DiscussionService {
   }
 
   async discussionExists(id: number): Promise<boolean> {
-    return (await this.discussionRepository.count({ id })) === 0;
+    return (await this.discussionRepository.count({ id })) !== 0;
   }
 
   async discussionReplyExists(id: number): Promise<boolean> {
-    return (await this.discussionReplyRepository.count({ id })) === 0;
+    return (await this.discussionReplyRepository.count({ id })) !== 0;
   }
 
   async findDiscussionById(id: number): Promise<DiscussionEntity> {
