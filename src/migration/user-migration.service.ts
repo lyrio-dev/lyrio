@@ -1,7 +1,10 @@
+import { createHash } from "crypto";
+
 import { Injectable, Inject, forwardRef } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
 
 import { Repository, Connection } from "typeorm";
+import * as bcrypt from "bcrypt";
 
 import { UserEntity } from "@/user/user.entity";
 import { UserService } from "@/user/user.service";
@@ -49,5 +52,11 @@ export class UserMigrationService {
     });
 
     return user;
+  }
+
+  async checkOldPassword(userMigrationInfo: UserMigrationInfoEntity, oldPassword: string): Promise<boolean> {
+    // The magic salt of SYZOJ 2 -- "syzoj2_xxx"
+    const oldPasswordHash = createHash("md5").update(`${oldPassword}syzoj2_xxx`).digest("hex").toLowerCase();
+    return await bcrypt.compare(oldPasswordHash, userMigrationInfo.oldPasswordHashBcrypt);
   }
 }

@@ -1,5 +1,3 @@
-import { createHash } from "crypto";
-
 import { Controller, Post, Body, Req } from "@nestjs/common";
 import { ApiOperation, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
@@ -56,9 +54,7 @@ export class MigrationController {
         error: MigrateUserResponseError.ALREADY_MIGRATED
       };
 
-    // The magic salt of SYZOJ 2 -- "syzoj2_xxx"
-    const oldPasswordHash = createHash("md5").update(`${request.oldPassword}syzoj2_xxx`).digest("hex");
-    if (oldPasswordHash.toLowerCase() !== userMigrationInfo.oldPasswordHash.toLowerCase())
+    if (!(await this.userMigrationService.checkOldPassword(userMigrationInfo, request.oldPassword)))
       return {
         error: MigrateUserResponseError.WRONG_PASSWORD
       };

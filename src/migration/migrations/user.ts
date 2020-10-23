@@ -1,6 +1,7 @@
 /* eslint-disable */
 import { isEmail } from "class-validator";
 import randomstring from "randomstring";
+import * as bcrypt from "bcrypt";
 
 import { isUsername } from "@/common/validators";
 import { UserEntity } from "@/user/user.entity";
@@ -80,7 +81,8 @@ export const migrationUser: MigrationInterface = {
 
         userMigrationInfo.migrated = false;
         userMigrationInfo.oldEmail = oldUser.email;
-        userMigrationInfo.oldPasswordHash = oldUser.password;
+        // A too-large cost of bcrypt will significantly reduce the speed of migration
+        userMigrationInfo.oldPasswordHashBcrypt = await bcrypt.hash(oldUser.password.toLowerCase(), 8);
         userMigrationInfo.oldUsername = oldUser.username;
         userMigrationInfo.userId = user.id;
         await entityManager.save(userMigrationInfo);

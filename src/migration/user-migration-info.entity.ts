@@ -20,10 +20,10 @@ export class UserMigrationInfoEntity {
   oldEmail: string;
 
   /**
-   * `md5(password + "syzoj2_xxx")`
+   * `bcrypt(md5(password + "syzoj2_xxx"))`
    */
-  @Column({ type: "char", length: 32 })
-  oldPasswordHash: string;
+  @Column({ type: "char", length: 60 })
+  oldPasswordHashBcrypt: string;
 
   @Column({ type: "boolean" })
   usernameMustChange: boolean;
