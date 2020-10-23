@@ -6,6 +6,14 @@ import { PreferenceConfig } from "@/config/config.schema";
 
 import { UserMetaDto, UserPreferenceDto } from "@/user/dto";
 
+export class ServerVersionDto {
+  @ApiProperty()
+  hash: string;
+
+  @ApiProperty()
+  date: string;
+}
+
 export class GetSessionInfoResponseDto {
   @ApiProperty()
   userMeta?: UserMetaDto;
@@ -20,5 +28,8 @@ export class GetSessionInfoResponseDto {
   userPreference?: UserPreferenceDto;
 
   @ApiProperty()
-  serverPreference?: PreferenceConfig;
+  serverPreference: PreferenceConfig;
+
+  @ApiProperty()
+  serverVersion: ServerVersionDto;
 }

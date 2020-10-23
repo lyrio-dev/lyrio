@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body, Query, Req } from "@nestjs/common";
 import { ApiOperation, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
+import { appGitRepoInfo } from "@/main";
 import { ConfigService } from "@/config/config.service";
 import { UserService } from "@/user/user.service";
 import { CurrentUser } from "@/common/user.decorator";
@@ -69,15 +70,20 @@ export class AuthController {
   async getSessionInfo(@Query() request: GetSessionInfoRequestDto): Promise<GetSessionInfoResponseDto> {
     const [, user] = await this.authSessionService.accessSession(request.token);
 
-    const result: GetSessionInfoResponseDto = {};
+    const result: GetSessionInfoResponseDto = {
+      serverPreference: this.configService.preferenceConfigToBeSentToUser,
+      serverVersion: {
+        hash: appGitRepoInfo.abbreviatedSha,
+        date: appGitRepoInfo.committerDate
+      }
+    };
+
     if (user) {
       result.userMeta = await this.userService.getUserMeta(user, user);
       result.joinedGroupsCount = await this.groupService.getUserJoinedGroupsCount(user);
       result.userPrivileges = await this.userPrivilegeService.getUserPrivileges(user.id);
       result.userPreference = await this.userService.getUserPreference(user);
     }
-
-    result.serverPreference = this.configService.preferenceConfigToBeSentToUser;
 
     if (request.jsonp)
       return `(window.getSessionInfoCallback || (function (sessionInfo) { window.sessionInfo = sessionInfo; }))(${JSON.stringify(

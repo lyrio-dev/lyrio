@@ -18,14 +18,15 @@ String.prototype.format = function format(...args) {
   return util.format.call(undefined, this, ...args);
 };
 
+export const appGitRepoInfo = getGitRepoInfo();
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function initialize(): Promise<[packageInfo: any, configService: ConfigService, app: NestExpressApplication]> {
   // Get package info
   const packageInfo = require("../package.json"); // eslint-disable-line @typescript-eslint/no-var-requires
-  const gitRepoInfo = getGitRepoInfo();
   const appVersion = `v${packageInfo.version}`;
-  const gitRepoVersion = gitRepoInfo.sha
-    ? ` (Git revision ${gitRepoInfo.sha.substr(8)} on ${moment(gitRepoInfo.committerDate).format(
+  const gitRepoVersion = appGitRepoInfo.abbreviatedSha
+    ? ` (Git revision ${appGitRepoInfo.abbreviatedSha} on ${moment(appGitRepoInfo.committerDate).format(
         "YYYY-MM-DD H:mm:ss"
       )})`
     : "";
