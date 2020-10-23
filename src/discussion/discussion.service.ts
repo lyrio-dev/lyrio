@@ -42,6 +42,8 @@ export enum DiscussionPermissionLevel {
   Write = 2
 }
 
+type GetReactionsResult = [reactionsCount: Record<string, number>, currentUserReactions: string[]];
+
 @Injectable()
 export class DiscussionService {
   constructor(
@@ -537,44 +539,69 @@ export class DiscussionService {
     });
   }
 
+  async getReactions(type: DiscussionReactionType, id: number, currentUser: UserEntity): Promise<GetReactionsResult>;
+
   async getReactions(
     type: DiscussionReactionType,
-    id: number,
+    ids: number[],
     currentUser: UserEntity
-  ): Promise<[reactionsCount: Record<string, number>, currentUserReactions: string[]]> {
-    const reactions: { emoji: Buffer; count: number }[] = await this.connection
-      .createQueryBuilder()
-      .select("emoji")
-      .addSelect("COUNT(*)", "count")
-      .from(
-        type === DiscussionReactionType.Discussion ? DiscussionReactionEntity : DiscussionReplyReactionEntity,
-        "reaction"
-      )
-      .where({
-        [type === DiscussionReactionType.Discussion ? "discussionId" : "discussionReplyId"]: id
-      })
-      .groupBy("emoji")
-      .getRawMany();
-    const currentUserReactions: { emoji: Buffer }[] =
-      currentUser &&
-      (await this.connection
-        .createQueryBuilder()
-        .select("emoji")
-        .from(
-          type === DiscussionReactionType.Discussion ? DiscussionReactionEntity : DiscussionReplyReactionEntity,
-          "reaction"
-        )
-        .where({
-          [type === DiscussionReactionType.Discussion ? "discussionId" : "discussionReplyId"]: id,
-          userId: currentUser.id
-        })
-        .getRawMany());
-    return [
-      Object.fromEntries(
-        reactions.map<[string, number]>(({ emoji, count }) => [emoji.toString("utf-8"), count])
-      ),
-      currentUser ? currentUserReactions.map(reaction => reaction.emoji.toString("utf-8")) : []
-    ];
+  ): Promise<GetReactionsResult[]>;
+
+  async getReactions(
+    type: DiscussionReactionType,
+    ids: number | number[],
+    currentUser: UserEntity
+  ): Promise<GetReactionsResult | GetReactionsResult[]> {
+    let returnOne = false;
+    if (typeof ids === "number") {
+      ids = [ids];
+      returnOne = true;
+    }
+
+    if (ids.length === 0) return [];
+
+    const idColumnName = type === DiscussionReactionType.Discussion ? "discussionId" : "discussionReplyId";
+    const [reactionsById, currentUserReactionsById] = await Promise.all([
+      (async () => {
+        const reactionsAll: { id: number; emoji: Buffer; count: number }[] = await this.connection
+          .createQueryBuilder()
+          .select("emoji")
+          .addSelect(idColumnName, "id")
+          .addSelect("COUNT(*)", "count")
+          .from(
+            type === DiscussionReactionType.Discussion ? DiscussionReactionEntity : DiscussionReplyReactionEntity,
+            "reaction"
+          )
+          .where(`${idColumnName} IN (:...ids)`, { ids })
+          .groupBy(idColumnName)
+          .addGroupBy("emoji")
+          .getRawMany();
+        const byId: Record<number, Record<string, number>> = Object.fromEntries(ids.map(id => [id, {}]));
+        for (const { id, emoji, count } of reactionsAll) byId[id][emoji.toString("utf-8")] = count;
+        return byId;
+      })(),
+      (async () => {
+        if (!currentUser) return {};
+        const currentUserReactionsAll: { id: number; emoji: Buffer }[] = await this.connection
+          .createQueryBuilder()
+          .select("emoji")
+          .addSelect(idColumnName, "id")
+          .from(
+            type === DiscussionReactionType.Discussion ? DiscussionReactionEntity : DiscussionReplyReactionEntity,
+            "reaction"
+          )
+          .where(`${idColumnName} IN (:...ids)`, { ids })
+          .andWhere("userId = :userId", { userId: currentUser.id })
+          .groupBy(idColumnName)
+          .getRawMany();
+        const byId: Record<number, string[]> = Object.fromEntries(ids.map(id => [id, []]));
+        for (const { id, emoji } of currentUserReactionsAll) byId[id].push(emoji.toString("utf-8"));
+        return byId;
+      })()
+    ]);
+
+    const result = ids.map<GetReactionsResult>(id => [reactionsById[id], currentUserReactionsById[id]]);
+    return returnOne ? result[0] : result;
   }
 
   async addReaction(type: DiscussionReactionType, id: number, currentUser: UserEntity, emoji: string): Promise<void> {

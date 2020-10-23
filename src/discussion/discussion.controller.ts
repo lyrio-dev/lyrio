@@ -446,10 +446,10 @@ export class DiscussionController {
                 )
               ))(),
             // reactions
-            Promise.all(
-              replyEntities.map(reply =>
-                this.discussionService.getReactions(DiscussionReactionType.DiscussionReply, reply.id, currentUser)
-              )
+            this.discussionService.getReactions(
+              DiscussionReactionType.DiscussionReply,
+              replyEntities.map(reply => reply.id),
+              currentUser
             ),
             // permissions
             // XXX: move to DiscussionService?
