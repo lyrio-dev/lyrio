@@ -45,7 +45,7 @@ export function IsUsername(validationOptions?: ValidationOptions) {
 // is a uppercase / lowercase letter or a number or any of ' :@~-_.#$/'
 // and is NOT '%'.
 export function IsGroupName(validationOptions?: ValidationOptions) {
-  return If(value => typeof value === "string" && /^[a-zA-Z0-9 :@~-_.#$/]{1,48}$/.test(value), validationOptions);
+  return If(value => typeof value === "string" && /^[a-zA-Z0-9 :@~\-_.#$/]{1,48}$/.test(value), validationOptions);
 }
 
 export function isValidFilename(filename: string): boolean {
