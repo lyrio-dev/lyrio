@@ -1,5 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 
+import { Type } from "class-transformer";
 import { IsInt, IsEnum, ValidateNested } from "class-validator";
 
 import { ProblemPermissionLevel } from "../problem.service";
@@ -31,9 +32,11 @@ export class SetProblemPermissionsRequestDto {
 
   @ApiProperty({ type: SetProblemPermissionsRequestUserPermissionDto, isArray: true })
   @ValidateNested({ each: true })
+  @Type(() => SetProblemPermissionsRequestUserPermissionDto)
   userPermissions: SetProblemPermissionsRequestUserPermissionDto[];
 
   @ApiProperty({ type: SetProblemPermissionsRequestGroupPermissionDto, isArray: true })
   @ValidateNested({ each: true })
+  @Type(() => SetProblemPermissionsRequestGroupPermissionDto)
   groupPermissions: SetProblemPermissionsRequestGroupPermissionDto[];
 }

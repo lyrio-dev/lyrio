@@ -1,5 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 
+import { Type } from "class-transformer";
 import { IsInt, IsEnum, ValidateNested } from "class-validator";
 
 import { DiscussionPermissionLevel } from "../discussion.service";
@@ -31,9 +32,11 @@ export class SetDiscussionPermissionsRequestDto {
 
   @ApiProperty({ type: SetDiscussionPermissionsRequestUserPermissionDto, isArray: true })
   @ValidateNested({ each: true })
+  @Type(() => SetDiscussionPermissionsRequestUserPermissionDto)
   userPermissions: SetDiscussionPermissionsRequestUserPermissionDto[];
 
   @ApiProperty({ type: SetDiscussionPermissionsRequestGroupPermissionDto, isArray: true })
   @ValidateNested({ each: true })
+  @Type(() => SetDiscussionPermissionsRequestGroupPermissionDto)
   groupPermissions: SetDiscussionPermissionsRequestGroupPermissionDto[];
 }

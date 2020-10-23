@@ -11,6 +11,7 @@ import {
   IsInt,
   ArrayNotEmpty
 } from "class-validator";
+import { Type } from "class-transformer";
 
 import { Locale } from "@/common/locale.type";
 import { If } from "@/common/validators";
@@ -25,12 +26,13 @@ export class UpdateProblemRequestUpdatingLocalizedContentDto {
 
   @ApiProperty()
   @IsString()
-  @Length(1, 120)
+  @Length(0, 120)
   @IsOptional()
   readonly title: string;
 
   @ApiProperty({ type: ProblemContentSectionDto, isArray: true })
   @ValidateNested({ each: true })
+  @Type(() => ProblemContentSectionDto)
   @IsArray()
   @ArrayMaxSize(20)
   @IsOptional()
@@ -47,6 +49,7 @@ export class UpdateProblemStatementRequestDto {
     isArray: true
   })
   @ValidateNested({ each: true })
+  @Type(() => UpdateProblemRequestUpdatingLocalizedContentDto)
   @If<UpdateProblemRequestUpdatingLocalizedContentDto[]>(
     updatingLocalizedContents =>
       new Set(updatingLocalizedContents.map(updatingLocalizedContent => updatingLocalizedContent.locale)).size ===
@@ -61,6 +64,7 @@ export class UpdateProblemStatementRequestDto {
 
   @ApiProperty({ type: ProblemSampleDataMemberDto, isArray: true })
   @ValidateNested({ each: true })
+  @Type(() => ProblemSampleDataMemberDto)
   @IsArray()
   @IsOptional()
   readonly samples: ProblemSampleDataMemberDto[];

@@ -1,6 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
 
 import { IsString, Length, ValidateNested, IsEnum, ArrayNotEmpty, IsArray, ArrayMaxSize, IsInt } from "class-validator";
+import { Type } from "class-transformer";
 
 import { Locale } from "@/common/locale.type";
 import { If } from "@/common/validators";
@@ -15,11 +16,12 @@ export class ProblemLocalizedContentDto {
 
   @ApiProperty()
   @IsString()
-  @Length(1, 120)
+  @Length(0, 120)
   readonly title: string;
 
   @ApiProperty({ type: ProblemContentSectionDto, isArray: true })
   @ValidateNested({ each: true })
+  @Type(() => ProblemContentSectionDto)
   @IsArray()
   @ArrayMaxSize(20)
   readonly contentSections: ProblemContentSectionDto[];
@@ -28,6 +30,7 @@ export class ProblemLocalizedContentDto {
 export class ProblemStatementDto {
   @ApiProperty({ type: ProblemLocalizedContentDto, isArray: true })
   @ValidateNested({ each: true })
+  @Type(() => ProblemLocalizedContentDto)
   @If<ProblemLocalizedContentDto[]>(
     localizedContents =>
       new Set(localizedContents.map(localizedContent => localizedContent.locale)).size === localizedContents.length,
@@ -41,6 +44,7 @@ export class ProblemStatementDto {
 
   @ApiProperty({ type: ProblemSampleDataMemberDto, isArray: true })
   @ValidateNested({ each: true })
+  @Type(() => ProblemSampleDataMemberDto)
   @IsArray()
   readonly samples: ProblemSampleDataMemberDto[];
 
