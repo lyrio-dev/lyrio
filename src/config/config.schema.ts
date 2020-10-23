@@ -241,6 +241,10 @@ class PreferenceConfigMisc {
   @IsBoolean()
   @ApiProperty()
   readonly discussionReactionAllowCustomEmojis: boolean;
+
+  @IsBoolean()
+  @ApiProperty()
+  readonly renderMarkdownInUserBio: boolean;
 }
 
 class PreferenceConfigServerSideOnly {
