@@ -600,7 +600,7 @@ export class DiscussionService {
       })()
     ]);
 
-    const result = ids.map<GetReactionsResult>(id => [reactionsById[id], currentUserReactionsById[id]]);
+    const result = ids.map<GetReactionsResult>(id => [reactionsById[id], currentUserReactionsById[id] || []]);
     return returnOne ? result[0] : result;
   }
 
