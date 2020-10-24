@@ -359,16 +359,7 @@ export class ProblemController {
       result.discussionCount = await this.discussionService.getDiscussionCountOfProblem(problem);
 
     if (request.permissionOfCurrentUser) {
-      result.permissionOfCurrentUser = {};
-      await Promise.all(
-        request.permissionOfCurrentUser.map(async permissionType => {
-          result.permissionOfCurrentUser[permissionType] = await this.problemService.userHasPermission(
-            currentUser,
-            problem,
-            permissionType
-          );
-        })
-      );
+      result.permissionOfCurrentUser = await this.problemService.getUserPermissions(currentUser, problem);
     }
 
     if (request.permissions) {

@@ -162,7 +162,7 @@ export class ProblemService {
         if (
           user &&
           user.id === problem.ownerId &&
-          this.configService.config.preference.security.allowNonAdminEditPublicProblem
+          this.configService.config.preference.security.allowNonPrivilegedUserEditPublicProblem
         )
           return true;
         if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageProblem)) return true;
@@ -174,7 +174,7 @@ export class ProblemService {
               PermissionObjectType.Problem,
               ProblemPermissionLevel.Write
             )) &&
-            (!problem.isPublic || this.configService.config.preference.security.allowNonAdminEditPublicProblem)
+            (!problem.isPublic || this.configService.config.preference.security.allowNonPrivilegedUserEditPublicProblem)
           );
 
       // Admins can manage a problem's permission
@@ -184,7 +184,7 @@ export class ProblemService {
           user &&
           user.id === problem.ownerId &&
           this.configService.config.preference.security.allowOwnerManageProblemPermission &&
-          this.configService.config.preference.security.allowNonAdminEditPublicProblem
+          (!problem.isPublic || this.configService.config.preference.security.allowNonPrivilegedUserEditPublicProblem)
         )
           return true;
         else if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageProblem)) return true;
@@ -202,7 +202,7 @@ export class ProblemService {
           user &&
           user.id === problem.ownerId &&
           this.configService.config.preference.security.allowOwnerDeleteProblem &&
-          this.configService.config.preference.security.allowNonAdminEditPublicProblem
+          (!problem.isPublic || this.configService.config.preference.security.allowNonPrivilegedUserEditPublicProblem)
         )
           return true;
         else if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageProblem)) return true;
@@ -211,6 +211,39 @@ export class ProblemService {
       default:
         return false;
     }
+  }
+
+  async getUserPermissions(user: UserEntity, problem: ProblemEntity): Promise<ProblemPermissionType[]> {
+    if (!user) return problem.isPublic ? [ProblemPermissionType.View] : [];
+    if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageProblem))
+      return Object.values(ProblemPermissionType);
+
+    const permissionLevel = await this.permissionService.getUserOrItsGroupsMaxPermissionLevel<ProblemPermissionLevel>(
+      user,
+      problem.id,
+      PermissionObjectType.Problem
+    );
+    const result: ProblemPermissionType[] = [];
+    if (problem.isPublic || permissionLevel >= ProblemPermissionLevel.Read || problem.ownerId === user.id)
+      result.push(ProblemPermissionType.View);
+    if (
+      (problem.ownerId === user.id || permissionLevel >= ProblemPermissionLevel.Write) &&
+      (!problem.isPublic || this.configService.config.preference.security.allowNonPrivilegedUserEditPublicProblem)
+    )
+      result.push(ProblemPermissionType.Modify);
+    if (
+      problem.ownerId === user.id &&
+      this.configService.config.preference.security.allowOwnerManageProblemPermission &&
+      (!problem.isPublic || this.configService.config.preference.security.allowNonPrivilegedUserEditPublicProblem)
+    )
+      result.push(ProblemPermissionType.ManagePermission);
+    if (
+      problem.ownerId === user.id &&
+      this.configService.config.preference.security.allowOwnerDeleteProblem &&
+      (!problem.isPublic || this.configService.config.preference.security.allowNonPrivilegedUserEditPublicProblem)
+    )
+      result.push(ProblemPermissionType.Delete);
+    return result;
   }
 
   async userHasCreateProblemPermission(user: UserEntity): Promise<boolean> {

@@ -143,7 +143,7 @@ class PreferenceConfigSecurity {
 
   @IsBoolean()
   @ApiProperty()
-  readonly allowNonAdminEditPublicProblem: boolean;
+  readonly allowNonPrivilegedUserEditPublicProblem: boolean;
 
   @IsBoolean()
   @ApiProperty()

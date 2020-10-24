@@ -21,23 +21,6 @@ export enum GetProblemResponseError {
   NO_SUCH_PROBLEM = "NO_SUCH_PROBLEM"
 }
 
-export class ProblemPermissionOfCurrentUserDto {
-  @ApiProperty({ required: false })
-  [ProblemPermissionType.View]?: boolean;
-
-  @ApiProperty({ required: false })
-  [ProblemPermissionType.Modify]?: boolean;
-
-  @ApiProperty({ required: false })
-  [ProblemPermissionType.ManagePermission]?: boolean;
-
-  @ApiProperty({ required: false })
-  [ProblemPermissionType.ManagePublicness]?: boolean;
-
-  @ApiProperty({ required: false })
-  [ProblemPermissionType.Delete]?: boolean;
-}
-
 class ProblemUserPermissionDto {
   @ApiProperty()
   user: UserMetaDto;
@@ -107,8 +90,8 @@ export class GetProblemResponseDto {
   @ApiProperty()
   discussionCount?: number;
 
-  @ApiProperty()
-  permissionOfCurrentUser?: ProblemPermissionOfCurrentUserDto;
+  @ApiProperty({ enum: ProblemPermissionType, isArray: true })
+  permissionOfCurrentUser?: ProblemPermissionType[];
 
   @ApiProperty()
   permissions?: ProblemPermissionsDto;

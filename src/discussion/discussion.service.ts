@@ -42,6 +42,12 @@ export enum DiscussionPermissionLevel {
   Write = 2
 }
 
+export enum DiscussionReplyPermissionType {
+  Modify = "Modify",
+  ManagePublicness = "ManagePublicness",
+  Delete = "Delete"
+}
+
 type GetReactionsResult = [reactionsCount: Record<string, number>, currentUserReactions: string[]];
 
 @Injectable()
@@ -192,6 +198,28 @@ export class DiscussionService {
     }
   }
 
+  async getUserPermissionsOfDiscussion(
+    user: UserEntity,
+    discussion: DiscussionEntity,
+    hasPrivilege?: boolean
+  ): Promise<DiscussionPermissionType[]> {
+    if (!user) return discussion.isPublic ? [DiscussionPermissionType.View] : [];
+    if (hasPrivilege ?? (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageDiscussion)))
+      return Object.values(DiscussionPermissionType);
+
+    const permissionLevel = await this.permissionService.getUserOrItsGroupsMaxPermissionLevel<
+      DiscussionPermissionLevel
+    >(user, discussion.id, PermissionObjectType.Discussion);
+    const result: DiscussionPermissionType[] = [];
+    if (discussion.isPublic || permissionLevel >= DiscussionPermissionLevel.Read || discussion.publisherId === user.id)
+      result.push(DiscussionPermissionType.View);
+    if (permissionLevel >= DiscussionPermissionLevel.Write || discussion.publisherId === user.id)
+      result.push(DiscussionPermissionType.Modify);
+    if (discussion.publisherId === user.id) result.push(DiscussionPermissionType.Delete);
+
+    return result;
+  }
+
   async userHasModifyDiscussionReplyPermission(
     user: UserEntity,
     discussionReply: DiscussionReplyEntity,
@@ -202,6 +230,19 @@ export class DiscussionService {
       (discussionReply.publisherId === user.id ||
         (hasPrivilege ?? (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageDiscussion))))
     );
+  }
+
+  async getUserPermissionsOfReply(
+    user: UserEntity,
+    discussionReply: DiscussionReplyEntity,
+    hasPrivilege?: boolean
+  ): Promise<DiscussionReplyPermissionType[]> {
+    if (!user) return [];
+    if (hasPrivilege ?? (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageDiscussion)))
+      return Object.values(DiscussionReplyPermissionType);
+    if (user.id === discussionReply.publisherId)
+      return [DiscussionReplyPermissionType.Modify, DiscussionReplyPermissionType.Delete];
+    return [];
   }
 
   async userHasCreateDiscussionPermission(user: UserEntity, hasPrivilege?: boolean): Promise<boolean> {

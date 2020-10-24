@@ -174,13 +174,7 @@ export class DiscussionController {
           count: {},
           currentUserReactions: []
         },
-        // XXX: move to DiscussionService?
-        permissions: [
-          (await this.discussionService.userHasModifyDiscussionReplyPermission(currentUser, reply, hasPrivilege))
-            ? [DiscussionPermissionType.Modify, DiscussionPermissionType.Delete]
-            : [],
-          hasPrivilege ? [DiscussionPermissionType.ManagePublicness] : []
-        ].flat()
+        permissions: await this.discussionService.getUserPermissionsOfReply(currentUser, reply, hasPrivilege)
       }
     };
   }
@@ -452,19 +446,9 @@ export class DiscussionController {
               currentUser
             ),
             // permissions
-            // XXX: move to DiscussionService?
             Promise.all(
-              replyEntities.map(async reply =>
-                [
-                  (await this.discussionService.userHasModifyDiscussionReplyPermission(
-                    currentUser,
-                    reply,
-                    hasPrivilege
-                  ))
-                    ? [DiscussionPermissionType.Modify, DiscussionPermissionType.Delete]
-                    : [],
-                  hasPrivilege ? [DiscussionPermissionType.ManagePublicness] : []
-                ].flat()
+              replyEntities.map(
+                async reply => await this.discussionService.getUserPermissionsOfReply(currentUser, reply, hasPrivilege)
               )
             )
           ]);
@@ -554,23 +538,7 @@ export class DiscussionController {
                 }
             ),
             // permissions
-            (async () => {
-              const requestedTypes = [
-                DiscussionPermissionType.Modify,
-                DiscussionPermissionType.ManagePermission,
-                DiscussionPermissionType.ManagePublicness,
-                DiscussionPermissionType.Delete
-              ];
-
-              const has = await Promise.all(
-                requestedTypes.map(
-                  async type =>
-                    await this.discussionService.userHasPermission(currentUser, discussion, type, discussionProblem)
-                )
-              );
-
-              return requestedTypes.filter((type, i) => has[i]);
-            })()
+            this.discussionService.getUserPermissionsOfDiscussion(currentUser, discussion)
           ]);
 
           result.discussion = {

@@ -9,7 +9,7 @@ import { DiscussionMetaDto } from "./discussion-meta.dto";
 import { UserMetaDto } from "@/user/dto";
 import { ProblemMetaDto } from "@/problem/dto";
 
-import { DiscussionPermissionType } from "../discussion.service";
+import { DiscussionPermissionType, DiscussionReplyPermissionType } from "../discussion.service";
 
 export enum GetDiscussionAndRepliesResponseError {
   NO_SUCH_DISCUSSION = "NO_SUCH_DISCUSSION",
@@ -75,7 +75,7 @@ export class DiscussionReplyDto {
     enum: DiscussionPermissionType,
     isArray: true
   })
-  permissions: DiscussionPermissionType[];
+  permissions: DiscussionReplyPermissionType[];
 }
 
 export class GetDiscussionAndRepliesResponseDto {

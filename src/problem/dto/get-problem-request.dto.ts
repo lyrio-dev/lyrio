@@ -1,9 +1,8 @@
 import { ApiProperty } from "@nestjs/swagger";
 
-import { IsInt, IsOptional, IsEnum, IsBoolean, IsArray, ArrayUnique } from "class-validator";
+import { IsInt, IsOptional, IsEnum, IsBoolean } from "class-validator";
 
 import { Locale } from "@/common/locale.type";
-import { ProblemPermissionType } from "@/problem/problem.service";
 
 export class GetProblemRequestDto {
   @ApiProperty({ required: false })
@@ -76,12 +75,10 @@ export class GetProblemRequestDto {
   @IsOptional()
   readonly discussionCount?: boolean;
 
-  @ApiProperty({ required: false, enum: ProblemPermissionType, isArray: true })
-  @IsEnum(ProblemPermissionType, { each: true })
-  @ArrayUnique()
-  @IsArray()
+  @ApiProperty({ required: false })
+  @IsBoolean()
   @IsOptional()
-  readonly permissionOfCurrentUser?: ProblemPermissionType[];
+  readonly permissionOfCurrentUser?: boolean;
 
   @ApiProperty({ required: false })
   @IsBoolean()
