@@ -19,7 +19,10 @@ export const migrationDiscussion: MigrationInterface = {
           discussion.id = oldArticle.id;
           discussion.title = oldArticle.title;
           discussion.publishTime = new Date(oldArticle.public_time * 1000);
-          discussion.editTime = new Date(oldArticle.update_time * 1000);
+          discussion.editTime =
+            oldArticle.update_time && oldArticle.update_time !== oldArticle.public_time
+              ? new Date(oldArticle.update_time * 1000)
+              : null;
           discussion.sortTime = new Date(oldArticle.sort_time * 1000);
           discussion.replyCount = 0;
           discussion.isPublic = true;
