@@ -32,6 +32,8 @@ export class QueryDiscussionsRequestDto {
   @ApiProperty({
     description: "Pass true to return discussion title only. For a preview in search bar."
   })
+  @IsBoolean()
+  @IsOptional()
   titleOnly?: boolean;
 
   @ApiProperty()

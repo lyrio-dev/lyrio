@@ -35,6 +35,8 @@ export class QueryProblemSetRequestDto {
   @ApiProperty({
     description: "Pass true to return problem title only. For a preview in search bar."
   })
+  @IsBoolean()
+  @IsOptional()
   titleOnly?: boolean;
 
   @ApiProperty()
