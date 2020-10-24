@@ -16,7 +16,7 @@ export enum SubmissionStatisticsType {
   Fastest = "Fastest",
   MinMemory = "MinMemory",
   MinAnswerSize = "MinAnswerSize",
-  Earlist = "Earlist"
+  Earliest = "Earliest"
 }
 
 interface SubmissionStatisticsField {
@@ -37,7 +37,7 @@ const submissionStatisticsFields: Record<SubmissionStatisticsType, SubmissionSta
     field: "answerSize",
     sort: "ASC"
   },
-  Earlist: {
+  Earliest: {
     field: "submitTime",
     sort: "ASC"
   }
