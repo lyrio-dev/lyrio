@@ -121,7 +121,14 @@ class SecurityConfig {
 }
 
 // These config items will be sent to client
-export class PreferenceConfigSecurity {
+class PreferenceConfigFrontend {
+  @IsBoolean()
+  @ApiProperty()
+  readonly redirectLegacyUrls: boolean;
+}
+
+// These config items will be sent to client
+class PreferenceConfigSecurity {
   @IsBoolean()
   @ApiProperty()
   readonly requireEmailVerification: boolean;
@@ -263,6 +270,11 @@ export class PreferenceConfig {
   @IsString()
   @ApiProperty()
   readonly siteName: string;
+
+  @ValidateNested()
+  @Type(() => PreferenceConfigFrontend)
+  @ApiProperty()
+  readonly frontend: PreferenceConfigFrontend;
 
   @ValidateNested()
   @Type(() => PreferenceConfigSecurity)

@@ -31,6 +31,8 @@ security:
   maintainceKey: also don't leak this
 preference:
   siteName: SYZOJ NG
+  frontend:
+    redirectLegacyUrls: false
   security:
     requireEmailVerification: true
     allowUserChangeUsername: true
