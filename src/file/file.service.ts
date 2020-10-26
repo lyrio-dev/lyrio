@@ -1,3 +1,6 @@
+import { URL } from "url";
+import { Readable } from "stream";
+
 import { Injectable, OnModuleInit, Logger } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
 
@@ -10,6 +13,11 @@ import { ConfigService } from "@/config/config.service";
 import { FileEntity } from "./file.entity";
 
 import { FileUploadInfoDto, SignedFileUploadRequestDto } from "./dto";
+
+// 10 minutes upload expire time
+const FILE_UPLOAD_EXPIRE_TIME = 10 * 60;
+// 20 minutes download expire time
+const FILE_DOWNLOAD_EXPIRE_TIME = 20 * 60 * 60;
 
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent
 function encodeRFC5987ValueChars(str: string) {
@@ -25,16 +33,59 @@ function encodeRFC5987ValueChars(str: string) {
   );
 }
 
-// 10 minutes upload expire time
-const FILE_UPLOAD_EXPIRE_TIME = 10 * 60;
-// 20 minutes download expire time
-const FILE_DOWNLOAD_EXPIRE_TIME = 20 * 60 * 60;
+interface MinioEndpointConfig {
+  endPoint: string;
+  port: number;
+  useSSL: boolean;
+}
+
+function parseMainEndpointUrl(endpoint: string): MinioEndpointConfig {
+  const url = new URL(endpoint);
+  const result: Partial<MinioEndpointConfig> = {};
+
+  if (url.pathname !== "/") throw new Error("Main MinIO endpoint URL of a sub-directory is not supported.");
+  if (url.username || url.password || url.hash || url.search)
+    throw new Error("Authorization, search parameters and hash are not supported for main MinIO endpoint URL.");
+
+  if (url.protocol === "http:") result.useSSL = false;
+  else if (url.protocol === "https:") result.useSSL = true;
+  else
+    throw new Error(
+      `Invalid protocol "${url.protocol}" for main MinIO endpoint URL. Only HTTP and HTTPS are supported.`
+    );
+
+  result.endPoint = url.hostname;
+  result.port = url.port ? Number(url.port) : result.useSSL ? 443 : 80;
+
+  return result as MinioEndpointConfig;
+}
+
+function parseAlternativeEndpointUrl(endpoint: string): (originalUrl: string) => string {
+  if (!endpoint) return originalUrl => originalUrl;
+
+  const url = new URL(endpoint);
+  if (url.hash || url.search)
+    throw new Error("Search parameters and hash are not supported for alternative MinIO endpoint URL.");
+  if (!url.pathname.endsWith("/")) throw new Error("Alternative MinIO endpoint URL's pathname must ends with '/'.");
+
+  return originalUrl => {
+    const parsedOriginUrl = new URL(originalUrl);
+    return new URL(parsedOriginUrl.pathname.slice(1) + parsedOriginUrl.search + parsedOriginUrl.hash, url).toString();
+  };
+}
+
+export enum AlternativeUrlFor {
+  User,
+  Judge
+}
 
 @Injectable()
 export class FileService implements OnModuleInit {
   private readonly minioClient: MinioClient;
 
   private readonly bucket: string;
+
+  private readonly replaceWithAlternativeUrlFor: Record<AlternativeUrlFor, (originalUrl: string) => string>;
 
   constructor(
     @InjectConnection()
@@ -43,14 +94,33 @@ export class FileService implements OnModuleInit {
     private readonly fileRepository: Repository<FileEntity>,
     private readonly configService: ConfigService
   ) {
+    const config = this.configService.config.services.minio;
+
     this.minioClient = new MinioClient({
-      endPoint: this.configService.config.services.minio.endPoint,
-      port: this.configService.config.services.minio.port,
-      useSSL: this.configService.config.services.minio.useSSL,
-      accessKey: this.configService.config.services.minio.accessKey,
-      secretKey: this.configService.config.services.minio.secretKey
+      ...parseMainEndpointUrl(config.endpoint),
+      accessKey: config.accessKey,
+      secretKey: config.secretKey
     });
-    this.bucket = this.configService.config.services.minio.bucket;
+    this.bucket = config.bucket;
+    this.replaceWithAlternativeUrlFor = {
+      [AlternativeUrlFor.User]: parseAlternativeEndpointUrl(config.endpointForUser),
+      [AlternativeUrlFor.Judge]: parseAlternativeEndpointUrl(config.endpointForJudge)
+    };
+  }
+
+  fileExistsInMinio(uuid: string): Promise<boolean> {
+    return new Promise(resolve =>
+      this.minioClient
+        .statObject(this.bucket, uuid)
+        .then(() => resolve(true))
+        .catch(() => resolve(false))
+    );
+  }
+
+  async uploadFile(uuid: string, streamOrBufferOrFile: string | Buffer | Readable): Promise<void> {
+    if (typeof streamOrBufferOrFile === "string")
+      await this.minioClient.fPutObject(this.bucket, uuid, streamOrBufferOrFile, {});
+    else await this.minioClient.putObject(this.bucket, uuid, streamOrBufferOrFile, {});
   }
 
   async onModuleInit(): Promise<void> {
@@ -130,6 +200,9 @@ export class FileService implements OnModuleInit {
     }
   }
 
+  /**
+   * Sign a upload request for given size. The alternative MinIO endpoint for user will be used in the POST URL.
+   */
   private async signUploadRequest(minSize?: number, maxSize?: number): Promise<SignedFileUploadRequestDto> {
     const uuid = UUID();
     const policy = this.minioClient.newPostPolicy();
@@ -144,7 +217,7 @@ export class FileService implements OnModuleInit {
     return {
       uuid,
       method: "POST",
-      url: policyResult.postURL,
+      url: this.replaceWithAlternativeUrlFor[AlternativeUrlFor.User](policyResult.postURL),
       extraFormData: policyResult.formData,
       fileFieldName: "file"
     };
@@ -193,18 +266,31 @@ export class FileService implements OnModuleInit {
     return uuids.map(uuid => map[uuid].size);
   }
 
-  async getDownloadLink(uuid: string, filename?: string, noExpire?: boolean): Promise<string> {
-    return await this.minioClient.presignedGetObject(
+  async signDownloadLink({
+    uuid,
+    downloadFilename,
+    noExpire,
+    useAlternativeEndpointFor
+  }: {
+    uuid: string;
+    downloadFilename?: string;
+    noExpire?: boolean;
+    useAlternativeEndpointFor?: AlternativeUrlFor;
+  }): Promise<string> {
+    const url = await this.minioClient.presignedGetObject(
       this.bucket,
       uuid,
       // The maximum expire time is 7 days
       noExpire ? 24 * 60 * 60 * 7 : FILE_DOWNLOAD_EXPIRE_TIME,
-      !filename
+      !downloadFilename
         ? {}
         : {
-            "response-content-disposition": `attachment; filename="${encodeRFC5987ValueChars(filename)}"`
+            "response-content-disposition": `attachment; filename="${encodeRFC5987ValueChars(downloadFilename)}"`
           }
     );
+
+    if (useAlternativeEndpointFor != null) return this.replaceWithAlternativeUrlFor[useAlternativeEndpointFor](url);
+    else return url;
   }
 
   async runMaintainceTasks(): Promise<void> {

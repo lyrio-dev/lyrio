@@ -25,7 +25,7 @@ import { RedisService } from "@/redis/redis.service";
 import { JudgeGateway } from "@/judge/judge.gateway";
 import { ProblemTypeFactoryService } from "@/problem-type/problem-type-factory.service";
 import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
-import { FileService } from "@/file/file.service";
+import { AlternativeUrlFor, FileService } from "@/file/file.service";
 import { ConfigService } from "@/config/config.service";
 import { FileEntity } from "@/file/file.entity";
 import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.service";
@@ -610,7 +610,12 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
             ? {
                 uuid: submissionDetail.fileUuid,
                 url: problemTypeService.shouldUploadAnswerFile()
-                  ? await this.fileService.getDownloadLink(submissionDetail.fileUuid, null, true)
+                  ? await this.fileService.signDownloadLink({
+                      uuid: submissionDetail.fileUuid,
+                      downloadFilename: null,
+                      noExpire: true,
+                      useAlternativeEndpointFor: AlternativeUrlFor.Judge
+                    })
                   : null
               }
             : null

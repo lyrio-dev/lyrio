@@ -5,7 +5,6 @@ import fs from "fs";
 import { Logger } from "@nestjs/common";
 
 import { v5 as uuid } from "uuid";
-import { Client as MinioClient } from "minio";
 import { JSDOM } from "jsdom";
 
 import { SubmissionEntity } from "@/submission/submission.entity";
@@ -33,6 +32,7 @@ import { SubmissionResultOmittableString } from "@/submission/submission-testcas
 import { getLanguageAndOptions, parseProblemType } from "./problem";
 import { OldDatabaseJudgeStateEntity } from "./old-database.interface";
 import { MigrationInterface } from "./migration.interface";
+import { FileService } from "@/file/file.service";
 
 enum OldSubmissionTestcaseResultType {
   Accepted = 1,
@@ -245,15 +245,7 @@ function htmlToAnsi(html: string) {
 export const migrationSubmission: MigrationInterface = {
   async migrate(entityManager, config, oldDatabase, queryTablePaged, app) {
     const configService = app.get(ConfigService);
-    const minioConfig = configService.config.services.minio;
-    const minioClient = new MinioClient({
-      endPoint: minioConfig.endPoint,
-      port: minioConfig.port,
-      useSSL: minioConfig.useSSL,
-      accessKey: minioConfig.accessKey,
-      secretKey: minioConfig.secretKey
-    });
-    const { bucket } = minioConfig;
+    const fileService = app.get(FileService);
 
     const problemInfoMap: Record<
       number,
@@ -323,14 +315,8 @@ export const migrationSubmission: MigrationInterface = {
               fileEntity.uploadTime = new Date();
               fileEntity.uuid = uuidFromSubmission(oldSubmission.id);
 
-              let exists = true;
-              try {
-                await minioClient.statObject(bucket, fileEntity.uuid);
-              } catch (e) {
-                exists = false;
-              }
-
-              if (!exists) await minioClient.fPutObject(bucket, fileEntity.uuid, answerFilePath, {});
+              if (!(await fileService.fileExistsInMinio(fileEntity.uuid)))
+                await fileService.uploadFile(fileEntity.uuid, answerFilePath);
 
               await entityManager.save(fileEntity);
             }

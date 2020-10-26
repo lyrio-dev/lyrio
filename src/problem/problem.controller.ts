@@ -4,7 +4,7 @@ import { ApiOperation, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { ConfigService } from "@/config/config.service";
 import { UserService } from "@/user/user.service";
 import { GroupService } from "@/group/group.service";
-import { FileService } from "@/file/file.service";
+import { AlternativeUrlFor, FileService } from "@/file/file.service";
 import { CurrentUser } from "@/common/user.decorator";
 import { UserEntity } from "@/user/user.entity";
 import { GroupEntity } from "@/group/group.entity";
@@ -680,7 +680,11 @@ export class ProblemController {
       downloadInfo: await Promise.all(
         downloadList.map(async problemFile => ({
           filename: problemFile.filename,
-          downloadUrl: await this.fileService.getDownloadLink(problemFile.uuid, problemFile.filename)
+          downloadUrl: await this.fileService.signDownloadLink({
+            uuid: problemFile.uuid,
+            downloadFilename: problemFile.filename,
+            useAlternativeEndpointFor: AlternativeUrlFor.User
+          })
         }))
       )
     };

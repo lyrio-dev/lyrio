@@ -9,7 +9,7 @@ import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.s
 import { ConfigService } from "@/config/config.service";
 import { ProblemEntity } from "@/problem/problem.entity";
 import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
-import { FileService } from "@/file/file.service";
+import { AlternativeUrlFor, FileService } from "@/file/file.service";
 import { ProblemTypeFactoryService } from "@/problem-type/problem-type-factory.service";
 
 import { SubmissionStatus } from "./submission-status.enum";
@@ -326,7 +326,11 @@ export class SubmissionController {
       };
 
     return {
-      url: await this.fileService.getDownloadLink(submissionDetail.fileUuid, request.filename)
+      url: await this.fileService.signDownloadLink({
+        uuid: submissionDetail.fileUuid,
+        downloadFilename: request.filename,
+        useAlternativeEndpointFor: AlternativeUrlFor.User
+      })
     };
   }
 

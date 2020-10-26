@@ -59,7 +59,7 @@ $ ./mc config host add minio http://127.0.0.1:9000 "AKAK" "SKSK"
 $ ./mc mb -p minio/syzoj-ng-files
 ```
 
-Then fill the MinIO server information in the config file. Notice that the endpoint should be accessible by both the API server and the user.
+Then fill the MinIO server information in the config file. The `endpoint` property is used by the server. If you want the user or judge to connect to MinIO with other host as the endpoint, set `endpointForUser` or `endpointForJudge` to a URL path. Make sure you configure Nginx properly, especially when you use a sub-directory.
 
 ## Run
 

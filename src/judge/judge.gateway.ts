@@ -11,7 +11,7 @@ import {
 
 import { Server, Socket } from "socket.io"; // eslint-disable-line import/no-extraneous-dependencies
 
-import { FileService } from "@/file/file.service";
+import { AlternativeUrlFor, FileService } from "@/file/file.service";
 import { SubmissionProgress } from "@/submission/submission-progress.interface";
 import { ConfigService } from "@/config/config.service";
 
@@ -148,7 +148,15 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     Logger.log(`Judge client ${client.id} (${state.judgeClient.name}) requested ${fileUuids.length} files`);
     return await Promise.all(
-      fileUuids.map(async fileUuid => await this.fileService.getDownloadLink(fileUuid, null, true))
+      fileUuids.map(
+        async fileUuid =>
+          await this.fileService.signDownloadLink({
+            uuid: fileUuid,
+            downloadFilename: null,
+            noExpire: true,
+            useAlternativeEndpointFor: AlternativeUrlFor.Judge
+          })
+      )
     );
   }
 

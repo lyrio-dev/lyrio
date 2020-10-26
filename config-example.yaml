@@ -12,9 +12,9 @@ services:
     password: syzoj-ng
     database: syzoj-ng
   minio:
-    endPoint: syzoj-ng.test
-    port: 9000
-    useSSL: false
+    endpoint: http://syzoj-ng-minio.test
+    endpointForUser: null
+    endpointForJudge: null
     accessKey: minioadmin
     secretKey: minioadmin
     bucket: syzoj-ng-files

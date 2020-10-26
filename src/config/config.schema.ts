@@ -54,14 +54,16 @@ class ServicesConfigDatabase {
 }
 
 class ServicesConfigMinio {
-  @IsString()
-  readonly endPoint: string;
+  @IsUrl()
+  readonly endpoint: string;
 
-  @IsPortNumber()
-  readonly port: number;
+  @IsUrl()
+  @IsOptional()
+  readonly endpointForUser: string;
 
-  @IsBoolean()
-  readonly useSSL: boolean;
+  @IsUrl()
+  @IsOptional()
+  readonly endpointForJudge: string;
 
   @IsString()
   readonly accessKey: string;

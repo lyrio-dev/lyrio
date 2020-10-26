@@ -7,7 +7,6 @@ import { Logger } from "@nestjs/common";
 
 import { EntityManager } from "typeorm";
 import yaml from "js-yaml";
-import { Client as MinioClient } from "minio";
 import { v5 as uuid } from "uuid";
 import unzipper from "unzipper";
 import tempy from "tempy";
@@ -34,6 +33,7 @@ import { ProblemJudgeInfoSubmitAnswer } from "@/problem-type/types/submit-answer
 import { ProblemFileEntity, ProblemFileType } from "@/problem/problem-file.entity";
 import { ConfigService } from "@/config/config.service";
 import { FileEntity } from "@/file/file.entity";
+import { FileService } from "@/file/file.service";
 
 import { CodeLanguage } from "@/code-language/code-language.type";
 import CompileAndRunOptionsCpp from "@/code-language/compile-and-run-options/cpp";
@@ -468,16 +468,7 @@ export const migrationProblem: MigrationInterface = {
     const localizedContentService = app.get(LocalizedContentService);
     const problemTypeFactoryService = app.get(ProblemTypeFactoryService);
     const configService = app.get(ConfigService);
-
-    const minioConfig = configService.config.services.minio;
-    const minioClient = new MinioClient({
-      endPoint: minioConfig.endPoint,
-      port: minioConfig.port,
-      useSSL: minioConfig.useSSL,
-      accessKey: minioConfig.accessKey,
-      secretKey: minioConfig.secretKey
-    });
-    const { bucket } = minioConfig;
+    const fileService = app.get(FileService);
 
     await queryTablePaged<OldDatabaseProblemTagEntity>("problem_tag", "id", async oldProblemTag => {
       const problemTag = new ProblemTagEntity();
@@ -541,18 +532,8 @@ export const migrationProblem: MigrationInterface = {
             fileEntity.uuid = fileUuid;
             await transactionalEntityManager.save(fileEntity);
 
-            let exists = true;
-            try {
-              await minioClient.statObject(bucket, fileEntity.uuid);
-            } catch (e) {
-              exists = false;
-            }
-
-            if (!exists) {
-              if (typeof streamOrFile === "string")
-                await minioClient.fPutObject(bucket, fileEntity.uuid, streamOrFile, {});
-              else await minioClient.putObject(bucket, fileEntity.uuid, streamOrFile, {});
-            }
+            if (!(await fileService.fileExistsInMinio(fileEntity.uuid)))
+              await fileService.uploadFile(fileEntity.uuid, streamOrFile);
           }
 
           const problemFile = new ProblemFileEntity();
