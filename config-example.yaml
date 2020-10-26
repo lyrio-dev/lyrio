@@ -80,6 +80,13 @@ queryLimit:
   userAuditLogs: 20
   discussions: 20
   discussionReplies: 50
+judge:
+  limit:
+    compilerMessage: 524288
+    outputSize: 104857600
+    dataDisplay: 128
+    dataDisplayForSubmitAnswer: 128
+    stderrDisplay: 5120
 errorReporting:
   telegramBotToken: null
   telegramApiRoot: null

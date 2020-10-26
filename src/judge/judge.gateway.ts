@@ -13,6 +13,7 @@ import { Server, Socket } from "socket.io"; // eslint-disable-line import/no-ext
 
 import { FileService } from "@/file/file.service";
 import { SubmissionProgress } from "@/submission/submission-progress.interface";
+import { ConfigService } from "@/config/config.service";
 
 import { JudgeClientService } from "./judge-client.service";
 import { JudgeClientEntity } from "./judge-client.entity";
@@ -41,7 +42,8 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     private readonly judgeClientService: JudgeClientService,
     private readonly judgeQueueService: JudgeQueueService,
-    private readonly fileService: FileService
+    private readonly fileService: FileService,
+    private readonly configService: ConfigService
   ) {}
 
   cancelTask(taskId: string): void {
@@ -93,7 +95,7 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
 
     // Now we are ready for consuming task
-    client.emit("ready", judgeClient.name);
+    client.emit("ready", judgeClient.name, this.configService.config.judge);
     Logger.log(`Judge client ${client.id} (${judgeClient.name}) initialized.`);
   }
 

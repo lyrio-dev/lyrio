@@ -370,6 +370,34 @@ class QueryLimitConfig {
   readonly discussionReplies: number;
 }
 
+class JudgeLimitConfig {
+  @IsInt()
+  @Min(1)
+  compilerMessage: number;
+
+  @IsInt()
+  @Min(1)
+  outputSize: number;
+
+  @IsInt()
+  @Min(1)
+  dataDisplay: number;
+
+  @IsInt()
+  @Min(1)
+  dataDisplayForSubmitAnswer: number;
+
+  @IsInt()
+  @Min(1)
+  stderrDisplay: number;
+}
+
+class JudgeConfig {
+  @ValidateNested()
+  @Type(() => JudgeLimitConfig)
+  readonly limit: JudgeLimitConfig;
+}
+
 class ErrorReportingConfig {
   @IsString()
   @IsOptional()
@@ -422,6 +450,10 @@ export class AppConfig {
   @ValidateNested()
   @Type(() => ErrorReportingConfig)
   readonly errorReporting: ErrorReportingConfig;
+
+  @ValidateNested()
+  @Type(() => JudgeConfig)
+  readonly judge: JudgeConfig;
 
   @ValidateNested()
   @Type(() => VendorConfig)
