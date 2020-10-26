@@ -87,7 +87,7 @@ judge:
     dataDisplay: 128
     dataDisplayForSubmitAnswer: 128
     stderrDisplay: 5120
-errorReporting:
+eventReport:
   telegramBotToken: null
   telegramApiRoot: null
   sentTo: "@example"

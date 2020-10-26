@@ -1,4 +1,4 @@
-import { Logger } from "@nestjs/common";
+import { forwardRef, Inject, Logger } from "@nestjs/common";
 import {
   ConnectedSocket,
   MessageBody,
@@ -14,6 +14,7 @@ import { Server, Socket } from "socket.io"; // eslint-disable-line import/no-ext
 import { AlternativeUrlFor, FileService } from "@/file/file.service";
 import { SubmissionProgress } from "@/submission/submission-progress.interface";
 import { ConfigService } from "@/config/config.service";
+import { EventReportService, EventReportType } from "@/event-report/event-report.service";
 
 import { JudgeClientService } from "./judge-client.service";
 import { JudgeClientEntity } from "./judge-client.entity";
@@ -43,7 +44,9 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly judgeClientService: JudgeClientService,
     private readonly judgeQueueService: JudgeQueueService,
     private readonly fileService: FileService,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
+    @Inject(forwardRef(() => EventReportService))
+    private readonly eventReportService: EventReportService
   ) {}
 
   cancelTask(taskId: string): void {
@@ -96,7 +99,13 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     // Now we are ready for consuming task
     client.emit("ready", judgeClient.name, this.configService.config.judge);
-    Logger.log(`Judge client ${client.id} (${judgeClient.name}) initialized.`);
+
+    const message = `Judge client ${client.id} (${judgeClient.name}) connected from ${client.handshake.address}.`;
+    Logger.log(message);
+    this.eventReportService.report({
+      type: EventReportType.Success,
+      message
+    });
   }
 
   async handleDisconnect(client: Socket): Promise<void> {
@@ -106,7 +115,12 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return; // Initialization has not been complated
     }
 
-    Logger.log(`Judge client ${client.id} (${state.judgeClient.name}) disconnected.`);
+    const message = `Judge client ${client.id} (${state.judgeClient.name}) disconnected.`;
+    Logger.log(message);
+    this.eventReportService.report({
+      type: EventReportType.Warning,
+      message
+    });
     this.mapSessionIdToJudgeClient.delete(client.id);
 
     await this.judgeClientService.disconnectJudgeClient(state.judgeClient);

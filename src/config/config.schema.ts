@@ -400,7 +400,7 @@ class JudgeConfig {
   readonly limit: JudgeLimitConfig;
 }
 
-class ErrorReportingConfig {
+class EventReportConfig {
   @IsString()
   @IsOptional()
   readonly telegramBotToken?: string;
@@ -450,8 +450,8 @@ export class AppConfig {
   readonly queryLimit: QueryLimitConfig;
 
   @ValidateNested()
-  @Type(() => ErrorReportingConfig)
-  readonly errorReporting: ErrorReportingConfig;
+  @Type(() => EventReportConfig)
+  readonly eventReport: EventReportConfig;
 
   @ValidateNested()
   @Type(() => JudgeConfig)
