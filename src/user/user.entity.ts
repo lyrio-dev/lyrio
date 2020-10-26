@@ -15,6 +15,9 @@ export class UserEntity {
   @Index({ unique: true })
   email: string;
 
+  @Column({ type: "varchar", length: 24 })
+  nickname: string;
+
   @Column({ type: "varchar", length: 160 })
   bio: string;
 

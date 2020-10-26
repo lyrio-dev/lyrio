@@ -206,6 +206,7 @@ export class UserController {
       request.email,
       request.publicEmail,
       request.avatarInfo,
+      request.nickname,
       request.bio,
       request.information
     );

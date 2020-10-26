@@ -47,6 +47,7 @@ export const migrationUser: MigrationInterface = {
         else user.email = `${randomUsername(oldUser.id)}@syzoj2-users.test`;
 
         user.publicEmail = !!oldUser.public_email;
+        user.nickname = "";
         user.bio = (oldUser.information || "").substr(0, 160);
         user.avatarInfo = getAvatarInfo(oldUser.email);
         user.isAdmin = !!oldUser.is_admin;

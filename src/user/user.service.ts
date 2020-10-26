@@ -133,6 +133,7 @@ export class UserService {
           ? user.email
           : null,
       avatar: this.getUserAvatar(user),
+      nickname: user.nickname,
       bio: user.bio,
       isAdmin: user.isAdmin,
       acceptedProblemCount: user.acceptedProblemCount,
@@ -172,6 +173,7 @@ export class UserService {
     email: string,
     publicEmail: boolean,
     avatarInfo: string,
+    nickname: string,
     bio: string,
     information: UserInformationDto
   ): Promise<UpdateUserProfileResponseError> {
@@ -184,6 +186,7 @@ export class UserService {
 
       user.publicEmail = publicEmail;
       user.avatarInfo = avatarInfo;
+      user.nickname = nickname;
       user.bio = bio;
 
       const userInformation = await this.findUserInformationByUserId(user.id);

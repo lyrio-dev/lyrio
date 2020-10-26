@@ -61,6 +61,7 @@ export class AuthService {
         user.username = username;
         user.email = email;
         user.publicEmail = true;
+        user.nickname = "";
         user.bio = "";
         user.avatarInfo = "gravatar:";
         user.isAdmin = false;

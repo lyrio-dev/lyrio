@@ -32,6 +32,11 @@ export class UpdateUserProfileRequestDto {
 
   @ApiProperty()
   @IsString()
+  @Length(0, 24)
+  readonly nickname: string;
+
+  @ApiProperty()
+  @IsString()
   @Length(0, 160)
   readonly bio: string;
 

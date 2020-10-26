@@ -13,6 +13,9 @@ export class UserMetaDto {
   email: string;
 
   @ApiProperty()
+  nickname: string;
+
+  @ApiProperty()
   bio: string;
 
   @ApiProperty()
