@@ -397,7 +397,7 @@ async function parseJudgeInfo(
             type: "custom",
             interface: useTestlib ? "testlib" : "legacy",
             filename: oldConfig.specialJudge.fileName,
-            ...getLanguageAndOptions(oldConfig.specialJudge.language, `problem ${displayProblem(oldProblem)}`),
+            ...getLanguageAndOptions(oldConfig.specialJudge.language, `problem ${displayProblem(oldProblem)}`, true),
             ...(oldProblem.type === "submit-answer"
               ? {
                   timeLimit: 1000,
@@ -418,7 +418,7 @@ async function parseJudgeInfo(
         (judgeInfo as ProblemJudgeInfoInteraction).interactor = {
           interface: "stdio",
           filename: oldConfig.interactor.fileName,
-          ...getLanguageAndOptions(oldConfig.interactor.language, `problem ${displayProblem(oldProblem)}`)
+          ...getLanguageAndOptions(oldConfig.interactor.language, `problem ${displayProblem(oldProblem)}`, true)
         };
       }
 
@@ -429,8 +429,8 @@ async function parseJudgeInfo(
         (judgeInfo as ProblemJudgeInfoTraditional).extraSourceFiles = {};
         const { extraSourceFiles } = judgeInfo as ProblemJudgeInfoTraditional;
         for (const entry of oldConfig.extraSourceFiles) {
-          const { language } = getLanguageAndOptions(entry.language, `problem ${displayProblem(oldProblem)}`);
-          if (language in extraSourceFiles) continue;
+          const { language } = getLanguageAndOptions(entry.language, `problem ${displayProblem(oldProblem)}`) || {};
+          if (!language || language in extraSourceFiles) continue;
           extraSourceFiles[language] = Object.fromEntries(
             entry.files
               .filter(({ dest }) => {
