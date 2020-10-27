@@ -4,6 +4,7 @@ import { WebSocketGateway, WebSocketServer, OnGatewayConnection, OnGatewayDiscon
 import { Server, Socket } from "socket.io"; // eslint-disable-line import/no-extraneous-dependencies
 import jwt from "jsonwebtoken";
 import { diff } from "jsondiffpatch";
+import SocketIOParser from "socket.io-msgpack-parser";
 
 import { ConfigService } from "@/config/config.service";
 
@@ -38,7 +39,12 @@ interface SubmissionProgressMessage {
 
 // TODO: This should be refactored if we add hack, custom judge, etc
 //       Maybe refactor to a general "task progress"
-@WebSocketGateway({ namespace: "submission-progress", path: "/api/socket", transports: ["websocket"] })
+@WebSocketGateway({
+  namespace: "submission-progress",
+  path: "/api/socket",
+  transports: ["websocket"],
+  parser: SocketIOParser
+})
 export class SubmissionProgressGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   private server: Server;

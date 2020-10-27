@@ -10,6 +10,7 @@ import {
 } from "@nestjs/websockets";
 
 import { Server, Socket } from "socket.io"; // eslint-disable-line import/no-extraneous-dependencies
+import SocketIOParser from "socket.io-msgpack-parser";
 
 import { AlternativeUrlFor, FileService } from "@/file/file.service";
 import { SubmissionProgress } from "@/submission/submission-progress.interface";
@@ -31,7 +32,7 @@ interface SubmissionProgressMessage {
   progress: SubmissionProgress;
 }
 
-@WebSocketGateway({ namespace: "judge", path: "/api/socket", transports: ["websocket"] })
+@WebSocketGateway({ namespace: "judge", path: "/api/socket", transports: ["websocket"], parser: SocketIOParser })
 export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   private server: Server;
