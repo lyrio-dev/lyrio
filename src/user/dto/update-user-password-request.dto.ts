@@ -8,7 +8,6 @@ export class UpdateUserPasswordRequestDto {
   readonly userId: number;
 
   @ApiProperty()
-  @Length(6, 32)
   @IsString()
   @IsOptional()
   readonly oldPassword?: string;

@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 
-import { IsOptional, IsString, Length, MaxLength } from "class-validator";
+import { IsOptional, IsString, MaxLength } from "class-validator";
 
 import { IsUsername } from "@/common/validators";
 
@@ -20,7 +20,6 @@ export class MigrateUserRequestDto {
   newUsername: string;
 
   @ApiProperty()
-  @Length(6, 32)
   @IsString()
   newPassword: string;
 }

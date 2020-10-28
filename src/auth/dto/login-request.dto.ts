@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 
-import { IsString, Length, MaxLength } from "class-validator";
+import { IsString, MaxLength } from "class-validator";
 
 export class LoginRequestDto {
   @ApiProperty({
@@ -11,6 +11,6 @@ export class LoginRequestDto {
   readonly username: string;
 
   @ApiProperty()
-  @Length(6, 32)
+  @IsString()
   readonly password: string;
 }
