@@ -3,5 +3,9 @@ import { JudgeTaskExtraInfo, JudgeTask } from "./judge-queue.service";
 
 export interface JudgeTaskService<TaskProgress extends JudgeTaskProgress, ExtraInfo extends JudgeTaskExtraInfo> {
   onTaskProgress(taskId: string, progress: TaskProgress): Promise<boolean>;
-  getTaskToBeSentToJudgeByTaskId(taskId: string): Promise<JudgeTask<ExtraInfo>>;
+
+  /**
+   * @param priorityKey We need to store the `priorityKey` in judge task as we may repush the task back to queue
+   */
+  getTaskToBeSentToJudgeByTaskId(taskId: string, priorityKey: string): Promise<JudgeTask<ExtraInfo>>;
 }

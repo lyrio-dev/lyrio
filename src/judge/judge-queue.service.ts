@@ -9,16 +9,15 @@ import { JudgeTaskProgress } from "./judge-task-progress.interface";
 
 // Smaller means higher priority
 // With the same priority value, the smaller ID means higher priority
-export enum JudgeTaskPriority {
-  High = 0,
-  Medium = 1,
-  Low = 2,
-  Lowest = 3
+export enum JudgeTaskPriorityType {
+  High = 1,
+  Medium = 2,
+  Low = 3,
+  Lowest = 4
 }
 
-// Since multiple keys is not supported in Redis ZSET, we use "<key1>.<key2>" to simulate it
-function combinePriority(id: number, priorityValue: JudgeTaskPriority): string {
-  return `${priorityValue}.${id}`;
+export function priorityToKey(priority: number) {
+  return priority.toFixed(20);
 }
 
 export enum JudgeTaskType {
@@ -40,8 +39,8 @@ export class JudgeTask<ExtraInfo extends JudgeTaskExtraInfo> implements JudgeTas
   constructor(
     public taskId: string, // Passed by the task creator, to indentify the task
     public type: JudgeTaskType,
-    public priority: JudgeTaskPriority,
-    public priorityId: number, // Passed by the task creator, lower means higher priority
+    public priorityType: JudgeTaskPriorityType,
+    public priorityKey: string,
     public extraInfo: ExtraInfo
   ) {}
 
@@ -79,22 +78,12 @@ export class JudgeQueueService {
     this.taskServices.set(taskType, service);
   }
 
-  public async pushTask(
-    taskId: string,
-    type: JudgeTaskType,
-    priority: JudgeTaskPriority,
-    priorityId: number,
-    repush = false
-  ): Promise<void> {
-    if (repush)
-      Logger.verbose(
-        `Repush judge task: { taskId: ${taskId}, type: ${type}, priority: ${JudgeTaskPriority[priority]} }`
-      );
-    else
-      Logger.verbose(`New judge task: { taskId: ${taskId}, type: ${type}, priority: ${JudgeTaskPriority[priority]} }`);
+  public async pushTask(taskId: string, type: JudgeTaskType, priorityKey: string, repush = false): Promise<void> {
+    if (repush) Logger.verbose(`Repush judge task: { taskId: ${taskId}, type: ${type}, priorityKey: ${priorityKey} }`);
+    else Logger.verbose(`New judge task: { taskId: ${taskId}, type: ${type}, priorityKey: ${priorityKey} }`);
     await this.redisForPush.zadd(
       REDIS_KEY_JUDGE_QUEUE,
-      combinePriority(priorityId, priority),
+      priorityKey,
       JSON.stringify({
         taskId,
         type
@@ -116,9 +105,11 @@ export class JudgeQueueService {
       return null;
     }
 
-    const [, taskJson] = redisResponse;
+    const [priorityKey, taskJson] = redisResponse;
     const taskMeta: JudgeTaskMeta = JSON.parse(taskJson);
-    const task = await this.taskServices.get(taskMeta.type).getTaskToBeSentToJudgeByTaskId(taskMeta.taskId);
+    const task = await this.taskServices
+      .get(taskMeta.type)
+      .getTaskToBeSentToJudgeByTaskId(taskMeta.taskId, priorityKey);
     if (!task) {
       Logger.verbose(
         `Consumed judge task { taskId: ${taskMeta.taskId}, type: ${taskMeta.type} }, but taskId is invalid, maybe canceled?`
@@ -127,9 +118,9 @@ export class JudgeQueueService {
     }
 
     Logger.verbose(
-      `Consumed judge task { taskId: ${task.taskId}, type: ${task.type}, priority: ${
-        JudgeTaskPriority[task.priority]
-      } }`
+      `Consumed judge task { taskId: ${task.taskId}, type: ${task.type}, priorityKey: ${priorityKey} (${
+        JudgeTaskPriorityType[task.priorityType]
+      }) }`
     );
     return task;
   }

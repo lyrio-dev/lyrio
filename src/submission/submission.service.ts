@@ -12,9 +12,10 @@ import { ProblemEntity, ProblemType } from "@/problem/problem.entity";
 import {
   JudgeQueueService,
   JudgeTaskType,
-  JudgeTaskPriority,
+  JudgeTaskPriorityType,
   JudgeTask,
-  JudgeTaskExtraInfo
+  JudgeTaskExtraInfo,
+  priorityToKey
 } from "@/judge/judge-queue.service";
 import { JudgeTaskService } from "@/judge/judge-task-service.interface";
 import { ProblemFileType } from "@/problem/problem-file.entity";
@@ -60,6 +61,22 @@ interface SubmissionTaskExtraInfo extends JudgeTaskExtraInfo {
     uuid: string;
     url: string;
   };
+}
+
+function makeSubmissionPriority(id: number, userPendingCount: number, priorityType: JudgeTaskPriorityType): number {
+  // A submission by a user with more pending submissions will have much lower priority
+  const t1 = userPendingCount + 1;
+  // Multiple submissions, with the same number of pending submissions by their users will be compared by their IDs
+  // We should make ID increase much slower to prevent it from influencing the priority more than pending count
+  const t2 = id + 1000000;
+
+  // For any `x > 1`, the larger `x` is, the smaller `1 / x` will be,
+  // so the less `priority - (1 / x)` will increase the priority
+
+  // So a larger `x` will lead to a lower priority as we use `priority - (1 / x)`
+  const x = t1 * t2;
+
+  return priorityType - 1 / x;
 }
 
 @Injectable()
@@ -397,7 +414,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
   /**
    * @param submission Must be locked (or just created, ID not exposed to user).
    */
-  public async judgeSubmission(submission: SubmissionEntity): Promise<void> {
+  public async judgeSubmission(submission: SubmissionEntity, isRejudge?: boolean): Promise<void> {
     const oldSubmission = { ...submission };
 
     if (submission.taskId) {
@@ -411,11 +428,24 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     submission.memoryUsed = null;
     await this.submissionRepository.save(submission);
 
+    // If we are rejudging some submission, don't consider the user's pending submission count for priority
+    const userPendingCount = isRejudge
+      ? 0
+      : await this.submissionRepository.count({
+          status: SubmissionStatus.Pending,
+          submitterId: submission.submitterId
+        });
+
     await this.judgeQueueService.pushTask(
       submission.taskId,
       JudgeTaskType.Submission,
-      JudgeTaskPriority.High,
-      submission.id
+      priorityToKey(
+        makeSubmissionPriority(
+          submission.id,
+          userPendingCount,
+          isRejudge ? JudgeTaskPriorityType.Medium : JudgeTaskPriorityType.High
+        )
+      )
     );
 
     await this.onSubmissionUpdated(oldSubmission, submission);
@@ -425,7 +455,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     // eslint-disable-next-line no-shadow
     await this.lockSubmission(submission, true, async submission => {
       if (!submission) return;
-      this.judgeSubmission(submission);
+      this.judgeSubmission(submission, true);
     });
   }
 
@@ -578,7 +608,10 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     return true;
   }
 
-  public async getTaskToBeSentToJudgeByTaskId(taskId: string): Promise<JudgeTask<SubmissionTaskExtraInfo>> {
+  public async getTaskToBeSentToJudgeByTaskId(
+    taskId: string,
+    priotityKey: string
+  ): Promise<JudgeTask<SubmissionTaskExtraInfo>> {
     try {
       const submission = await this.findSubmissionByTaskId(taskId);
       if (!submission) return null;
@@ -594,8 +627,8 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
       return new JudgeTask<SubmissionTaskExtraInfo>(
         submission.taskId,
         JudgeTaskType.Submission,
-        submission.id,
-        JudgeTaskPriority.High,
+        JudgeTaskPriorityType.High,
+        priotityKey,
         {
           problemType: problem.type,
           judgeInfo: preprocessedJudgeInfo,
