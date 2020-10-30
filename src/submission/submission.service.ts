@@ -1,7 +1,7 @@
 import { Injectable, Logger, Inject, forwardRef } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
 
-import { Repository, Connection } from "typeorm";
+import { Repository, Connection, QueryBuilder } from "typeorm";
 import { ValidationError } from "class-validator";
 import { v4 as uuid } from "uuid";
 import moment from "moment-timezone";
@@ -14,8 +14,7 @@ import {
   JudgeTaskType,
   JudgeTaskPriorityType,
   JudgeTask,
-  JudgeTaskExtraInfo,
-  priorityToKey
+  JudgeTaskExtraInfo
 } from "@/judge/judge-queue.service";
 import { JudgeTaskService } from "@/judge/judge-task-service.interface";
 import { ProblemFileType } from "@/problem/problem-file.entity";
@@ -63,18 +62,47 @@ interface SubmissionTaskExtraInfo extends JudgeTaskExtraInfo {
   };
 }
 
-function makeSubmissionPriority(id: number, userPendingCount: number, priorityType: JudgeTaskPriorityType): number {
+function makeSubmissionPriority(
+  id: number,
+  userPendingCount: number,
+  userOccupiedTimeRecently: number,
+  avgEveryUsersOccupiedTimeRecently: number,
+  stdEveryUsersOccupiedTimeRecently: number,
+  priorityType: JudgeTaskPriorityType
+): number {
+  // For any `x` > 1, the larger `x` is, the smaller `1 / x` will be,
+  // so the less `priority - (1 / x)` will increase the priority
+
+  // Let `x` = `t_1` * `t_2` * `t_3` ....
+  // For some `t_i` in [1, `n_i`], the smaller `n_i`, the more significantly it will influence `x`
+  // Because, with the same `t_i`, increasing other `t_j`s will influence `x` less significantly
+
   // A submission by a user with more pending submissions will have much lower priority
   const t1 = userPendingCount + 1;
   // Multiple submissions, with the same number of pending submissions by their users will be compared by their IDs
-  // We should make ID increase much slower to prevent it from influencing the priority more than pending count
+  // We should make ID much larger and increase much slower to prevent it from influencing the priority more than pending count
   const t2 = id + 1000000;
 
-  // For any `x > 1`, the larger `x` is, the smaller `1 / x` will be,
-  // so the less `priority - (1 / x)` will increase the priority
+  // The more time the user occupied recently, the lower the submission' priority will be
+  // We assume the total time occupied by each user fits normal distribution
+  // k: the user's occupied time = average + k * standard deviation
+  const k = (userOccupiedTimeRecently - avgEveryUsersOccupiedTimeRecently) / stdEveryUsersOccupiedTimeRecently;
+
+  // We map k ** 2 to a number in [1, 100] to have a more significant influence than ID but less than pending count
+  const T3_MIN = 1;
+  const T3_MAX = 100;
+  const K_MIN = 1;
+  const K_MAX = 3;
+  let t3: number;
+  // All time occupied recently is by this user means no other users are submitting, no need to decrease its priority
+  if (Number.isNaN(k) || k < 1) t3 = T3_MIN;
+  // If a user's occupied time > average + 3 * standard deviation, we decrease its priotity to the lowest
+  else if (k > 3) t3 = T3_MAX;
+  // If a user's occupied time > average + 1 * standard deviation, we start decreasing its priority
+  else t3 = ((k ** 2 - K_MIN) / (K_MAX - K_MIN)) * (T3_MAX - T3_MIN) + T3_MIN;
 
   // So a larger `x` will lead to a lower priority as we use `priority - (1 / x)`
-  const x = t1 * t2;
+  const x = t1 * t2 * t3;
 
   return priorityType - 1 / x;
 }
@@ -428,23 +456,65 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     submission.memoryUsed = null;
     await this.submissionRepository.save(submission);
 
-    // If we are rejudging some submission, don't consider the user's pending submission count for priority
-    const userPendingCount = isRejudge
-      ? 0
-      : await this.submissionRepository.count({
+    const [
+      userPendingCount,
+      userOccupiedTimeRecently,
+      avgEveryUsersOccupiedTimeRecently,
+      stdEveryUsersOccupiedTimeRecently
+    ] = await (async () => {
+      // If we are rejudging some submission, don't consider the user's influence to judge queue for priority
+      if (isRejudge) return [0, 0, 0];
+
+      const selectTotalOccupiedTimeRecently = (qb: QueryBuilder<SubmissionEntity>) =>
+        qb.select("SUM(totalOccupiedTime)", "total").andWhere("submitTime >= NOW() - INTERVAL 15 MINUTE");
+
+      // eslint-disable-next-line no-shadow
+      const [userPendingCount, userOccupiedTimeRecently, avgAndStdEveryUsersOccupiedTimeRecently] = await Promise.all([
+        // userPendingCount
+        this.submissionRepository.count({
           status: SubmissionStatus.Pending,
           submitterId: submission.submitterId
-        });
+        }),
+        // userOccupiedTimeRecently
+        selectTotalOccupiedTimeRecently(this.submissionRepository.createQueryBuilder())
+          .where({
+            submitterId: submission.submitterId
+          })
+          .getRawOne<{ total: number }>()
+          .then(result => result.total),
+        // avgAndStdEveryUsersOccupiedTimeRecently
+        this.submissionRepository
+          .createQueryBuilder()
+          .select("AVG(total)", "avg")
+          .addSelect("STD(total)", "std")
+          .from(
+            qb =>
+              selectTotalOccupiedTimeRecently(qb.select().from(SubmissionEntity, "submission")).groupBy(
+                "submission.submitterId"
+              ),
+            "totalResult"
+          )
+          .getRawOne<{ avg: number; std: number }>()
+      ]);
+
+      return [
+        userPendingCount,
+        userOccupiedTimeRecently,
+        avgAndStdEveryUsersOccupiedTimeRecently.avg,
+        avgAndStdEveryUsersOccupiedTimeRecently.std
+      ];
+    })();
 
     await this.judgeQueueService.pushTask(
       submission.taskId,
       JudgeTaskType.Submission,
-      priorityToKey(
-        makeSubmissionPriority(
-          submission.id,
-          userPendingCount,
-          isRejudge ? JudgeTaskPriorityType.Medium : JudgeTaskPriorityType.High
-        )
+      makeSubmissionPriority(
+        submission.id,
+        userPendingCount,
+        userOccupiedTimeRecently,
+        avgEveryUsersOccupiedTimeRecently,
+        stdEveryUsersOccupiedTimeRecently,
+        isRejudge ? JudgeTaskPriorityType.Medium : JudgeTaskPriorityType.High
       )
     );
 
@@ -561,6 +631,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     submission.taskId = null;
     submission.status = progress.status;
     submission.score = progress.score;
+    submission.totalOccupiedTime = progress.totalOccupiedTime;
 
     const timeAndMemory = this.problemTypeFactoryService
       .type(problem.type)
@@ -610,7 +681,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
 
   public async getTaskToBeSentToJudgeByTaskId(
     taskId: string,
-    priotityKey: string
+    priotity: number
   ): Promise<JudgeTask<SubmissionTaskExtraInfo>> {
     try {
       const submission = await this.findSubmissionByTaskId(taskId);
@@ -628,7 +699,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
         submission.taskId,
         JudgeTaskType.Submission,
         JudgeTaskPriorityType.High,
-        priotityKey,
+        priotity,
         {
           problemType: problem.type,
           judgeInfo: preprocessedJudgeInfo,

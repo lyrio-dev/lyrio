@@ -134,7 +134,7 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
     await Promise.all(
       Array.from(state.pendingTasks.values()).map(async task => {
         this.mapTaskIdToSocket.delete(task.taskId);
-        await this.judgeQueueService.pushTask(task.taskId, task.type, task.priorityKey, true);
+        await this.judgeQueueService.pushTask(task.taskId, task.type, task.priority, true);
       })
     );
   }
@@ -192,7 +192,7 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
         Logger.verbose(
           `Consumed task for client ${client.id} (${state.judgeClient.name}), but connection became invalid, repushing task back to queue`
         );
-        await this.judgeQueueService.pushTask(task.taskId, task.type, task.priorityKey, true);
+        await this.judgeQueueService.pushTask(task.taskId, task.type, task.priority, true);
       }
 
       state.pendingTasks.add(task);

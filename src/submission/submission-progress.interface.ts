@@ -26,6 +26,7 @@ export interface SubmissionProgress<TestcaseResult extends SubmissionTestcaseRes
   // Only valid when finished
   status?: SubmissionStatus;
   score?: number;
+  totalOccupiedTime?: number;
 
   compile?: {
     compileTaskHash: string;

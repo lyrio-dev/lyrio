@@ -14,7 +14,8 @@ import { SubmissionDetailEntity } from "./submission-detail.entity";
 @Index(["isPublic", "codeLanguage", "submitterId"])
 @Index(["isPublic", "status", "codeLanguage"])
 @Index(["problemId", "submitterId"])
-@Index(["problemId", "submitterId", "status"])
+@Index(["submitterId", "status"])
+@Index(["submitTime", "submitterId"])
 export class SubmissionEntity {
   @PrimaryGeneratedColumn()
   id: number;
@@ -51,6 +52,10 @@ export class SubmissionEntity {
   @Column({ type: "enum", enum: SubmissionStatus })
   @Index()
   status: SubmissionStatus;
+
+  // For backward compatibility it's nullable
+  @Column({ type: "integer", nullable: true })
+  totalOccupiedTime: number;
 
   @Column({ type: "datetime" })
   @Index()

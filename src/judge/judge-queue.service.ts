@@ -16,10 +16,6 @@ export enum JudgeTaskPriorityType {
   Lowest = 4
 }
 
-export function priorityToKey(priority: number) {
-  return priority.toFixed(20);
-}
-
 export enum JudgeTaskType {
   Submission = "Submission",
   CustomTest = "CustomTest",
@@ -40,7 +36,7 @@ export class JudgeTask<ExtraInfo extends JudgeTaskExtraInfo> implements JudgeTas
     public taskId: string, // Passed by the task creator, to indentify the task
     public type: JudgeTaskType,
     public priorityType: JudgeTaskPriorityType,
-    public priorityKey: string,
+    public priority: number,
     public extraInfo: ExtraInfo
   ) {}
 
@@ -78,12 +74,12 @@ export class JudgeQueueService {
     this.taskServices.set(taskType, service);
   }
 
-  public async pushTask(taskId: string, type: JudgeTaskType, priorityKey: string, repush = false): Promise<void> {
-    if (repush) Logger.verbose(`Repush judge task: { taskId: ${taskId}, type: ${type}, priorityKey: ${priorityKey} }`);
-    else Logger.verbose(`New judge task: { taskId: ${taskId}, type: ${type}, priorityKey: ${priorityKey} }`);
+  public async pushTask(taskId: string, type: JudgeTaskType, priority: number, repush = false): Promise<void> {
+    if (repush) Logger.verbose(`Repush judge task: { taskId: ${taskId}, type: ${type}, priority: ${priority} }`);
+    else Logger.verbose(`New judge task: { taskId: ${taskId}, type: ${type}, priority: ${priority} }`);
     await this.redisForPush.zadd(
       REDIS_KEY_JUDGE_QUEUE,
-      priorityKey,
+      priority,
       JSON.stringify({
         taskId,
         type
@@ -96,7 +92,7 @@ export class JudgeQueueService {
 
     // ioredis's definition doesn't have bzpopmin method
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const redisResponse: [string, string] = await (this.redisForConsume as any).bzpopmin(
+    const redisResponse: [key: string, element: string, score: string] = await (this.redisForConsume as any).bzpopmin(
       REDIS_KEY_JUDGE_QUEUE,
       REDIS_CONSUME_TIMEOUT
     );
@@ -105,11 +101,10 @@ export class JudgeQueueService {
       return null;
     }
 
-    const [priorityKey, taskJson] = redisResponse;
+    const [, taskJson, priorityString] = redisResponse;
+    const priority = Number(priorityString);
     const taskMeta: JudgeTaskMeta = JSON.parse(taskJson);
-    const task = await this.taskServices
-      .get(taskMeta.type)
-      .getTaskToBeSentToJudgeByTaskId(taskMeta.taskId, priorityKey);
+    const task = await this.taskServices.get(taskMeta.type).getTaskToBeSentToJudgeByTaskId(taskMeta.taskId, priority);
     if (!task) {
       Logger.verbose(
         `Consumed judge task { taskId: ${taskMeta.taskId}, type: ${taskMeta.type} }, but taskId is invalid, maybe canceled?`
@@ -118,7 +113,7 @@ export class JudgeQueueService {
     }
 
     Logger.verbose(
-      `Consumed judge task { taskId: ${task.taskId}, type: ${task.type}, priorityKey: ${priorityKey} (${
+      `Consumed judge task { taskId: ${task.taskId}, type: ${task.type}, priority: ${priority} (${
         JudgeTaskPriorityType[task.priorityType]
       }) }`
     );

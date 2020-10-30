@@ -5,7 +5,7 @@ export interface JudgeTaskService<TaskProgress extends JudgeTaskProgress, ExtraI
   onTaskProgress(taskId: string, progress: TaskProgress): Promise<boolean>;
 
   /**
-   * @param priorityKey We need to store the `priorityKey` in judge task as we may repush the task back to queue
+   * @param priority We need to store the `priority` in judge task as we may repush the task back to queue
    */
-  getTaskToBeSentToJudgeByTaskId(taskId: string, priorityKey: string): Promise<JudgeTask<ExtraInfo>>;
+  getTaskToBeSentToJudgeByTaskId(taskId: string, priority: number): Promise<JudgeTask<ExtraInfo>>;
 }
