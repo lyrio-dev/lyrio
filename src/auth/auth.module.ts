@@ -1,8 +1,6 @@
 import { Module, forwardRef } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
-import { RecaptchaModule } from "@/app.module";
-import { ConfigModule } from "@/config/config.module";
 import { UserModule } from "@/user/user.module";
 import { GroupModule } from "@/group/group.module";
 import { RedisModule } from "@/redis/redis.module";
@@ -19,9 +17,7 @@ import { AuthIpLocationService } from "./auth-ip-location.service";
 
 @Module({
   imports: [
-    forwardRef(() => RecaptchaModule),
     TypeOrmModule.forFeature([UserAuthEntity]),
-    forwardRef(() => ConfigModule),
     forwardRef(() => UserModule),
     forwardRef(() => GroupModule),
     forwardRef(() => RedisModule),

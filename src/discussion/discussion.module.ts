@@ -1,9 +1,7 @@
 import { Module, forwardRef } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
-import { RecaptchaModule } from "@/app.module";
 import { UserModule } from "@/user/user.module";
-import { ConfigModule } from "@/config/config.module";
 import { AuditModule } from "@/audit/audit.module";
 import { PermissionModule } from "@/permission/permission.module";
 import { RedisModule } from "@/redis/redis.module";
@@ -20,7 +18,6 @@ import { DiscussionReplyReactionEntity } from "./discussion-reply-reaction.entit
 
 @Module({
   imports: [
-    forwardRef(() => RecaptchaModule),
     TypeOrmModule.forFeature([DiscussionEntity]),
     TypeOrmModule.forFeature([DiscussionContentEntity]),
     TypeOrmModule.forFeature([DiscussionReplyEntity]),
@@ -28,7 +25,6 @@ import { DiscussionReplyReactionEntity } from "./discussion-reply-reaction.entit
     TypeOrmModule.forFeature([DiscussionReplyReactionEntity]),
     forwardRef(() => UserModule),
     forwardRef(() => GroupModule),
-    forwardRef(() => ConfigModule),
     forwardRef(() => AuditModule),
     forwardRef(() => PermissionModule),
     forwardRef(() => ProblemModule),

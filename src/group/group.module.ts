@@ -2,7 +2,6 @@ import { Module, forwardRef } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { UserModule } from "@/user/user.module";
-import { ConfigModule } from "@/config/config.module";
 import { AuditModule } from "@/audit/audit.module";
 
 import { GroupService } from "./group.service";
@@ -15,7 +14,6 @@ import { GroupMembershipEntity } from "./group-membership.entity";
     TypeOrmModule.forFeature([GroupEntity]),
     TypeOrmModule.forFeature([GroupMembershipEntity]),
     forwardRef(() => UserModule),
-    forwardRef(() => ConfigModule),
     forwardRef(() => AuditModule)
   ],
   providers: [GroupService],

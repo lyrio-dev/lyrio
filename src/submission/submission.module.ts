@@ -1,8 +1,6 @@
 import { Module, forwardRef } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
-import { RecaptchaModule } from "@/app.module";
-import { ConfigModule } from "@/config/config.module";
 import { RedisModule } from "@/redis/redis.module";
 import { ProblemModule } from "@/problem/problem.module";
 import { ProblemTypeModule } from "@/problem-type/problem-type.module";
@@ -21,10 +19,8 @@ import { SubmissionStatisticsService } from "./submission-statistics.service";
 
 @Module({
   imports: [
-    forwardRef(() => RecaptchaModule),
     TypeOrmModule.forFeature([SubmissionEntity]),
     TypeOrmModule.forFeature([SubmissionDetailEntity]),
-    forwardRef(() => ConfigModule),
     forwardRef(() => RedisModule),
     forwardRef(() => ProblemModule),
     forwardRef(() => ProblemTypeModule),

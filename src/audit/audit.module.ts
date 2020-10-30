@@ -1,13 +1,11 @@
-import { Module, forwardRef } from "@nestjs/common";
+import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
-
-import { ConfigModule } from "@/config/config.module";
 
 import { AuditLogEntity } from "./audit-log.entity";
 import { AuditService } from "./audit.service";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([AuditLogEntity]), forwardRef(() => ConfigModule)],
+  imports: [TypeOrmModule.forFeature([AuditLogEntity])],
   providers: [AuditService],
   exports: [AuditService]
 })

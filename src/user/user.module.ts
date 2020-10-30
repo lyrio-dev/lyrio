@@ -1,7 +1,6 @@
 import { Module, forwardRef } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
-import { ConfigModule } from "@/config/config.module";
 import { AuthModule } from "@/auth/auth.module";
 import { SubmissionModule } from "@/submission/submission.module";
 import { RedisModule } from "@/redis/redis.module";
@@ -21,7 +20,6 @@ import { UserController } from "./user.controller";
     TypeOrmModule.forFeature([UserPrivilegeEntity]),
     TypeOrmModule.forFeature([UserInformationEntity]),
     TypeOrmModule.forFeature([UserPreferenceEntity]),
-    forwardRef(() => ConfigModule),
     forwardRef(() => AuthModule),
     forwardRef(() => SubmissionModule),
     forwardRef(() => RedisModule),

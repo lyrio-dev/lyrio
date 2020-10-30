@@ -1,8 +1,6 @@
 import { Module, forwardRef } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
-import { RecaptchaModule } from "@/app.module";
-import { ConfigModule } from "@/config/config.module";
 import { LocalizedContentModule } from "@/localized-content/localized-content.module";
 import { UserModule } from "@/user/user.module";
 import { GroupModule } from "@/group/group.module";
@@ -25,14 +23,12 @@ import { ProblemEntity } from "./problem.entity";
 
 @Module({
   imports: [
-    forwardRef(() => RecaptchaModule),
     TypeOrmModule.forFeature([ProblemEntity]),
     TypeOrmModule.forFeature([ProblemJudgeInfoEntity]),
     TypeOrmModule.forFeature([ProblemSampleEntity]),
     TypeOrmModule.forFeature([ProblemFileEntity]),
     TypeOrmModule.forFeature([ProblemTagEntity]),
     TypeOrmModule.forFeature([ProblemTagMapEntity]),
-    forwardRef(() => ConfigModule),
     forwardRef(() => LocalizedContentModule),
     forwardRef(() => UserModule),
     forwardRef(() => GroupModule),
