@@ -1,6 +1,8 @@
 import { Controller, Get, Post, Body, Query, Req } from "@nestjs/common";
 import { ApiOperation, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
+import { Recaptcha } from "@nestlab/google-recaptcha";
+
 import { appGitRepoInfo } from "@/main";
 import { ConfigService } from "@/config/config.service";
 import { UserService } from "@/user/user.service";
@@ -94,11 +96,12 @@ export class AuthController {
     return result;
   }
 
+  @Recaptcha()
   @Post("login")
   @ApiBearerAuth()
   @ApiOperation({
     summary: "Login with given credentials.",
-    description: "Return session token if success."
+    description: "Recaptcha required. Return session token if success."
   })
   async login(
     @Req() req: RequestWithSession,
@@ -197,10 +200,12 @@ export class AuthController {
     return result;
   }
 
+  @Recaptcha()
   @Post("sendEmailVerifactionCode")
   @ApiBearerAuth()
   @ApiOperation({
-    summary: "Send email verifaction code for registering or changing email"
+    summary: "Send email verifaction code for registering or changing email",
+    description: "Recaptcha required."
   })
   async sendEmailVerifactionCode(
     @CurrentUser() currentUser: UserEntity,
@@ -284,11 +289,12 @@ export class AuthController {
     return {};
   }
 
+  @Recaptcha()
   @Post("register")
   @ApiBearerAuth()
   @ApiOperation({
     summary: "Register then login.",
-    description: "Return the session token if success."
+    description: "Recaptcha required. Return the session token if success."
   })
   async register(
     @Req() req: RequestWithSession,
@@ -322,10 +328,12 @@ export class AuthController {
     };
   }
 
+  @Recaptcha()
   @Post("resetPassword")
   @ApiBearerAuth()
   @ApiOperation({
-    summary: "Reset a user's password with email verification code and then login."
+    summary: "Reset a user's password with email verification code and then login.",
+    description: "Recaptcha required."
   })
   async resetPassword(
     @Req() req: RequestWithSession,

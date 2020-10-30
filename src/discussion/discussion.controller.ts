@@ -1,6 +1,8 @@
 import { Controller, Post, Body } from "@nestjs/common";
 import { ApiOperation, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
+import { Recaptcha } from "@nestlab/google-recaptcha";
+
 import { ConfigService } from "@/config/config.service";
 import { CurrentUser } from "@/common/user.decorator";
 import { UserEntity } from "@/user/user.entity";
@@ -90,10 +92,12 @@ export class DiscussionController {
       .map((value: string) => (value.startsWith("/") && value.endsWith("/") ? new RegExp(value.slice(1, -1)) : value));
   }
 
+  @Recaptcha()
   @Post("createDiscussion")
   @ApiBearerAuth()
   @ApiOperation({
-    summary: "Create a new discussion."
+    summary: "Create a new discussion.",
+    description: "Recaptcha required."
   })
   async createDiscussion(
     @CurrentUser() currentUser: UserEntity,
@@ -130,10 +134,12 @@ export class DiscussionController {
     };
   }
 
+  @Recaptcha()
   @Post("createDiscussionReply")
   @ApiBearerAuth()
   @ApiOperation({
-    summary: "Create a new discussion."
+    summary: "Create a new discussion.",
+    description: "Recaptcha required."
   })
   async createDiscussionReply(
     @CurrentUser() currentUser: UserEntity,

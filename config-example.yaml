@@ -29,11 +29,14 @@ security:
       - http://syzoj-ng-app.test
   sessionSecret: don't leak this
   maintainceKey: also don't leak this
+  recaptchaSecret: null
 preference:
   siteName: SYZOJ NG
   frontend:
     redirectLegacyUrls: false
   security:
+    recaptchaEnabled: false
+    recaptchaKey: null
     requireEmailVerification: true
     allowUserChangeUsername: true
     allowEveryoneCreateProblem: true

@@ -117,6 +117,10 @@ class SecurityConfig {
   @IsString()
   readonly maintainceKey: string;
 
+  @IsString()
+  @IsOptional()
+  readonly recaptchaSecret: string;
+
   @ValidateNested()
   @Type(() => SecurityConfigCrossOrigin)
   readonly crossOrigin: SecurityConfigCrossOrigin;
@@ -131,6 +135,15 @@ class PreferenceConfigFrontend {
 
 // These config items will be sent to client
 class PreferenceConfigSecurity {
+  @IsBoolean()
+  @ApiProperty()
+  readonly recaptchaEnabled: boolean;
+
+  @IsString()
+  @IsOptional()
+  @ApiProperty()
+  readonly recaptchaKey: string;
+
   @IsBoolean()
   @ApiProperty()
   readonly requireEmailVerification: boolean;

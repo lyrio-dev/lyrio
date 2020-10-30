@@ -12,6 +12,7 @@ import { AppModule } from "./app.module";
 import { ConfigService } from "./config/config.service";
 import { MigrationService } from "./migration/migration.service";
 import { ErrorFilter } from "./error.filter";
+import { RecaptchaFilter } from "./recaptcha.filter";
 
 // eslint-disable-next-line no-extend-native
 String.prototype.format = function format(...args) {
@@ -37,7 +38,7 @@ async function initialize(): Promise<[packageInfo: any, configService: ConfigSer
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const configService = app.get(ConfigService);
   app.setGlobalPrefix("api");
-  app.useGlobalFilters(app.get(ErrorFilter));
+  app.useGlobalFilters(app.get(ErrorFilter), app.get(RecaptchaFilter));
   app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }));
   app.set("trust proxy", configService.config.server.trustProxy);
 

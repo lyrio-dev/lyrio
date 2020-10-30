@@ -1,6 +1,8 @@
 import { Controller, Post, Body, BadRequestException } from "@nestjs/common";
 import { ApiOperation, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
+import { Recaptcha } from "@nestlab/google-recaptcha";
+
 import { CurrentUser } from "@/common/user.decorator";
 import { UserEntity } from "@/user/user.entity";
 import { ProblemService, ProblemPermissionType } from "@/problem/problem.service";
@@ -66,8 +68,10 @@ export class SubmissionController {
     private readonly fileService: FileService
   ) {}
 
+  @Recaptcha()
   @ApiOperation({
-    summary: "Submit code to a problem."
+    summary: "Submit code to a problem.",
+    description: "Recaptcha required."
   })
   @ApiBearerAuth()
   @Post("submit")

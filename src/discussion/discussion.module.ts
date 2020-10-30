@@ -1,6 +1,7 @@
 import { Module, forwardRef } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
+import { RecaptchaModule } from "@/app.module";
 import { UserModule } from "@/user/user.module";
 import { ConfigModule } from "@/config/config.module";
 import { AuditModule } from "@/audit/audit.module";
@@ -19,6 +20,7 @@ import { DiscussionReplyReactionEntity } from "./discussion-reply-reaction.entit
 
 @Module({
   imports: [
+    forwardRef(() => RecaptchaModule),
     TypeOrmModule.forFeature([DiscussionEntity]),
     TypeOrmModule.forFeature([DiscussionContentEntity]),
     TypeOrmModule.forFeature([DiscussionReplyEntity]),

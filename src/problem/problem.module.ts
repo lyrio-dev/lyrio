@@ -1,6 +1,7 @@
 import { Module, forwardRef } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
+import { RecaptchaModule } from "@/app.module";
 import { ConfigModule } from "@/config/config.module";
 import { LocalizedContentModule } from "@/localized-content/localized-content.module";
 import { UserModule } from "@/user/user.module";
@@ -24,6 +25,7 @@ import { ProblemEntity } from "./problem.entity";
 
 @Module({
   imports: [
+    forwardRef(() => RecaptchaModule),
     TypeOrmModule.forFeature([ProblemEntity]),
     TypeOrmModule.forFeature([ProblemJudgeInfoEntity]),
     TypeOrmModule.forFeature([ProblemSampleEntity]),

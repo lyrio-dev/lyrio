@@ -1,8 +1,12 @@
 import { Module, forwardRef, NestModule, MiddlewareConsumer, RequestMethod } from "@nestjs/common";
 
+import { Request } from "express"; // eslint-disable-line import/no-extraneous-dependencies
+import { GoogleRecaptchaModule } from "@nestlab/google-recaptcha";
+
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { ErrorFilter } from "./error.filter";
+import { RecaptchaFilter } from "./recaptcha.filter";
 import { AuthMiddleware } from "./auth/auth.middleware";
 
 import { ConfigModule } from "./config/config.module";
@@ -23,8 +27,21 @@ import { DiscussionModule } from "./discussion/discussion.module";
 import { MigrationModule } from "./migration/migration.module";
 import { EventReportModule } from "./event-report/event-report.module";
 
+import { ConfigService } from "./config/config.service";
+
+export const RecaptchaModule = GoogleRecaptchaModule.forRootAsync({
+  imports: [ConfigModule],
+  useFactory: (configService: ConfigService) => ({
+    secretKey: configService.config.security.recaptchaSecret,
+    response: (req: Request) => String(req.headers["x-recaptcha-token"]),
+    skipIf: () => !configService.config.security.recaptchaSecret
+  }),
+  inject: [ConfigService]
+});
+
 @Module({
   imports: [
+    RecaptchaModule,
     forwardRef(() => ConfigModule),
     forwardRef(() => DatabaseModule),
     forwardRef(() => RedisModule),
@@ -44,7 +61,7 @@ import { EventReportModule } from "./event-report/event-report.module";
     forwardRef(() => MigrationModule)
   ],
   controllers: [AppController],
-  providers: [AppService, ErrorFilter]
+  providers: [AppService, ErrorFilter, RecaptchaFilter]
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {

@@ -1,6 +1,8 @@
 import { Controller, Post, Body } from "@nestjs/common";
 import { ApiOperation, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
+import { Recaptcha } from "@nestlab/google-recaptcha";
+
 import { ConfigService } from "@/config/config.service";
 import { UserService } from "@/user/user.service";
 import { GroupService } from "@/group/group.service";
@@ -185,10 +187,12 @@ export class ProblemController {
     };
   }
 
+  @Recaptcha()
   @Post("createProblem")
   @ApiBearerAuth()
   @ApiOperation({
-    summary: "Create a problem with given statement and default judge info."
+    summary: "Create a problem with given statement and default judge info.",
+    description: "Recaptcha required."
   })
   async createProblem(
     @CurrentUser() currentUser: UserEntity,
@@ -575,10 +579,12 @@ export class ProblemController {
     return {};
   }
 
+  @Recaptcha()
   @Post("addProblemFile")
   @ApiBearerAuth()
   @ApiOperation({
-    summary: "Upload or add an existing file to a problem as its testdata or additional file."
+    summary: "Upload or add an existing file to a problem as its testdata or additional file.",
+    description: "Recaptcha required."
   })
   async addProblemFile(
     @CurrentUser() currentUser: UserEntity,
