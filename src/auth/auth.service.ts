@@ -11,7 +11,7 @@ import { UserPreferenceEntity } from "@/user/user-preference.entity";
 import { ConfigService } from "@/config/config.service";
 
 import { UserAuthEntity } from "./user-auth.entity";
-import { AuthEmailVerifactionCodeService } from "./auth-email-verifaction-code.service";
+import { AuthEmailVerificationCodeService } from "./auth-email-verification-code.service";
 
 import { RegisterResponseError } from "./dto";
 
@@ -24,8 +24,8 @@ export class AuthService {
     private readonly userAuthRepository: Repository<UserAuthEntity>,
     @Inject(forwardRef(() => UserService))
     private readonly userService: UserService,
-    @Inject(forwardRef(() => AuthEmailVerifactionCodeService))
-    private readonly authEmailVerifactionCodeService: AuthEmailVerifactionCodeService,
+    @Inject(forwardRef(() => AuthEmailVerificationCodeService))
+    private readonly authEmailVerificationCodeService: AuthEmailVerificationCodeService,
     @Inject(forwardRef(() => ConfigService))
     private readonly configService: ConfigService
   ) {}
@@ -50,7 +50,7 @@ export class AuthService {
     // inserting will still fail if another with same username is inserted after we check
 
     if (this.configService.config.preference.security.requireEmailVerification) {
-      if (!(await this.authEmailVerifactionCodeService.verify(email, emailVerificationCode)))
+      if (!(await this.authEmailVerificationCodeService.verify(email, emailVerificationCode)))
         return [RegisterResponseError.INVALID_EMAIL_VERIFICATION_CODE, null];
     }
 
@@ -93,7 +93,7 @@ export class AuthService {
       });
 
       if (this.configService.config.preference.security.requireEmailVerification) {
-        await this.authEmailVerifactionCodeService.revoke(email, emailVerificationCode);
+        await this.authEmailVerificationCodeService.revoke(email, emailVerificationCode);
       }
 
       return [null, user];

@@ -8,17 +8,17 @@ import { RedisService } from "@/redis/redis.service";
 const RATE_LIMIT = 60;
 const CODE_VALID_TIME = 60 * 15;
 
-const REDIS_KEY_EMAIL_VERIFICATION_CODE_RATE_LIMIT = "email-verifaction-code-rate-limit:%s";
-const REDIS_KEY_EMAIL_VERIFICATION_CODE = "email-verifaction-code:%s:%s";
+const REDIS_KEY_EMAIL_VERIFICATION_CODE_RATE_LIMIT = "email-verification-code-rate-limit:%s";
+const REDIS_KEY_EMAIL_VERIFICATION_CODE = "email-verification-code:%s:%s";
 
-export enum EmailVerifactionCodeType {
+export enum EmailVerificationCodeType {
   Register = "Register",
   ChangeEmail = "ChangeEmail",
   ResetPassword = "ResetPassword"
 }
 
 @Injectable()
-export class AuthEmailVerifactionCodeService {
+export class AuthEmailVerificationCodeService {
   private readonly redis: Redis;
 
   constructor(

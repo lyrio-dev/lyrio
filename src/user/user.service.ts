@@ -11,7 +11,7 @@ import { SubmissionService } from "@/submission/submission.service";
 import { SubmissionEntity } from "@/submission/submission.entity";
 import { SubmissionStatus } from "@/submission/submission-status.enum";
 import { ConfigService } from "@/config/config.service";
-import { AuthEmailVerifactionCodeService } from "@/auth/auth-email-verifaction-code.service";
+import { AuthEmailVerificationCodeService } from "@/auth/auth-email-verification-code.service";
 import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
 
 import { UserEntity } from "./user.entity";
@@ -40,8 +40,8 @@ export class UserService {
     private readonly userInformationRepository: Repository<UserInformationEntity>,
     @InjectRepository(UserPreferenceEntity)
     private readonly userPreferenceRepository: Repository<UserPreferenceEntity>,
-    @Inject(forwardRef(() => AuthEmailVerifactionCodeService))
-    private readonly authEmailVerifactionCodeService: AuthEmailVerifactionCodeService,
+    @Inject(forwardRef(() => AuthEmailVerificationCodeService))
+    private readonly authEmailVerificationCodeService: AuthEmailVerificationCodeService,
     @Inject(forwardRef(() => RedisService))
     private readonly redisService: RedisService,
     @Inject(forwardRef(() => ConfigService))
@@ -220,7 +220,7 @@ export class UserService {
     emailVerificationCode: string
   ): Promise<UpdateUserSelfEmailResponseError> {
     if (this.configService.config.preference.security.requireEmailVerification) {
-      if (!(await this.authEmailVerifactionCodeService.verify(email, emailVerificationCode)))
+      if (!(await this.authEmailVerificationCodeService.verify(email, emailVerificationCode)))
         return UpdateUserSelfEmailResponseError.INVALID_EMAIL_VERIFICATION_CODE;
     }
 
@@ -233,7 +233,7 @@ export class UserService {
     }
 
     if (this.configService.config.preference.security.requireEmailVerification) {
-      await this.authEmailVerifactionCodeService.revoke(email, emailVerificationCode);
+      await this.authEmailVerificationCodeService.revoke(email, emailVerificationCode);
     }
 
     return null;

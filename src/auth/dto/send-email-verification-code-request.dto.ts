@@ -4,7 +4,7 @@ import { IsEmail, IsEnum } from "class-validator";
 
 import { Locale } from "@/common/locale.type";
 
-import { EmailVerifactionCodeType } from "../auth-email-verifaction-code.service";
+import { EmailVerificationCodeType } from "../auth-email-verification-code.service";
 
 export class SendEmailVerificationCodeRequestDto {
   @ApiProperty()
@@ -12,8 +12,8 @@ export class SendEmailVerificationCodeRequestDto {
   readonly email: string;
 
   @ApiProperty()
-  @IsEnum(EmailVerifactionCodeType)
-  readonly type: EmailVerifactionCodeType;
+  @IsEnum(EmailVerificationCodeType)
+  readonly type: EmailVerificationCodeType;
 
   @ApiProperty()
   @IsEnum(Locale)

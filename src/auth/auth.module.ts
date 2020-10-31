@@ -11,7 +11,7 @@ import { MigrationModule } from "@/migration/migration.module";
 import { UserAuthEntity } from "./user-auth.entity";
 import { AuthService } from "./auth.service";
 import { AuthController } from "./auth.controller";
-import { AuthEmailVerifactionCodeService } from "./auth-email-verifaction-code.service";
+import { AuthEmailVerificationCodeService } from "./auth-email-verification-code.service";
 import { AuthSessionService } from "./auth-session.service";
 import { AuthIpLocationService } from "./auth-ip-location.service";
 
@@ -25,8 +25,8 @@ import { AuthIpLocationService } from "./auth-ip-location.service";
     forwardRef(() => AuditModule),
     forwardRef(() => MigrationModule)
   ],
-  providers: [AuthService, AuthEmailVerifactionCodeService, AuthSessionService, AuthIpLocationService],
+  providers: [AuthService, AuthEmailVerificationCodeService, AuthSessionService, AuthIpLocationService],
   controllers: [AuthController],
-  exports: [AuthService, AuthEmailVerifactionCodeService, AuthSessionService, AuthIpLocationService]
+  exports: [AuthService, AuthEmailVerificationCodeService, AuthSessionService, AuthIpLocationService]
 })
 export class AuthModule {}
