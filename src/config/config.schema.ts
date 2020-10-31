@@ -110,6 +110,19 @@ class SecurityConfigCrossOrigin {
   readonly whiteList: string[];
 }
 
+class SecurityConfigRecaptcha {
+  @IsString()
+  @IsOptional()
+  readonly secretKey: string;
+
+  @IsBoolean()
+  readonly useRecaptchaNet: boolean;
+
+  @IsString()
+  @IsOptional()
+  readonly proxyUrl: string;
+}
+
 class SecurityConfig {
   @IsString()
   readonly sessionSecret: string;
@@ -117,9 +130,9 @@ class SecurityConfig {
   @IsString()
   readonly maintainceKey: string;
 
-  @IsString()
-  @IsOptional()
-  readonly recaptchaSecret: string;
+  @ValidateNested()
+  @Type(() => SecurityConfigRecaptcha)
+  readonly recaptcha: SecurityConfigRecaptcha;
 
   @ValidateNested()
   @Type(() => SecurityConfigCrossOrigin)

@@ -13,9 +13,9 @@ const sharedModules = [
   GoogleRecaptchaModule.forRootAsync({
     imports: [ConfigModule],
     useFactory: (configService: ConfigService) => ({
-      secretKey: configService.config.security.recaptchaSecret,
+      secretKey: configService.config.security.recaptcha.secretKey,
       response: (req: Request) => String(req.headers["x-recaptcha-token"]),
-      skipIf: () => !configService.config.security.recaptchaSecret
+      skipIf: () => !configService.config.security.recaptcha.secretKey
     }),
     inject: [ConfigService]
   })
