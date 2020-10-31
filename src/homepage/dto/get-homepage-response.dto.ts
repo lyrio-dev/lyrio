@@ -1,11 +1,11 @@
 import { ApiProperty } from "@nestjs/swagger";
 
 import { Locale } from "@/common/locale.type";
-import { DiscussionMetaDto } from "@/discussion/dtos";
 
 import { ProblemMetaDto } from "@/problem/dto";
 import { UserMetaDto } from "@/user/dto";
 import { SubmissionBasicMetaDto } from "@/submission/dto";
+import { DiscussionMetaDto } from "@/discussion/dto";
 
 import {
   HomepageSettingsCountdown,

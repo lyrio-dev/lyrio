@@ -22,6 +22,8 @@ import {
 } from "./discussion.service";
 import { DiscussionReplyEntity } from "./discussion-reply.entity";
 
+import { UserMetaDto } from "@/user/dto";
+
 import {
   CreateDiscussionRequestDto,
   CreateDiscussionResponseDto,
@@ -67,9 +69,7 @@ import {
   GetDiscussionPermissionsRequestDto,
   GetDiscussionPermissionsResponseDto,
   GetDiscussionPermissionsResponseError
-} from "./dtos";
-
-import { UserMetaDto } from "@/user/dto";
+} from "./dto";
 
 @ApiTags("Discussion")
 @Controller("discussion")

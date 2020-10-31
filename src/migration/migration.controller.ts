@@ -9,6 +9,7 @@ import { UserService } from "@/user/user.service";
 import { AuthSessionService } from "@/auth/auth-session.service";
 
 import { UserMigrationService } from "./user-migration.service";
+
 import {
   MigrateUserRequestDto,
   MigrateUserResponseDto,
@@ -16,7 +17,7 @@ import {
   QueryUserMigrationInfoRequestDto,
   QueryUserMigrationInfoResponseDto,
   QueryUserMigrationInfoResponseError
-} from "./dtos";
+} from "./dto";
 
 @ApiTags("Migration")
 @Controller("migration")

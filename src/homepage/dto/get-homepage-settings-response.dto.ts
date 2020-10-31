@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 
-import { DiscussionMetaDto } from "@/discussion/dtos";
+import { DiscussionMetaDto } from "@/discussion/dto";
 
 import { HomepageSettings } from "../homepage-settings.interface";
 

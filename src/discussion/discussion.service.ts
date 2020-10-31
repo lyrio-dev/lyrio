@@ -22,7 +22,7 @@ import { DiscussionReplyEntity } from "./discussion-reply.entity";
 import { DiscussionReactionEntity } from "./discussion-reaction.entity";
 import { DiscussionReplyReactionEntity } from "./discussion-reply-reaction.entity";
 
-import { DiscussionMetaDto } from "./dtos";
+import { DiscussionMetaDto } from "./dto";
 
 export enum DiscussionReactionType {
   Discussion = "Discussion",
