@@ -9,6 +9,7 @@ import { UserService } from "@/user/user.service";
 import { UserInformationEntity } from "@/user/user-information.entity";
 import { UserPreferenceEntity } from "@/user/user-preference.entity";
 import { ConfigService } from "@/config/config.service";
+import { delay, DELAY_FOR_SECURITY } from "@/common/delay";
 
 import { UserAuthEntity } from "./user-auth.entity";
 import { AuthEmailVerificationCodeService } from "./auth-email-verification-code.service";
@@ -50,6 +51,8 @@ export class AuthService {
     // inserting will still fail if another with same username is inserted after we check
 
     if (this.configService.config.preference.security.requireEmailVerification) {
+      // Delay for security
+      await delay(DELAY_FOR_SECURITY);
       if (!(await this.authEmailVerificationCodeService.verify(email, emailVerificationCode)))
         return [RegisterResponseError.INVALID_EMAIL_VERIFICATION_CODE, null];
     }

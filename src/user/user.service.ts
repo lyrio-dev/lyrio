@@ -13,6 +13,7 @@ import { SubmissionStatus } from "@/submission/submission-status.enum";
 import { ConfigService } from "@/config/config.service";
 import { AuthEmailVerificationCodeService } from "@/auth/auth-email-verification-code.service";
 import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
+import { delay, DELAY_FOR_SECURITY } from "@/common/delay";
 
 import { UserEntity } from "./user.entity";
 import { UserPrivilegeService, UserPrivilegeType } from "./user-privilege.service";
@@ -220,6 +221,8 @@ export class UserService {
     emailVerificationCode: string
   ): Promise<UpdateUserSelfEmailResponseError> {
     if (this.configService.config.preference.security.requireEmailVerification) {
+      // Delay for security
+      await delay(DELAY_FOR_SECURITY);
       if (!(await this.authEmailVerificationCodeService.verify(email, emailVerificationCode)))
         return UpdateUserSelfEmailResponseError.INVALID_EMAIL_VERIFICATION_CODE;
     }

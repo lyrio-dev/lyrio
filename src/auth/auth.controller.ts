@@ -14,6 +14,7 @@ import { GroupService } from "@/group/group.service";
 import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
 import { UserMigrationService } from "@/migration/user-migration.service";
 import { UserMigrationInfoEntity } from "@/migration/user-migration-info.entity";
+import { delay, DELAY_FOR_SECURITY } from "@/common/delay";
 
 import { AuthEmailVerificationCodeService, EmailVerificationCodeType } from "./auth-email-verification-code.service";
 import { AuthSessionService } from "./auth-session.service";
@@ -352,6 +353,9 @@ export class AuthController {
       };
 
     const userAuth = await this.authService.findUserAuthByUserId(user.id);
+
+    // Delay for security
+    await delay(DELAY_FOR_SECURITY);
     if (!(await this.authEmailVerificationCodeService.verify(request.email, request.emailVerificationCode)))
       return {
         error: ResetPasswordResponseError.INVALID_EMAIL_VERIFICATION_CODE
