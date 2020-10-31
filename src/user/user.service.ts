@@ -324,9 +324,15 @@ export class UserService {
   async getUserRank(user: UserEntity): Promise<number> {
     return (
       1 +
-      (await this.userRepository.count({
-        rating: MoreThan(user.rating)
-      }))
+      (await this.userRepository.count(
+        this.configService.config.preference.misc.sortUserByRating
+          ? {
+              rating: MoreThan(user.rating)
+            }
+          : {
+              acceptedProblemCount: MoreThan(user.acceptedProblemCount)
+            }
+      ))
     );
   }
 

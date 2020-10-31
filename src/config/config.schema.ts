@@ -131,6 +131,10 @@ class PreferenceConfigFrontend {
   @IsBoolean()
   @ApiProperty()
   readonly redirectLegacyUrls: boolean;
+
+  @IsBoolean()
+  @ApiProperty()
+  readonly homepageUserListOnMainView: boolean;
 }
 
 // These config items will be sent to client
@@ -183,6 +187,16 @@ class PreferenceConfigSecurity {
 
 // These config items will be sent to client
 class PreferenceConfigPagination {
+  @IsInt()
+  @Min(1)
+  @ApiProperty()
+  readonly homepageUserList: number;
+
+  @IsInt()
+  @Min(1)
+  @ApiProperty()
+  readonly homepageProblemList: number;
+
   @IsInt()
   @Min(1)
   @ConfigRelation("queryLimit.problemSet", ConfigRelationType.LessThanOrEqual)
@@ -267,6 +281,10 @@ class PreferenceConfigMisc {
   @IsBoolean()
   @ApiProperty()
   readonly renderMarkdownInUserBio: boolean;
+
+  @IsBoolean()
+  @ApiProperty()
+  readonly sortUserByRating: boolean;
 }
 
 class PreferenceConfigServerSideOnly {

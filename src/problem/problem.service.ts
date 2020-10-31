@@ -330,6 +330,18 @@ export class ProblemService {
     return [await this.findProblemsByExistingIds(result.map(row => row.id)), count];
   }
 
+  async getLatestUpdatedProblems(takeCount: number): Promise<ProblemEntity[]> {
+    return await this.problemRepository.find({
+      where: {
+        isPublic: true
+      },
+      order: {
+        publicTime: "DESC"
+      },
+      take: takeCount
+    });
+  }
+
   async createProblem(
     owner: UserEntity,
     type: ProblemType,

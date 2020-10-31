@@ -23,6 +23,7 @@ import { JudgeModule } from "./judge/judge.module";
 import { DiscussionModule } from "./discussion/discussion.module";
 import { MigrationModule } from "./migration/migration.module";
 import { EventReportModule } from "./event-report/event-report.module";
+import { HomepageModule } from "./homepage/homepage.module";
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { EventReportModule } from "./event-report/event-report.module";
     forwardRef(() => JudgeModule),
     forwardRef(() => DiscussionModule),
     forwardRef(() => EventReportModule),
+    forwardRef(() => HomepageModule),
     forwardRef(() => MigrationModule)
   ],
   controllers: [AppController],

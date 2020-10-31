@@ -5,9 +5,11 @@ import { GoogleRecaptchaModule } from "@nestlab/google-recaptcha";
 
 import { ConfigModule } from "./config/config.module";
 import { ConfigService } from "./config/config.service";
+import { SettingsModule } from "./settings/settings.module";
 
 const sharedModules = [
   ConfigModule,
+  SettingsModule,
   GoogleRecaptchaModule.forRootAsync({
     imports: [ConfigModule],
     useFactory: (configService: ConfigService) => ({

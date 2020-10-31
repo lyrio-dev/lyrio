@@ -3,6 +3,7 @@ import { Entity, PrimaryColumn, Index, ManyToOne, JoinColumn } from "typeorm";
 import { UserEntity } from "@/user/user.entity";
 
 export enum UserPrivilegeType {
+  EditHomepage = "EditHomepage",
   ManageUser = "ManageUser",
   ManageUserGroup = "ManageUserGroup",
   ManageProblem = "ManageProblem",

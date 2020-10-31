@@ -34,6 +34,7 @@ preference:
   siteName: SYZOJ NG
   frontend:
     redirectLegacyUrls: false
+    homepageUserListOnMainView: true
   security:
     recaptchaEnabled: false
     recaptchaKey: null
@@ -47,6 +48,8 @@ preference:
     discussionDefaultPublic: true
     discussionReplyDefaultPublic: true
   pagination:
+    homepageUserList: 10
+    homepageProblemList: 10
     problemSet: 50
     searchProblemsPreview: 7
     submissions: 10
@@ -62,6 +65,7 @@ preference:
     renderMarkdownInUserBio: false
     discussionReactionEmojis: [👍, 👎, 😄, 😕, ❤️, 🤔, 🤣, 🌿, 🍋, 🕊️]
     discussionReactionAllowCustomEmojis: true
+    sortUserByRating: false
   serverSideOnly:
     discussionReactionCustomEmojisBlacklist: /(\uD83C[\uDDE6-\uDDFF]){2}/
 resourceLimit:
