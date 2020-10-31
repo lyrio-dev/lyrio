@@ -108,7 +108,7 @@ export class ProblemService {
     return await this.problemRepository.findOne(id);
   }
 
-  public async findProblemsByExistingIds(problemIds: number[]): Promise<ProblemEntity[]> {
+  async findProblemsByExistingIds(problemIds: number[]): Promise<ProblemEntity[]> {
     if (problemIds.length === 0) return [];
     const uniqueIds = Array.from(new Set(problemIds));
     const records = await this.problemRepository.findByIds(uniqueIds);

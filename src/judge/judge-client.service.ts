@@ -33,19 +33,19 @@ export class JudgeClientService {
     this.redis = this.redisService.getClient();
   }
 
-  public async findJudgeClientById(id: number): Promise<JudgeClientEntity> {
+  async findJudgeClientById(id: number): Promise<JudgeClientEntity> {
     return await this.judgeClientRepository.findOne({ id });
   }
 
-  public async findJudgeClientByKey(key: string): Promise<JudgeClientEntity> {
+  async findJudgeClientByKey(key: string): Promise<JudgeClientEntity> {
     return await this.judgeClientRepository.findOne({ key });
   }
 
-  public async listJudgeClients(): Promise<JudgeClientEntity[]> {
+  async listJudgeClients(): Promise<JudgeClientEntity[]> {
     return await this.judgeClientRepository.find();
   }
 
-  public async getJudgeClientInfo(judgeClient: JudgeClientEntity, showSensitive = false): Promise<JudgeClientInfoDto> {
+  async getJudgeClientInfo(judgeClient: JudgeClientEntity, showSensitive = false): Promise<JudgeClientInfoDto> {
     return {
       id: judgeClient.id,
       name: judgeClient.name,
@@ -56,7 +56,7 @@ export class JudgeClientService {
     };
   }
 
-  public async addJudgeClient(name: string, allowedHosts: string[]): Promise<JudgeClientEntity> {
+  async addJudgeClient(name: string, allowedHosts: string[]): Promise<JudgeClientEntity> {
     const judgeClient = new JudgeClientEntity();
     judgeClient.name = name;
     judgeClient.key = generateKey();
@@ -66,39 +66,36 @@ export class JudgeClientService {
     return judgeClient;
   }
 
-  public async resetJudgeClientKey(judgeClient: JudgeClientEntity): Promise<void> {
+  async resetJudgeClientKey(judgeClient: JudgeClientEntity): Promise<void> {
     judgeClient.key = generateKey();
     await this.judgeClientRepository.save(judgeClient);
     await this.disconnectJudgeClient(judgeClient);
   }
 
-  public async deleteJudgeClient(judgeClient: JudgeClientEntity): Promise<void> {
+  async deleteJudgeClient(judgeClient: JudgeClientEntity): Promise<void> {
     await this.judgeClientRepository.delete({
       id: judgeClient.id
     });
     await this.disconnectJudgeClient(judgeClient);
   }
 
-  public async setJudgeClientOnlineSessionId(judgeClient: JudgeClientEntity, sessionId: string): Promise<void> {
+  async setJudgeClientOnlineSessionId(judgeClient: JudgeClientEntity, sessionId: string): Promise<void> {
     await this.redis.set(REDIS_KEY_JUDGE_CLIENT_SESSION_ID.format(judgeClient.id), sessionId);
   }
 
-  public async disconnectJudgeClient(judgeClient: JudgeClientEntity): Promise<void> {
+  async disconnectJudgeClient(judgeClient: JudgeClientEntity): Promise<void> {
     await this.redis.del(REDIS_KEY_JUDGE_CLIENT_SESSION_ID.format(judgeClient.id));
   }
 
-  public async checkJudgeClientSession(judgeClient: JudgeClientEntity, sessionId: string): Promise<boolean> {
+  async checkJudgeClientSession(judgeClient: JudgeClientEntity, sessionId: string): Promise<boolean> {
     return sessionId === (await this.redis.get(REDIS_KEY_JUDGE_CLIENT_SESSION_ID.format(judgeClient.id)));
   }
 
-  public async updateJudgeClientSystemInfo(
-    judgeClient: JudgeClientEntity,
-    systemInfo: JudgeClientSystemInfo
-  ): Promise<void> {
+  async updateJudgeClientSystemInfo(judgeClient: JudgeClientEntity, systemInfo: JudgeClientSystemInfo): Promise<void> {
     await this.redis.set(REDIS_KEY_JUDGE_CLIENT_SYSTEM_INFO.format(judgeClient.id), JSON.stringify(systemInfo));
   }
 
-  public async getJudgeClientSystemInfo(judgeClient: JudgeClientEntity): Promise<JudgeClientSystemInfo> {
+  async getJudgeClientSystemInfo(judgeClient: JudgeClientEntity): Promise<JudgeClientSystemInfo> {
     const str = await this.redis.get(REDIS_KEY_JUDGE_CLIENT_SYSTEM_INFO.format(judgeClient.id));
     try {
       return JSON.parse(str);
@@ -107,7 +104,7 @@ export class JudgeClientService {
     }
   }
 
-  public async isJudgeClientOnline(judgeClient: JudgeClientEntity): Promise<boolean> {
+  async isJudgeClientOnline(judgeClient: JudgeClientEntity): Promise<boolean> {
     return !!(await this.redis.get(REDIS_KEY_JUDGE_CLIENT_SESSION_ID.format(judgeClient.id)));
   }
 }

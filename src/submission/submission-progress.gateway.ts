@@ -227,7 +227,7 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
     );
   }
 
-  public async onSubmissionEvent(
+  async onSubmissionEvent(
     submissionId: number,
     type: SubmissionEventType,
     // progress == null only when type === SubmissionEventType.(Deleted or Canceled)

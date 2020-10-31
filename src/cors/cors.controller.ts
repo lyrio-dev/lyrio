@@ -27,7 +27,7 @@ export class CorsController {
   @ApiOperation({
     summary: "Get the proxy page for xdomain (used for CORS requests)."
   })
-  public async cors(): Promise<string> {
+  async cors(): Promise<string> {
     if (!this.configService.config.security.crossOrigin.enabled) {
       return "Requested cors proxy page, but cross origin is NOT enabled";
     }
@@ -41,7 +41,7 @@ export class CorsController {
   @ApiOperation({
     summary: "Get the xdomain script (used for CORS requests)."
   })
-  public async xdomain(): Promise<string> {
+  async xdomain(): Promise<string> {
     if (!this.configService.config.security.crossOrigin.enabled) {
       return "console.error('Requested cors/xdomain.min.js, but cross origin is NOT enabled');";
     }

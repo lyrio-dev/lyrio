@@ -50,7 +50,7 @@ export class SubmissionProgressService {
 
   // If the progress type is "Finished", this method is called after the progress
   // result is stored in the database.
-  public async emitSubmissionEvent(
+  async emitSubmissionEvent(
     submissionId: number,
     type: SubmissionEventType,
     progress?: SubmissionProgress
@@ -73,7 +73,7 @@ export class SubmissionProgressService {
     );
   }
 
-  public async getPendingSubmissionProgress(submissionId: number): Promise<SubmissionProgress> {
+  async getPendingSubmissionProgress(submissionId: number): Promise<SubmissionProgress> {
     const str = await this.redis.get(REDIS_KEY_SUBMISSION_PROGRESS.format(submissionId));
     try {
       return JSON.parse(str);

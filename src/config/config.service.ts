@@ -8,9 +8,9 @@ import { AppConfig, PreferenceConfig } from "./config.schema";
 import { checkConfigRelation } from "./config-relation.decorator";
 
 export class ConfigService {
-  public readonly config: AppConfig;
+  readonly config: AppConfig;
 
-  public readonly preferenceConfigToBeSentToUser: PreferenceConfig;
+  readonly preferenceConfigToBeSentToUser: PreferenceConfig;
 
   constructor() {
     const filePath = process.env.SYZOJ_NG_CONFIG_FILE;

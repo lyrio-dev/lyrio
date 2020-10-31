@@ -44,15 +44,15 @@ export class RedisService implements OnModuleInit {
     }
   }
 
-  public async cacheSet(key: string, value: string): Promise<void> {
+  async cacheSet(key: string, value: string): Promise<void> {
     await this.client.setex(key, REDIS_CACHE_EXPIRE_TIME, value);
   }
 
-  public async cacheGet(key: string): Promise<string> {
+  async cacheGet(key: string): Promise<string> {
     return await this.client.get(key);
   }
 
-  public async cacheDelete(key: string): Promise<void> {
+  async cacheDelete(key: string): Promise<void> {
     await this.client.del(key);
   }
 
@@ -61,7 +61,7 @@ export class RedisService implements OnModuleInit {
    *
    * Please use `cacheGet` and `cacheSet` for caching since they handle the expire time automatically.
    */
-  public getClient(): Redis.Redis {
+  getClient(): Redis.Redis {
     return this.client.duplicate();
   }
 
@@ -71,7 +71,7 @@ export class RedisService implements OnModuleInit {
    * @param callback The function to execute while the lock is held.
    * @return The value returned in `callback`.
    */
-  public async lock<T>(name: string, callback: () => Promise<T>): Promise<T>;
+  async lock<T>(name: string, callback: () => Promise<T>): Promise<T>;
 
   /**
    * Basic lock with Redis.
@@ -79,9 +79,9 @@ export class RedisService implements OnModuleInit {
    * @param callback The function to execute while the lock is held.
    * @return The function to unlock.
    */
-  public async lock(name: string): Promise<() => Promise<void>>;
+  async lock(name: string): Promise<() => Promise<void>>;
 
-  public async lock<T>(name: string, callback?: () => Promise<T>): Promise<T | (() => Promise<void>)> {
+  async lock<T>(name: string, callback?: () => Promise<T>): Promise<T | (() => Promise<void>)> {
     const LOCK_TTL = 5000;
 
     const lock = await this.redlock.lock(name, LOCK_TTL);
@@ -116,7 +116,7 @@ export class RedisService implements OnModuleInit {
    * @param callback The function to execute while the lock is held.
    * @return The value returned in `callback`.
    */
-  public async lockReadWrite<T>(name: string, type: "Read" | "Write", callback: () => Promise<T>): Promise<T> {
+  async lockReadWrite<T>(name: string, type: "Read" | "Write", callback: () => Promise<T>): Promise<T> {
     const lockRead = async () => {
       let unlock: () => Promise<void>;
       try {

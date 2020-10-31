@@ -46,7 +46,7 @@ export class GroupService {
     return await this.groupRepository.findOne(id);
   }
 
-  public async findGroupsByExistingIds(groupIds: number[]): Promise<GroupEntity[]> {
+  async findGroupsByExistingIds(groupIds: number[]): Promise<GroupEntity[]> {
     if (groupIds.length === 0) return [];
     const uniqueIds = Array.from(new Set(groupIds));
     const records = await this.groupRepository.findByIds(uniqueIds);

@@ -103,7 +103,7 @@ export class DiscussionService {
     return await this.discussionReplyRepository.findOne(id);
   }
 
-  public async findDiscussionsByExistingIds(discussionIds: number[]): Promise<DiscussionEntity[]> {
+  async findDiscussionsByExistingIds(discussionIds: number[]): Promise<DiscussionEntity[]> {
     if (discussionIds.length === 0) return [];
     const uniqueIds = Array.from(new Set(discussionIds));
     const records = await this.discussionRepository.findByIds(uniqueIds);

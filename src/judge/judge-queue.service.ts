@@ -40,7 +40,7 @@ export class JudgeTask<ExtraInfo extends JudgeTaskExtraInfo> implements JudgeTas
     public extraInfo: ExtraInfo
   ) {}
 
-  public getMeta(): JudgeTaskMeta {
+  getMeta(): JudgeTaskMeta {
     return {
       taskId: this.taskId,
       type: this.type
@@ -67,14 +67,14 @@ export class JudgeQueueService {
     this.redisForConsume = this.redisService.getClient();
   }
 
-  public registerTaskType<TaskProgress>(
+  registerTaskType<TaskProgress>(
     taskType: JudgeTaskType,
     service: JudgeTaskService<TaskProgress, JudgeTaskExtraInfo>
   ): void {
     this.taskServices.set(taskType, service);
   }
 
-  public async pushTask(taskId: string, type: JudgeTaskType, priority: number, repush = false): Promise<void> {
+  async pushTask(taskId: string, type: JudgeTaskType, priority: number, repush = false): Promise<void> {
     if (repush) Logger.verbose(`Repush judge task: { taskId: ${taskId}, type: ${type}, priority: ${priority} }`);
     else Logger.verbose(`New judge task: { taskId: ${taskId}, type: ${type}, priority: ${priority} }`);
     await this.redisForPush.zadd(
@@ -87,7 +87,7 @@ export class JudgeQueueService {
     );
   }
 
-  public async consumeTask(): Promise<JudgeTask<JudgeTaskExtraInfo>> {
+  async consumeTask(): Promise<JudgeTask<JudgeTaskExtraInfo>> {
     Logger.verbose("Consuming task queue");
 
     // ioredis's definition doesn't have bzpopmin method
@@ -123,7 +123,7 @@ export class JudgeQueueService {
   /**
    * @return `false` means the task is canceled.
    */
-  public async onTaskProgress(taskMeta: JudgeTaskMeta, progress: JudgeTaskProgress): Promise<boolean> {
+  async onTaskProgress(taskMeta: JudgeTaskMeta, progress: JudgeTaskProgress): Promise<boolean> {
     return await this.taskServices.get(taskMeta.type).onTaskProgress(taskMeta.taskId, progress);
   }
 }

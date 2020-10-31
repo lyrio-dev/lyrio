@@ -73,7 +73,7 @@ export class SubmissionStatisticsService {
     }
   }
 
-  public async querySubmissionStatisticsAndCount(
+  async querySubmissionStatisticsAndCount(
     problem: ProblemEntity,
     statisticsType: SubmissionStatisticsType,
     skipCount: number,
@@ -139,7 +139,7 @@ export class SubmissionStatisticsService {
   /**
    * Return how many submissions with each score (0 ~ 100) are there.
    */
-  public async querySubmissionScoreStatistics(problem: ProblemEntity): Promise<number[]> {
+  async querySubmissionScoreStatistics(problem: ProblemEntity): Promise<number[]> {
     const key = REDIS_KEY_SUBMISSION_STATISTICS.format(problem.id);
     const cachedResult = await this.parseFromRedis<number[]>(key);
     if (cachedResult) return cachedResult;
@@ -166,7 +166,7 @@ export class SubmissionStatisticsService {
    *
    * A newly-added submission won't call this function.
    */
-  public async onSubmissionUpdated(oldSubmission: SubmissionEntity, submission?: SubmissionEntity): Promise<void> {
+  async onSubmissionUpdated(oldSubmission: SubmissionEntity, submission?: SubmissionEntity): Promise<void> {
     // Submission score statistics
     if (!submission || oldSubmission.score !== submission.score) {
       await this.redisService.cacheDelete(REDIS_KEY_SUBMISSION_STATISTICS.format(oldSubmission.problemId));
@@ -222,7 +222,7 @@ export class SubmissionStatisticsService {
     );
   }
 
-  public async onProblemDeleted(problemId: number): Promise<void> {
+  async onProblemDeleted(problemId: number): Promise<void> {
     await Promise.all([
       ...Object.values(SubmissionStatisticsType).map(type =>
         this.redisService.cacheDelete(REDIS_KEY_SUBMISSION_SCORE_STATISTICS.format(problemId, type))

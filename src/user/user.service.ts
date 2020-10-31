@@ -70,7 +70,7 @@ export class UserService {
     });
   }
 
-  public async findUsersByExistingIds(userIds: number[]): Promise<UserEntity[]> {
+  async findUsersByExistingIds(userIds: number[]): Promise<UserEntity[]> {
     if (userIds.length === 0) return [];
     const uniqueIds = Array.from(new Set(userIds));
     const records = await this.userRepository.findByIds(uniqueIds);
