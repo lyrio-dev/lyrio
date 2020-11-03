@@ -135,6 +135,25 @@ export class ProblemController {
       request.takeCount
     );
 
+    if (request.keyword && request.keywordMatchesId) {
+      const matchId = request.keyword.substr(0, 1).toUpperCase() === "P" ? Number(request.keyword.slice(1)) || 0 : 0;
+      const matchDisplayId = Number(request.keyword) || 0;
+      if (!problems.some(problem => problem.id === matchId || problem.displayId === matchDisplayId)) {
+        const problem = matchId
+          ? await this.problemService.findProblemById(matchId)
+          : matchDisplayId
+          ? await this.problemService.findProblemByDisplayId(matchDisplayId)
+          : null;
+        if (
+          problem &&
+          (await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.View, hasPrivilege))
+        ) {
+          problems.unshift(problem);
+          if (problems.length > request.takeCount) problems.pop();
+        }
+      }
+    }
+
     const acceptedSubmissions =
       !request.titleOnly &&
       currentUser &&
@@ -596,12 +615,15 @@ export class ProblemController {
         error: AddProblemFileResponseError.NO_SUCH_PROBLEM
       };
 
-    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.Modify)))
+    const hasPrivilege = await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.ManageProblem);
+
+    if (
+      !(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.Modify, hasPrivilege))
+    )
       return {
         error: AddProblemFileResponseError.PERMISSION_DENIED
       };
 
-    const hasPrivilege = await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.ManageProblem);
     const result = await this.problemService.addProblemFile(
       problem,
       request.type,
@@ -747,12 +769,8 @@ export class ProblemController {
       };
 
     const hasPrivilege = await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.ManageProblem);
-    if (
-      !(
-        hasPrivilege ||
-        (await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.Modify))
-      )
-    )
+
+    if (await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.Modify, hasPrivilege))
       return {
         error: UpdateProblemJudgeInfoResponseError.PERMISSION_DENIED
       };

@@ -14,6 +14,13 @@ export class QueryProblemSetRequestDto {
   @IsOptional()
   keyword?: string;
 
+  @ApiProperty({
+    description: "The result item by ID may NOT be included in the count."
+  })
+  @IsBoolean()
+  @IsOptional()
+  keywordMatchesId?: boolean;
+
   @ApiProperty({ type: [Number] })
   @ArrayMaxSize(20)
   @ArrayUnique()

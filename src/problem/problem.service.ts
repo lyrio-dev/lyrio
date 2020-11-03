@@ -141,14 +141,20 @@ export class ProblemService {
     return meta;
   }
 
-  async userHasPermission(user: UserEntity, problem: ProblemEntity, type: ProblemPermissionType): Promise<boolean> {
+  async userHasPermission(
+    user: UserEntity,
+    problem: ProblemEntity,
+    type: ProblemPermissionType,
+    hasPrivilege?: boolean
+  ): Promise<boolean> {
     switch (type) {
       // Everyone can view a public problem
       // Owner, admins and those who has read permission can view a non-public problem
       case ProblemPermissionType.View:
         if (problem.isPublic) return true;
         if (user && user.id === problem.ownerId) return true;
-        if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageProblem)) return true;
+        if (hasPrivilege ?? (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageProblem)))
+          return true;
         else
           return await this.permissionService.userOrItsGroupsHavePermission(
             user,
@@ -165,7 +171,8 @@ export class ProblemService {
           this.configService.config.preference.security.allowNonPrivilegedUserEditPublicProblem
         )
           return true;
-        if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageProblem)) return true;
+        if (hasPrivilege ?? (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageProblem)))
+          return true;
         else
           return (
             (await this.permissionService.userOrItsGroupsHavePermission(
@@ -187,12 +194,17 @@ export class ProblemService {
           (!problem.isPublic || this.configService.config.preference.security.allowNonPrivilegedUserEditPublicProblem)
         )
           return true;
-        else if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageProblem)) return true;
+        else if (
+          hasPrivilege ??
+          (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageProblem))
+        )
+          return true;
         else return false;
 
       // Admins can manage a problem's publicness (set display id / make public or non-public)
       case ProblemPermissionType.ManagePublicness:
-        if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageProblem)) return true;
+        if (hasPrivilege ?? (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageProblem)))
+          return true;
         else return false;
 
       // Admins can delete a problem
@@ -205,7 +217,11 @@ export class ProblemService {
           (!problem.isPublic || this.configService.config.preference.security.allowNonPrivilegedUserEditPublicProblem)
         )
           return true;
-        else if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageProblem)) return true;
+        else if (
+          hasPrivilege ??
+          (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageProblem))
+        )
+          return true;
         else return false;
 
       default:
