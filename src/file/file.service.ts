@@ -117,10 +117,23 @@ export class FileService implements OnModuleInit {
     );
   }
 
-  async uploadFile(uuid: string, streamOrBufferOrFile: string | Buffer | Readable): Promise<void> {
-    if (typeof streamOrBufferOrFile === "string")
-      await this.minioClient.fPutObject(this.bucket, uuid, streamOrBufferOrFile, {});
-    else await this.minioClient.putObject(this.bucket, uuid, streamOrBufferOrFile, {});
+  async uploadFile(uuid: string, streamOrBufferOrFile: string | Buffer | Readable, retryCount = 10): Promise<void> {
+    for (let i = 0; i < retryCount; i++) {
+      try {
+        /* eslint-disable no-await-in-loop */
+        if (typeof streamOrBufferOrFile === "string")
+          await this.minioClient.fPutObject(this.bucket, uuid, streamOrBufferOrFile, {});
+        else await this.minioClient.putObject(this.bucket, uuid, streamOrBufferOrFile, {});
+        /* eslint-enable no-await-in-loop */
+      } catch (e) {
+        if (i === retryCount - 1) throw e;
+        else {
+          // eslint-disable-next-line no-await-in-loop
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          continue;
+        }
+      }
+    }
   }
 
   async onModuleInit(): Promise<void> {
