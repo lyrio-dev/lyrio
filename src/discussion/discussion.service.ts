@@ -633,7 +633,6 @@ export class DiscussionService {
           )
           .where(`${idColumnName} IN (:...ids)`, { ids })
           .andWhere("userId = :userId", { userId: currentUser.id })
-          .groupBy(idColumnName)
           .getRawMany();
         const byId: Record<number, string[]> = Object.fromEntries(ids.map(id => [id, []]));
         for (const { id, emoji } of currentUserReactionsAll) byId[id].push(emoji.toString("utf-8"));
