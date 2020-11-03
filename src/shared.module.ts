@@ -15,7 +15,7 @@ const sharedModules = [
     useFactory: (configService: ConfigService) => ({
       secretKey: configService.config.security.recaptcha.secretKey,
       response: (req: Request) => String(req.headers["x-recaptcha-token"]),
-      skipIf: () => !configService.config.security.recaptcha.secretKey
+      skipIf: () => !configService.config.preference.security.recaptchaEnabled
     }),
     inject: [ConfigService]
   })
