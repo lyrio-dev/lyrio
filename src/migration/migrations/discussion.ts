@@ -4,12 +4,16 @@ import { Logger } from "@nestjs/common";
 import { DiscussionEntity } from "@/discussion/discussion.entity";
 import { DiscussionContentEntity } from "@/discussion/discussion-content.entity";
 import { DiscussionReplyEntity } from "@/discussion/discussion-reply.entity";
+import { HomepageService } from "@/homepage/homepage.service";
+import { Locale } from "@/common/locale.type";
 
 import { OldDatabaseArticleCommentEntity, OldDatabaseArticleEntity } from "./old-database.interface";
 import { MigrationInterface } from "./migration.interface";
 
 export const migrationDiscussion: MigrationInterface = {
   async migrate(entityManager, config, oldDatabase, queryTablePaged, app) {
+    const annoucementIds: number[] = [];
+
     await queryTablePaged<OldDatabaseArticleEntity>(
       "article",
       "id",
@@ -39,9 +43,23 @@ export const migrationDiscussion: MigrationInterface = {
         } catch (e) {
           Logger.error(`Failed to migrate discussion #${oldArticle.id}, ${e}`);
         }
+
+        if (oldArticle.is_notice) annoucementIds.push(oldArticle.id);
       },
       1000
     );
+
+    annoucementIds.sort((a, b) => a - b);
+    if (annoucementIds.length > 0) {
+      const homepageService = app.get(HomepageService);
+      const settings = await homepageService.getSettings();
+      settings.annnouncements = {
+        items: {
+          [Locale.zh_CN]: annoucementIds
+        }
+      };
+      await homepageService.setSettings(settings);
+    }
 
     await queryTablePaged<OldDatabaseArticleCommentEntity>(
       "article_comment",
