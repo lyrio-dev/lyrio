@@ -770,7 +770,9 @@ export class ProblemController {
 
     const hasPrivilege = await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.ManageProblem);
 
-    if (await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.Modify, hasPrivilege))
+    if (
+      !(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.Modify, hasPrivilege))
+    )
       return {
         error: UpdateProblemJudgeInfoResponseError.PERMISSION_DENIED
       };
