@@ -95,7 +95,10 @@ export class ProblemService {
       const problem = await this.findProblemById(problemId);
       return !problem
         ? null
-        : await Promise.all([this.getProblemMeta(problem), this.getProblemLocalizedTitle(problem, locale)]);
+        : await Promise.all([
+            this.getProblemMeta(problem),
+            this.getProblemLocalizedTitle(problem, problem.locales.includes(locale) ? locale : problem.locales[0])
+          ]);
     });
 
     this.auditService.registerObjectTypeQueryHandler(AuditLogObjectType.ProblemTag, async (problemTagId, locale) => {
