@@ -44,7 +44,11 @@ export class MigrationController {
         error: MigrateUserResponseError.ALREADY_LOGGEDIN
       };
 
-    const userMigrationInfo = await this.userMigrationService.findUserMigrationInfoByOldUsername(request.oldUsername);
+    const userMigrationInfo = request.oldUsername
+      ? await this.userMigrationService.findUserMigrationInfoByOldUsername(request.oldUsername)
+      : await this.userMigrationService.findUserMigrationInfoByUserId(
+          (await this.userService.findUserByEmail(request.email))?.id
+        );
     if (!userMigrationInfo)
       return {
         error: MigrateUserResponseError.NO_SUCH_USER
@@ -61,7 +65,7 @@ export class MigrationController {
       };
 
     if (userMigrationInfo.usernameMustChange)
-      if (!(await this.userService.checkUsernameAvailability(request.newUsername)))
+      if (!request.newUsername || !(await this.userService.checkUsernameAvailability(request.newUsername)))
         return {
           error: MigrateUserResponseError.DUPLICATE_USERNAME
         };
@@ -101,7 +105,11 @@ export class MigrationController {
         error: QueryUserMigrationInfoResponseError.ALREADY_LOGGEDIN
       };
 
-    const userMigrationInfo = await this.userMigrationService.findUserMigrationInfoByOldUsername(request.oldUsername);
+    const userMigrationInfo = request.oldUsername
+      ? await this.userMigrationService.findUserMigrationInfoByOldUsername(request.oldUsername)
+      : await this.userMigrationService.findUserMigrationInfoByUserId(
+          (await this.userService.findUserByEmail(request.email))?.id
+        );
     if (!userMigrationInfo)
       return {
         error: QueryUserMigrationInfoResponseError.NO_SUCH_USER

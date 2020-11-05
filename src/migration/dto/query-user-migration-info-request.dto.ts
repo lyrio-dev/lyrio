@@ -1,10 +1,16 @@
 import { ApiProperty } from "@nestjs/swagger";
 
-import { IsString, MaxLength } from "class-validator";
+import { IsEmail, IsOptional, IsString, MaxLength } from "class-validator";
 
 export class QueryUserMigrationInfoRequestDto {
   @ApiProperty()
-  @MaxLength(80)
+  @IsEmail()
+  @IsOptional()
+  email?: string;
+
+  @ApiProperty()
   @IsString()
-  oldUsername: string;
+  @IsOptional()
+  @MaxLength(80)
+  oldUsername?: string;
 }

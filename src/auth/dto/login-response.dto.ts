@@ -13,4 +13,7 @@ export class LoginResponseDto {
 
   @ApiProperty()
   token?: string;
+
+  @ApiProperty()
+  username?: string;
 }

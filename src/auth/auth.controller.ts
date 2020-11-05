@@ -126,8 +126,10 @@ export class AuthController {
       return LoginResponseError.USER_NOT_MIGRATED;
     };
 
-    const user = await this.userService.findUserByUsername(request.username);
-    if (!user) {
+    const user = request.username
+      ? await this.userService.findUserByUsername(request.username)
+      : await this.userService.findUserByEmail(request.email);
+    if (request.username && !user) {
       // The username may be a non-migrated old user
       const userMigrationInfo = await this.userMigrationService.findUserMigrationInfoByOldUsername(request.username);
       if (userMigrationInfo)
@@ -160,7 +162,8 @@ export class AuthController {
     await this.auditService.log(user.id, "auth.login");
 
     return {
-      token: await this.authSessionService.newSession(user, req.ip, req.headers["user-agent"])
+      token: await this.authSessionService.newSession(user, req.ip, req.headers["user-agent"]),
+      username: user.username
     };
   }
 
