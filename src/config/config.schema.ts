@@ -140,17 +140,6 @@ class SecurityConfig {
 }
 
 // These config items will be sent to client
-class PreferenceConfigFrontend {
-  @IsBoolean()
-  @ApiProperty()
-  readonly redirectLegacyUrls: boolean;
-
-  @IsBoolean()
-  @ApiProperty()
-  readonly homepageUserListOnMainView: boolean;
-}
-
-// These config items will be sent to client
 class PreferenceConfigSecurity {
   @IsBoolean()
   @ApiProperty()
@@ -279,6 +268,22 @@ class PreferenceConfigPagination {
 
 // These config items will be sent to client
 class PreferenceConfigMisc {
+  @IsBoolean()
+  @ApiProperty()
+  readonly redirectLegacyUrls: boolean;
+
+  @IsBoolean()
+  @ApiProperty()
+  readonly homepageUserListOnMainView: boolean;
+
+  @IsBoolean()
+  @ApiProperty()
+  readonly sortUserByRating: boolean;
+
+  @IsBoolean()
+  @ApiProperty()
+  readonly renderMarkdownInUserBio: boolean;
+
   @IsEmoji({ each: true })
   @IsString({ each: true })
   @ArrayUnique()
@@ -290,14 +295,6 @@ class PreferenceConfigMisc {
   @IsBoolean()
   @ApiProperty()
   readonly discussionReactionAllowCustomEmojis: boolean;
-
-  @IsBoolean()
-  @ApiProperty()
-  readonly renderMarkdownInUserBio: boolean;
-
-  @IsBoolean()
-  @ApiProperty()
-  readonly sortUserByRating: boolean;
 }
 
 class PreferenceConfigServerSideOnly {
@@ -316,11 +313,6 @@ export class PreferenceConfig {
   @IsString()
   @ApiProperty()
   readonly siteName: string;
-
-  @ValidateNested()
-  @Type(() => PreferenceConfigFrontend)
-  @ApiProperty()
-  readonly frontend: PreferenceConfigFrontend;
 
   @ValidateNested()
   @Type(() => PreferenceConfigSecurity)
