@@ -173,7 +173,7 @@ export class AuthController {
     @CurrentUser() currentUser: UserEntity,
     @Req() req: RequestWithSession
   ): Promise<Record<string, unknown>> {
-    const sessionKey = req?.session.sessionKey;
+    const sessionKey = req?.session?.sessionKey;
     if (sessionKey) {
       await this.authSessionService.endSession(sessionKey);
     }
