@@ -440,7 +440,10 @@ async function parseJudgeInfo(
                       oldProblem
                     )}`
                   );
+                  return false;
                 }
+
+                return true;
               })
               .map(({ name, dest }) => [dest, name])
           );
