@@ -985,7 +985,7 @@ export class ProblemController {
     return await this.problemService.lockProblemById<DeleteProblemResponseDto>(
       request.problemId,
       "Write",
-      // eslint-disable-next-line no-shadow
+      // eslint-disable-next-line @typescript-eslint/no-shadow
       async problem => {
         if (!problem)
           return {
@@ -1037,7 +1037,7 @@ export class ProblemController {
     return await this.problemService.lockProblemById<ChangeProblemTypeResponseDto>(
       request.problemId,
       "Write",
-      // eslint-disable-next-line no-shadow
+      // eslint-disable-next-line @typescript-eslint/no-shadow
       async problem => {
         if (!problem)
           return {

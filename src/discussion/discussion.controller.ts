@@ -665,7 +665,7 @@ export class DiscussionController {
     return await this.discussionService.lockDiscussionById<DeleteDiscussionResponseDto>(
       request.discussionId,
       "Write",
-      // eslint-disable-next-line no-shadow
+      // eslint-disable-next-line @typescript-eslint/no-shadow
       async discussion => {
         if (!discussion)
           return {

@@ -177,7 +177,7 @@ export class RedisService implements OnModuleInit {
         }
         /* eslint-enable no-await-in-loop */
 
-        // eslint-disable-next-line no-shadow
+        // eslint-disable-next-line @typescript-eslint/no-shadow
         const numWritersWaiting = Number(await this.client.get(REDIS_KEY_RWLOCK_NUM_WRITERS_WAITING.format(name))) || 0;
         if (numWritersWaiting === 1) {
           await this.client.del(REDIS_KEY_RWLOCK_NUM_WRITERS_WAITING.format(name));

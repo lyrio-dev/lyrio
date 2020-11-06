@@ -567,7 +567,7 @@ export class ProblemService {
     await this.lockProblemById(
       problem.id,
       "Read",
-      // eslint-disable-next-line no-shadow
+      // eslint-disable-next-line @typescript-eslint/no-shadow
       async problem =>
         await this.permissionService.replaceUsersAndGroupsPermissionForObject(
           problem.id,
@@ -720,7 +720,7 @@ export class ProblemService {
     | "FILE_UUID_EXISTS"
     | "FILE_NOT_UPLOADED"
   > {
-    // eslint-disable-next-line no-shadow
+    // eslint-disable-next-line @typescript-eslint/no-shadow
     return await this.lockManageProblemFile(problem.id, type, async problem => {
       if (!problem) return "NO_SUCH_PROBLEM";
 
@@ -763,7 +763,7 @@ export class ProblemService {
   }
 
   async removeProblemFiles(problem: ProblemEntity, type: ProblemFileType, filenames: string[]): Promise<void> {
-    // eslint-disable-next-line no-shadow
+    // eslint-disable-next-line @typescript-eslint/no-shadow
     return await this.lockManageProblemFile(problem.id, type, async problem => {
       if (!problem) return;
 
@@ -822,7 +822,7 @@ export class ProblemService {
     filename: string,
     newFilename: string
   ): Promise<boolean> {
-    // eslint-disable-next-line no-shadow
+    // eslint-disable-next-line @typescript-eslint/no-shadow
     return await this.lockManageProblemFile(problem.id, type, async problem => {
       if (!problem) return false;
 

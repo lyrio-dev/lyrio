@@ -339,7 +339,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
         else return [result, null];
       }
 
-      // eslint-disable-next-line no-shadow
+      // eslint-disable-next-line @typescript-eslint/no-shadow
       const submission = new SubmissionEntity();
       submission.isPublic = problem.isPublic;
       const pair = await problemTypeService.getCodeLanguageAndAnswerSizeFromSubmissionContentAndFile(content, file);
@@ -468,7 +468,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
       const selectTotalOccupiedTimeRecently = (qb: QueryBuilder<SubmissionEntity>) =>
         qb.select("SUM(totalOccupiedTime)", "total").andWhere("submitTime >= NOW() - INTERVAL 15 MINUTE");
 
-      // eslint-disable-next-line no-shadow
+      // eslint-disable-next-line @typescript-eslint/no-shadow
       const [userPendingCount, userOccupiedTimeRecently, avgAndStdEveryUsersOccupiedTimeRecently] = await Promise.all([
         // userPendingCount
         this.submissionRepository.count({
@@ -522,7 +522,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
   }
 
   async rejudgeSubmission(submission: SubmissionEntity): Promise<void> {
-    // eslint-disable-next-line no-shadow
+    // eslint-disable-next-line @typescript-eslint/no-shadow
     await this.lockSubmission(submission, true, async submission => {
       if (!submission) return;
       this.judgeSubmission(submission, true);
@@ -530,7 +530,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
   }
 
   async cancelSubmission(submission: SubmissionEntity): Promise<void> {
-    // eslint-disable-next-line no-shadow
+    // eslint-disable-next-line @typescript-eslint/no-shadow
     const canceled = await this.lockSubmission(submission, true, async submission => {
       if (!submission || !submission.taskId) return false;
 
@@ -570,7 +570,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
   async deleteSubmission(submission: SubmissionEntity): Promise<void> {
     // This function updates related info, lock the problem for Read first, then lock the submission
     let deleteFileActually: () => void = null;
-    // eslint-disable-next-line no-shadow
+    // eslint-disable-next-line @typescript-eslint/no-shadow
     await this.lockSubmission(submission, true, async submission => {
       if (!submission) return;
 
@@ -662,7 +662,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     const finished = progress.progressType === SubmissionProgressType.Finished;
 
     // Don't lock the problem if not finished since we don't modify the database.
-    // eslint-disable-next-line no-shadow
+    // eslint-disable-next-line @typescript-eslint/no-shadow
     await this.lockSubmission(submission, finished, async (submission, problem?) => {
       if (!submission || submission.taskId !== taskId) {
         Logger.warn(`Invalid task Id ${taskId} of task progress, maybe there's a too-early rejudge?`);

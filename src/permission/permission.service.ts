@@ -313,7 +313,7 @@ export class PermissionService {
     groupPermissions: [GroupEntity, PermissionLevel][],
     transactionalEntityManager?: EntityManager
   ): Promise<void> {
-    // eslint-disable-next-line no-shadow
+    // eslint-disable-next-line @typescript-eslint/no-shadow
     const runInTransaction = async (transactionalEntityManager: EntityManager) => {
       await transactionalEntityManager.delete(PermissionForUserEntity, {
         objectId,

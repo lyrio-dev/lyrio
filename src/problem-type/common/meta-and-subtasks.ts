@@ -129,7 +129,7 @@ export function validateMetaAndSubtasks(
     restrictProperties(subtask, ["timeLimit", "memoryLimit", "scoringType", "points", "dependencies", "testcases"]);
 
     testcases.forEach((testcase, j) => {
-      // eslint-disable-next-line no-shadow
+      // eslint-disable-next-line @typescript-eslint/no-shadow
       const { inputFile, outputFile, userOutputFilename, timeLimit, memoryLimit, points } = testcase;
 
       if (options.enableInputFile) {
@@ -197,7 +197,7 @@ export function validateMetaAndSubtasks(
       ]);
     });
 
-    // eslint-disable-next-line no-shadow
+    // eslint-disable-next-line @typescript-eslint/no-shadow
     const sum = testcases.reduce((s, { points }) => (points ? s + points : s), 0);
     if (sum > 100) {
       throw ["POINTS_SUM_UP_TO_LARGER_THAN_100_TESTCASES", i + 1, sum];

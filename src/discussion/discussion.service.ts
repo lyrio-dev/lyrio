@@ -448,7 +448,7 @@ export class DiscussionService {
     await this.lockDiscussionById(
       discussion.id,
       "Read",
-      // eslint-disable-next-line no-shadow
+      // eslint-disable-next-line @typescript-eslint/no-shadow
       async discussion =>
         await this.permissionService.replaceUsersAndGroupsPermissionForObject(
           discussion.id,
