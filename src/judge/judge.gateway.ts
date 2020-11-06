@@ -11,11 +11,13 @@ import {
 
 import { Server, Socket } from "socket.io"; // eslint-disable-line import/no-extraneous-dependencies
 import SocketIOParser from "socket.io-msgpack-parser";
+import { Redis } from "ioredis";
 
 import { AlternativeUrlFor, FileService } from "@/file/file.service";
 import { SubmissionProgress } from "@/submission/submission-progress.interface";
 import { ConfigService } from "@/config/config.service";
 import { EventReportService, EventReportType } from "@/event-report/event-report.service";
+import { RedisService } from "@/redis/redis.service";
 
 import { JudgeClientService } from "./judge-client.service";
 import { JudgeClientEntity } from "./judge-client.entity";
@@ -32,6 +34,10 @@ interface SubmissionProgressMessage {
   progress: SubmissionProgress;
 }
 
+// If a judge client is disconnected temporarily (within 1 minute), don't report it with event reporter
+const REDIS_KEY_JUDGE_CLIENT_TEMPORARILY_DISCONNENTED = "judge-client-temporarily-disconnected:%d";
+const JUDGE_CLIENT_TEMPORARILY_DISCONNENTED_MAX_TIME = 60;
+
 @WebSocketGateway({ namespace: "judge", path: "/api/socket", transports: ["websocket"], parser: SocketIOParser })
 export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
@@ -41,14 +47,19 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private mapTaskIdToSocket: Map<string, Socket> = new Map();
 
+  private redis: Redis;
+
   constructor(
     private readonly judgeClientService: JudgeClientService,
     private readonly judgeQueueService: JudgeQueueService,
     private readonly fileService: FileService,
     private readonly configService: ConfigService,
     @Inject(forwardRef(() => EventReportService))
-    private readonly eventReportService: EventReportService
-  ) {}
+    private readonly eventReportService: EventReportService,
+    private readonly redisService: RedisService
+  ) {
+    this.redis = this.redisService.getClient();
+  }
 
   cancelTask(taskId: string): void {
     const client = this.mapTaskIdToSocket.get(taskId);
@@ -103,10 +114,13 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     const message = `Judge client ${client.id} (${judgeClient.name}) connected from ${client.handshake.address}.`;
     Logger.log(message);
-    this.eventReportService.report({
-      type: EventReportType.Success,
-      message
-    });
+    if ((await this.redis.del(REDIS_KEY_JUDGE_CLIENT_TEMPORARILY_DISCONNENTED.format(judgeClient.id))) === 0) {
+      // If the judge client is NOT temporarily disconnected, report it with event-reporter
+      this.eventReportService.report({
+        type: EventReportType.Success,
+        message
+      });
+    }
   }
 
   async handleDisconnect(client: Socket): Promise<void> {
@@ -118,25 +132,38 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     const message = `Judge client ${client.id} (${state.judgeClient.name}) disconnected.`;
     Logger.log(message);
-    this.eventReportService.report({
-      type: EventReportType.Warning,
-      message
-    });
+
     this.mapSessionIdToJudgeClient.delete(client.id);
 
     await this.judgeClientService.disconnectJudgeClient(state.judgeClient);
 
-    if (state.pendingTasks.size === 0) return;
-    Logger.log(
-      `Repushing ${state.pendingTasks.size} tasks consumed by judge client ${client.id} (${state.judgeClient.name}).`
+    if (state.pendingTasks.size !== 0) {
+      Logger.log(
+        `Repushing ${state.pendingTasks.size} tasks consumed by judge client ${client.id} (${state.judgeClient.name}).`
+      );
+      // Push the pending tasks back to the queue
+      await Promise.all(
+        Array.from(state.pendingTasks.values()).map(async task => {
+          this.mapTaskIdToSocket.delete(task.taskId);
+          await this.judgeQueueService.pushTask(task.taskId, task.type, task.priority, true);
+        })
+      );
+    }
+
+    // Report event
+    await this.redis.setex(
+      REDIS_KEY_JUDGE_CLIENT_TEMPORARILY_DISCONNENTED.format(state.judgeClient.id),
+      JUDGE_CLIENT_TEMPORARILY_DISCONNENTED_MAX_TIME,
+      "1"
     );
-    // Push the pending tasks back to the queue
-    await Promise.all(
-      Array.from(state.pendingTasks.values()).map(async task => {
-        this.mapTaskIdToSocket.delete(task.taskId);
-        await this.judgeQueueService.pushTask(task.taskId, task.type, task.priority, true);
-      })
-    );
+    setTimeout(async () => {
+      if (!(await this.judgeClientService.isJudgeClientOnline(state.judgeClient))) {
+        this.eventReportService.report({
+          type: EventReportType.Warning,
+          message
+        });
+      }
+    }, JUDGE_CLIENT_TEMPORARILY_DISCONNENTED_MAX_TIME * 1000);
   }
 
   @SubscribeMessage("systemInfo")
