@@ -389,7 +389,8 @@ export class AuthController {
   ): Promise<ListUserSessionsResponseDto> {
     if (
       !(
-        (currentUser && currentUser.id === request.userId) ||
+        (currentUser &&
+          (request.username ? currentUser.username === request.username : currentUser.id === request.userId)) ||
         (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.ManageUser))
       )
     )
@@ -397,14 +398,18 @@ export class AuthController {
         error: ListUserSessionsResponseError.PERMISSION_DENIED
       };
 
-    const sessions = await this.authSessionService.listUserSessions(request.userId);
+    const userId = request.username
+      ? (await this.userService.findUserByUsername(request.username))?.id
+      : request.userId;
+
+    const sessions = await this.authSessionService.listUserSessions(userId);
 
     return {
       sessions: sessions.map(sessionInfo => ({
         ...sessionInfo,
         loginIpLocation: this.authIpLocationService.query(sessionInfo.loginIp)
       })),
-      currentSessionId: request.userId === currentUser.id ? req.session.sessionId : null
+      currentSessionId: userId === currentUser.id ? req.session.sessionId : null
     };
   }
 

@@ -326,7 +326,9 @@ export class UserController {
         error: GetUserProfileResponseError.PERMISSION_DENIED
       };
 
-    const user = await this.userService.findUserById(request.userId);
+    const user = request.username
+      ? await this.userService.findUserByUsername(request.username)
+      : await this.userService.findUserById(request.userId);
     if (!user)
       return {
         error: GetUserProfileResponseError.NO_SUCH_USER
@@ -371,7 +373,9 @@ export class UserController {
         error: GetUserPreferenceResponseError.PERMISSION_DENIED
       };
 
-    const user = await this.userService.findUserById(request.userId);
+    const user = request.username
+      ? await this.userService.findUserByUsername(request.username)
+      : await this.userService.findUserById(request.userId);
     if (!user)
       return {
         error: GetUserPreferenceResponseError.NO_SUCH_USER
@@ -438,7 +442,9 @@ export class UserController {
         error: GetUserSecuritySettingsResponseError.PERMISSION_DENIED
       };
 
-    const user = await this.userService.findUserById(request.userId);
+    const user = request.username
+      ? await this.userService.findUserByUsername(request.username)
+      : await this.userService.findUserById(request.userId);
     if (!user)
       return {
         error: GetUserSecuritySettingsResponseError.NO_SUCH_USER
@@ -477,21 +483,23 @@ export class UserController {
       };
 
     if (
-      currentUser.id !== request.userId &&
+      (request.username ? currentUser.username !== request.username : currentUser.id !== request.userId) &&
       !(await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.ManageUser))
     )
       return {
         error: QueryAuditLogsResponseError.PERMISSION_DENIED
       };
 
-    const user = await this.userService.findUserById(request.userId);
-    if (request.userId != null && !user)
+    const user = request.username
+      ? await this.userService.findUserByUsername(request.username)
+      : await this.userService.findUserById(request.userId);
+    if (request.username != null && request.userId != null && !user)
       return {
         error: QueryAuditLogsResponseError.NO_SUCH_USER
       };
 
     const [results, count] = await this.auditService.query(
-      request.userId,
+      user?.id,
       request.actionQuery,
       request.ip,
       request.firstObjectId,
@@ -506,7 +514,7 @@ export class UserController {
       results: await Promise.all(
         results.map(async result => ({
           user: await this.userService.getUserMeta(
-            result.userId === request.userId ? user : await this.userService.findUserById(result.userId),
+            result.userId === user?.id ? user : await this.userService.findUserById(result.userId),
             currentUser
           ),
           ip: result.ip,

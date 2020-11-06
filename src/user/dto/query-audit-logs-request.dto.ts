@@ -3,12 +3,18 @@ import { ApiProperty } from "@nestjs/swagger";
 import { IsEnum, IsInt, IsOptional, IsString, Length, Min } from "class-validator";
 
 import { Locale } from "@/common/locale.type";
+import { IsUsername } from "@/common/validators";
 
 export class QueryAuditLogsRequestDto {
   @ApiProperty()
   @IsInt()
   @IsOptional()
   userId?: number;
+
+  @ApiProperty()
+  @IsUsername()
+  @IsOptional()
+  username?: string;
 
   @ApiProperty({
     description: "The query string for action field, will be matching as prefix."

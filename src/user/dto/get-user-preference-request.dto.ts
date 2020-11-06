@@ -1,9 +1,17 @@
 import { ApiProperty } from "@nestjs/swagger";
 
-import { IsInt } from "class-validator";
+import { IsInt, IsOptional } from "class-validator";
+
+import { IsUsername } from "@/common/validators";
 
 export class GetUserPreferenceRequestDto {
   @ApiProperty()
   @IsInt()
-  userId: number;
+  @IsOptional()
+  userId?: number;
+
+  @ApiProperty()
+  @IsUsername()
+  @IsOptional()
+  username?: string;
 }
