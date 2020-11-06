@@ -80,7 +80,7 @@ export class EventReportService {
         const user = request.session?.user;
         const userInfo = user ? `#${user.id} ${user.username}` : "";
 
-        requestInfo = `Request URL: ${url}\nClientIP: ${ip}\n`;
+        requestInfo = `\nRequest URL: ${url}\nClientIP: ${ip}\n`;
         if (userInfo) requestInfo += `User: ${userInfo}\n`;
 
         if (request.body) {

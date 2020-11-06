@@ -15,6 +15,7 @@ export class ErrorFilter implements ExceptionFilter {
     const contextType = host.getType();
     let request: RequestWithSession;
     if (contextType === "http") {
+      request = host.switchToHttp().getRequest<RequestWithSession>();
       const response = host.switchToHttp().getResponse<Response>();
       if (error instanceof HttpException) response.status(error.getStatus()).send(error.getResponse());
       else
