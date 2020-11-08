@@ -503,7 +503,7 @@ export class DiscussionService {
   }
 
   private async updateSortTime(discussionId: number, transactionalEntityManager: EntityManager, editTime?: Date) {
-    const [queryResultMaxReplyTime, queryResultEditTime] = await Promise.all([
+    const [queryResultMaxReplyTime, queryResultPublishOrEditTime] = await Promise.all([
       transactionalEntityManager
         .createQueryBuilder()
         .select("MAX(reply.publishTime)", "maxReplyTime")
@@ -513,17 +513,22 @@ export class DiscussionService {
       !editTime &&
         transactionalEntityManager
           .createQueryBuilder()
-          .select("discussion.editTime", "editTime")
+          .select("IFNULL(discussion.editTime, discussion.publishTime)", "publishOrEditTime")
           .from(DiscussionEntity, "discussion")
           .where("discussion.id = :discussionId", { discussionId })
-          .getRawOne<{ editTime: Date }>()
+          .getRawOne<{ publishOrEditTime: Date }>()
     ]);
 
     await transactionalEntityManager
       .createQueryBuilder()
       .update(DiscussionEntity)
       .set({
-        sortTime: new Date(Math.max(+queryResultMaxReplyTime.maxReplyTime, +(editTime || queryResultEditTime.editTime)))
+        sortTime: new Date(
+          Math.max(
+            +queryResultMaxReplyTime?.maxReplyTime || 0,
+            +(editTime || queryResultPublishOrEditTime.publishOrEditTime)
+          )
+        )
       })
       .where("id = :discussionId")
       .setParameters({
