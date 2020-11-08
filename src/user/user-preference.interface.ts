@@ -6,6 +6,7 @@ export interface UserPreference {
     content?: Locale;
   };
   font?: {
+    contentFontFace?: string;
     codeFontFace?: string;
     codeFontSize?: number;
     codeLineHeight?: number;

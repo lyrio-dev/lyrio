@@ -9,7 +9,8 @@ import {
   Min,
   Max,
   IsNumber,
-  ValidateNested
+  ValidateNested,
+  IsIn
 } from "class-validator";
 import { Type } from "class-transformer";
 
@@ -31,6 +32,11 @@ class UserPreferenceFontDto {
   @IsString()
   @Length(0, 36)
   @IsOptional()
+  contentFontFace?: string;
+
+  @IsString()
+  @Length(0, 36)
+  @IsOptional()
   codeFontFace?: string;
 
   @IsNumber()
@@ -48,6 +54,10 @@ class UserPreferenceFontDto {
   @IsBoolean()
   @IsOptional()
   codeFontLigatures?: boolean;
+
+  @IsIn(["content", "code"])
+  @IsOptional()
+  markdownEditorFont?: string;
 }
 
 class UserPreferenceCodeFormatterDto {
