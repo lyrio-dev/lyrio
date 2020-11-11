@@ -129,13 +129,15 @@ export class AuthController {
     const user = request.username
       ? await this.userService.findUserByUsername(request.username)
       : await this.userService.findUserByEmail(request.email);
-    if (request.username && !user) {
-      // The username may be a non-migrated old user
-      const userMigrationInfo = await this.userMigrationService.findUserMigrationInfoByOldUsername(request.username);
-      if (userMigrationInfo)
-        return {
-          error: await checkNonMigratedUserPassword(userMigrationInfo)
-        };
+    if (!user) {
+      if (request.username) {
+        // The username may be a non-migrated old user
+        const userMigrationInfo = await this.userMigrationService.findUserMigrationInfoByOldUsername(request.username);
+        if (userMigrationInfo)
+          return {
+            error: await checkNonMigratedUserPassword(userMigrationInfo)
+          };
+      }
 
       return {
         error: LoginResponseError.NO_SUCH_USER
