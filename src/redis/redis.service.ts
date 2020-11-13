@@ -27,7 +27,10 @@ export class RedisService implements OnModuleInit {
     this.client = new Redis(this.configService.config.services.redis, {
       enableReadyCheck: true
     });
-    this.redlock = new Redlock([this.client]);
+    this.redlock = new Redlock([this.client], {
+      retryCount: 20,
+      retryDelay: 500
+    });
 
     // TODO: Handle errors after connected?
     this.untilReady = new Promise((resolve, reject) => {
