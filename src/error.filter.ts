@@ -1,6 +1,7 @@
 import { ExceptionFilter, Catch, ArgumentsHost, HttpException, Logger } from "@nestjs/common";
 
 import { Response } from "express"; // eslint-disable-line import/no-extraneous-dependencies
+import { LockError } from "redlock";
 
 import { RequestWithSession } from "./auth/auth.middleware";
 import { EventReportService, EventReportType } from "./event-report/event-report.service";
@@ -26,8 +27,11 @@ export class ErrorFilter implements ExceptionFilter {
     }
 
     if (!(error instanceof HttpException)) {
-      if (error instanceof Error) logger.error(error.message, error.stack);
-      else logger.error(error);
+      if (error instanceof Error) {
+        if (this.isignoredError(error)) return;
+
+        logger.error(error.message, error.stack);
+      } else logger.error(error);
 
       this.eventReportService.report({
         type: EventReportType.Error,
@@ -36,5 +40,11 @@ export class ErrorFilter implements ExceptionFilter {
         message: "ErrorFilter has caught a uncaught exception."
       });
     }
+  }
+
+  isignoredError(error: Error) {
+    if (error instanceof LockError) return true;
+
+    return false;
   }
 }
