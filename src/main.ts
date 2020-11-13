@@ -7,6 +7,7 @@ import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
 
 import getGitRepoInfo from "git-repo-info";
 import moment from "moment";
+import { json } from "express"; // eslint-disable-line import/no-extraneous-dependencies
 
 import { AppModule } from "./app.module";
 import { ConfigService } from "./config/config.service";
@@ -40,6 +41,7 @@ async function initialize(): Promise<[packageInfo: any, configService: ConfigSer
   app.setGlobalPrefix("api");
   app.useGlobalFilters(app.get(ErrorFilter), app.get(RecaptchaFilter));
   app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }));
+  app.use(json({ limit: "1024mb" }));
   app.set("trust proxy", configService.config.server.trustProxy);
 
   // Configure swagger
