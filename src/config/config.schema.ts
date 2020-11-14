@@ -272,6 +272,11 @@ class PreferenceConfigMisc {
   @ApiProperty()
   readonly redirectLegacyUrls: boolean;
 
+  @IsString()
+  @IsOptional()
+  @ApiProperty()
+  readonly legacyContestsEntryUrl: boolean;
+
   @IsBoolean()
   @ApiProperty()
   readonly homepageUserListOnMainView: boolean;
