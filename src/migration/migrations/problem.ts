@@ -133,7 +133,8 @@ export function parseProblemType(type: OldDatabaseProblemEntity["type"]) {
 export function getLanguageAndOptions(
   oldLanguageName: string,
   errorObjectDescription: string,
-  onUnknownReturnDefault = true
+  onUnknownReturnDefault = true,
+  ensureCppAtLeast11 = false
 ): { language: CodeLanguage; compileAndRunOptions: unknown } {
   oldLanguageName = oldLanguageName || "";
 
@@ -143,7 +144,7 @@ export function getLanguageAndOptions(
         language: CodeLanguage.Cpp,
         compileAndRunOptions: <CompileAndRunOptionsCpp>{
           compiler: "g++",
-          std: "c++03",
+          std: ensureCppAtLeast11 ? "c++11" : "c++03",
           O: "2",
           m: "x32"
         }
@@ -397,7 +398,12 @@ async function parseJudgeInfo(
             type: "custom",
             interface: useTestlib ? "testlib" : "legacy",
             filename: oldConfig.specialJudge.fileName,
-            ...getLanguageAndOptions(oldConfig.specialJudge.language, `problem ${displayProblem(oldProblem)}`, true),
+            ...getLanguageAndOptions(
+              oldConfig.specialJudge.language,
+              `problem ${displayProblem(oldProblem)}`,
+              true,
+              useTestlib
+            ),
             ...(oldProblem.type === "submit-answer"
               ? {
                   timeLimit: 1000,
@@ -418,7 +424,7 @@ async function parseJudgeInfo(
         (judgeInfo as ProblemJudgeInfoInteraction).interactor = {
           interface: "stdio",
           filename: oldConfig.interactor.fileName,
-          ...getLanguageAndOptions(oldConfig.interactor.language, `problem ${displayProblem(oldProblem)}`, true)
+          ...getLanguageAndOptions(oldConfig.interactor.language, `problem ${displayProblem(oldProblem)}`, true, true)
         };
       }
 
