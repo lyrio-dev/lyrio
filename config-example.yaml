@@ -34,6 +34,9 @@ security:
     secretKey: null
     useRecaptchaNet: false
     proxyUrl: null
+  rateLimit:
+    maxRequests: 200
+    durationSeconds: 10
 preference:
   siteName: SYZOJ NG
   security:

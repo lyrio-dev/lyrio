@@ -8,7 +8,14 @@ import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
 
 import getGitRepoInfo from "git-repo-info";
 import moment from "moment";
-import { json } from "express"; // eslint-disable-line import/no-extraneous-dependencies
+import { Request, Response, json } from "express"; // eslint-disable-line import/no-extraneous-dependencies
+import {
+  RateLimiterClusterMaster,
+  RateLimiterCluster,
+  RateLimiterMemory,
+  RateLimiterAbstract,
+  IRateLimiterOptions
+} from "rate-limiter-flexible";
 
 import { AppModule } from "./app.module";
 import { ConfigService } from "./config/config.service";
@@ -46,6 +53,34 @@ async function initialize(): Promise<[packageInfo: any, configService: ConfigSer
   app.useGlobalFilters(app.get(ErrorFilter), app.get(RecaptchaFilter));
   app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }));
   app.use(json({ limit: "1024mb" }));
+  if (configService.config.security.rateLimit) {
+    const clusterService = app.get(ClusterService);
+    const rateLimiterConfig: IRateLimiterOptions = {
+      points: configService.config.security.rateLimit.maxRequests,
+      duration: configService.config.security.rateLimit.durationSeconds
+    };
+
+    let rateLimiter: RateLimiterAbstract;
+
+    if (clusterService.enabled) {
+      // eslint-disable-next-line no-new
+      if (clusterService.isMaster) new RateLimiterClusterMaster();
+      else {
+        rateLimiter = new RateLimiterCluster(rateLimiterConfig);
+      }
+    } else rateLimiter = new RateLimiterMemory(rateLimiterConfig);
+
+    app.use((req: Request, res: Response, next: () => void) => {
+      rateLimiter
+        .consume(req.ip)
+        .then(() => {
+          next();
+        })
+        .catch(() => {
+          res.status(429).send("Too Many Requests");
+        });
+    });
+  }
   app.set("trust proxy", configService.config.server.trustProxy);
 
   const options = new DocumentBuilder()

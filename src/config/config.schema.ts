@@ -128,6 +128,14 @@ class SecurityConfigRecaptcha {
   readonly proxyUrl: string;
 }
 
+class SecurityConfigRateLimit {
+  @IsInt()
+  readonly maxRequests: number;
+
+  @IsInt()
+  readonly durationSeconds: number;
+}
+
 class SecurityConfig {
   @IsString()
   readonly sessionSecret: string;
@@ -142,6 +150,11 @@ class SecurityConfig {
   @ValidateNested()
   @Type(() => SecurityConfigCrossOrigin)
   readonly crossOrigin: SecurityConfigCrossOrigin;
+
+  @ValidateNested()
+  @Type(() => SecurityConfigRateLimit)
+  @IsOptional()
+  readonly rateLimit: SecurityConfigRateLimit;
 }
 
 // These config items will be sent to client
