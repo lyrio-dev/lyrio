@@ -1,7 +1,8 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 
 import { Redis } from "ioredis";
 
+import { logger } from "@/logger";
 import { RedisService } from "@/redis/redis.service";
 
 import { JudgeTaskService } from "./judge-task-service.interface";
@@ -75,8 +76,8 @@ export class JudgeQueueService {
   }
 
   async pushTask(taskId: string, type: JudgeTaskType, priority: number, repush = false): Promise<void> {
-    if (repush) Logger.verbose(`Repush judge task: { taskId: ${taskId}, type: ${type}, priority: ${priority} }`);
-    else Logger.verbose(`New judge task: { taskId: ${taskId}, type: ${type}, priority: ${priority} }`);
+    if (repush) logger.verbose(`Repush judge task: { taskId: ${taskId}, type: ${type}, priority: ${priority} }`);
+    else logger.verbose(`New judge task: { taskId: ${taskId}, type: ${type}, priority: ${priority} }`);
     await this.redisForPush.zadd(
       REDIS_KEY_JUDGE_QUEUE,
       priority,
@@ -88,7 +89,7 @@ export class JudgeQueueService {
   }
 
   async consumeTask(): Promise<JudgeTask<JudgeTaskExtraInfo>> {
-    Logger.verbose("Consuming task queue");
+    logger.verbose("Consuming task queue");
 
     // ioredis's definition doesn't have bzpopmin method
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -97,7 +98,7 @@ export class JudgeQueueService {
       REDIS_CONSUME_TIMEOUT
     );
     if (!redisResponse) {
-      Logger.verbose("Consuming task queue - timeout");
+      logger.verbose("Consuming task queue - timeout");
       return null;
     }
 
@@ -106,13 +107,13 @@ export class JudgeQueueService {
     const taskMeta: JudgeTaskMeta = JSON.parse(taskJson);
     const task = await this.taskServices.get(taskMeta.type).getTaskToBeSentToJudgeByTaskId(taskMeta.taskId, priority);
     if (!task) {
-      Logger.verbose(
+      logger.verbose(
         `Consumed judge task { taskId: ${taskMeta.taskId}, type: ${taskMeta.type} }, but taskId is invalid, maybe canceled?`
       );
       return null;
     }
 
-    Logger.verbose(
+    logger.verbose(
       `Consumed judge task { taskId: ${task.taskId}, type: ${task.type}, priority: ${priority} (${
         JudgeTaskPriorityType[task.priorityType]
       }) }`

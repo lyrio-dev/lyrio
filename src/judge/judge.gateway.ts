@@ -1,4 +1,4 @@
-import { forwardRef, Inject, Logger } from "@nestjs/common";
+import { forwardRef, Inject } from "@nestjs/common";
 import {
   ConnectedSocket,
   MessageBody,
@@ -13,6 +13,7 @@ import { Server, Socket } from "socket.io"; // eslint-disable-line import/no-ext
 import SocketIOParser from "socket.io-msgpack-parser";
 import { Redis } from "ioredis";
 
+import { logger } from "@/logger";
 import { AlternativeUrlFor, FileService } from "@/file/file.service";
 import { SubmissionProgress } from "@/submission/submission-progress.interface";
 import { ConfigService } from "@/config/config.service";
@@ -101,7 +102,7 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const judgeClient = await this.judgeClientService.findJudgeClientByKey(key);
 
     if (!judgeClient) {
-      Logger.verbose(`Client ${client.id} connected with invalid key`);
+      logger.verbose(`Client ${client.id} connected with invalid key`);
       client.emit("authenticationFailed");
       // Delay the disconnection to make the authenticationFailed event able to be sent to the client
       setImmediate(() => client.disconnect(true));
@@ -125,7 +126,7 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.emit("ready", judgeClient.name, this.configService.config.judge);
 
     const message = `Judge client ${client.id} (${judgeClient.name}) connected from ${client.handshake.address}.`;
-    Logger.log(message);
+    logger.log(message);
     if ((await this.redis.del(REDIS_KEY_JUDGE_CLIENT_TEMPORARILY_DISCONNENTED.format(judgeClient.id))) === 0) {
       // If the judge client is NOT temporarily disconnected, report it with event-reporter
       this.eventReportService.report({
@@ -138,19 +139,19 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleDisconnect(client: Socket): Promise<void> {
     const state = this.mapSessionIdToJudgeClient.get(client.id);
     if (!state) {
-      Logger.log(`Judge client ${client.id} disconnected before initialized, ignoring`);
+      logger.log(`Judge client ${client.id} disconnected before initialized, ignoring`);
       return; // Initialization has not been complated
     }
 
     const message = `Judge client ${client.id} (${state.judgeClient.name}) disconnected.`;
-    Logger.log(message);
+    logger.log(message);
 
     this.mapSessionIdToJudgeClient.delete(client.id);
 
     await this.judgeClientService.disconnectJudgeClient(state.judgeClient);
 
     if (state.pendingTasks.size !== 0) {
-      Logger.log(
+      logger.log(
         `Repushing ${state.pendingTasks.size} tasks consumed by judge client ${client.id} (${state.judgeClient.name}).`
       );
       // Push the pending tasks back to the queue
@@ -185,7 +186,7 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ): Promise<void> {
     const state = this.mapSessionIdToJudgeClient.get(client.id);
     if (!state) {
-      Logger.warn(`"systemInfo" emitted from an unknown client ${client.id}, ignoring`);
+      logger.warn(`"systemInfo" emitted from an unknown client ${client.id}, ignoring`);
       return;
     }
 
@@ -196,11 +197,11 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async onRequestFiles(@ConnectedSocket() client: Socket, @MessageBody() fileUuids: string[]): Promise<string[]> {
     const state = this.mapSessionIdToJudgeClient.get(client.id);
     if (!state) {
-      Logger.warn(`"requestFiles" emitted from an unknown client ${client.id}, ignoring`);
+      logger.warn(`"requestFiles" emitted from an unknown client ${client.id}, ignoring`);
       return [];
     }
 
-    Logger.log(`Judge client ${client.id} (${state.judgeClient.name}) requested ${fileUuids.length} files`);
+    logger.log(`Judge client ${client.id} (${state.judgeClient.name}) requested ${fileUuids.length} files`);
     return await Promise.all(
       fileUuids.map(
         async fileUuid =>
@@ -218,7 +219,7 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async onConsumeTask(@ConnectedSocket() client: Socket, @MessageBody() threadId: number): Promise<void> {
     const state = this.mapSessionIdToJudgeClient.get(client.id);
     if (!state) {
-      Logger.warn(`"consumeTask" emitted from an unknown client ${client.id}, ignoring`);
+      logger.warn(`"consumeTask" emitted from an unknown client ${client.id}, ignoring`);
       return;
     }
 
@@ -228,7 +229,7 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
       if (!task) continue;
 
       if (!(await this.checkConnection(client))) {
-        Logger.verbose(
+        logger.verbose(
           `Consumed task for client ${client.id} (${state.judgeClient.name}), but connection became invalid, repushing task back to queue`
         );
         await this.judgeQueueService.pushTask(task.taskId, task.type, task.priority, true);
@@ -237,7 +238,7 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
       state.pendingTasks.add(task);
       this.mapTaskIdToSocket.set(task.taskId, client);
       client.emit("task", threadId, task, () => {
-        Logger.verbose(
+        logger.verbose(
           `Judge client ${client.id} (${state.judgeClient.name}) acknowledged task { taskId: ${task.taskId}, type: ${task.type} }`
         );
         state.pendingTasks.delete(task);
@@ -256,13 +257,13 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ): Promise<void> {
     const state = this.mapSessionIdToJudgeClient.get(client.id);
     if (!state) {
-      Logger.warn(`"progress" emitted from an unknown client ${client.id}, ignoring`);
+      logger.warn(`"progress" emitted from an unknown client ${client.id}, ignoring`);
       return;
     }
 
     const notCanceled = await this.judgeQueueService.onTaskProgress(message.taskMeta, message.progress);
     if (!notCanceled) {
-      Logger.log(`Emitting cancel event for task ${message.taskMeta.taskId}`);
+      logger.log(`Emitting cancel event for task ${message.taskMeta.taskId}`);
       client.emit("cancel", message.taskMeta.taskId);
     }
   }

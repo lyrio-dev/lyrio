@@ -1,8 +1,9 @@
-import { Injectable, Logger, Inject, forwardRef } from "@nestjs/common";
+import { Injectable, Inject, forwardRef } from "@nestjs/common";
 import { InjectConnection } from "@nestjs/typeorm";
 
 import { Connection } from "typeorm";
 
+import { logger } from "@/logger";
 import { RedisService } from "@/redis/redis.service";
 import { ProblemEntity } from "@/problem/problem.entity";
 
@@ -213,7 +214,7 @@ export class SubmissionStatisticsService {
         };
 
         if (shouldCacheBePurged()) {
-          Logger.log(
+          logger.log(
             `Purging submission statistics cache: problemId = ${oldSubmission.problemId}, statisticsType = ${statisticsType}`
           );
           await this.redisService.cacheDelete(key);

@@ -1,8 +1,9 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 
 import { FindConditions, Like, Repository } from "typeorm";
 
+import { logger } from "@/logger";
 import { getCurrentRequest } from "@/auth/auth.middleware";
 import { UserEntity } from "@/user/user.entity";
 import { Locale } from "@/common/locale.type";
@@ -96,7 +97,7 @@ export class AuditService {
     const req = getCurrentRequest();
     if (userId == null) {
       if (!req.session) {
-        Logger.warn(
+        logger.warn(
           `Failed to get the current request session for audit logging { action: ${JSON.stringify(
             action
           )}, firstObject: <${firstObjectType} ${firstObjectId}>, secondObject: <${secondObjectType} ${secondObjectId}> }`

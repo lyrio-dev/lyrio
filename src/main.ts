@@ -38,7 +38,9 @@ async function initialize(): Promise<[packageInfo: any, configService: ConfigSer
   if (cluster.isMaster) Logger.log(`Starting ${packageInfo.name} version ${appVersion}${gitRepoVersion}`, "Bootstrap");
 
   // Create nestjs app
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    ...(process.env.NODE_ENV === "production" ? { logger: ["warn", "error"] } : {})
+  });
   const configService = app.get(ConfigService);
   app.setGlobalPrefix("api");
   app.useGlobalFilters(app.get(ErrorFilter), app.get(RecaptchaFilter));

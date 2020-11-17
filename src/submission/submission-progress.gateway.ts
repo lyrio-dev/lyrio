@@ -1,4 +1,4 @@
-import { Logger, Inject, forwardRef } from "@nestjs/common";
+import { Inject, forwardRef } from "@nestjs/common";
 import { WebSocketGateway, WebSocketServer, OnGatewayConnection, OnGatewayDisconnect } from "@nestjs/websockets";
 
 import { Server, Socket } from "socket.io"; // eslint-disable-line import/no-extraneous-dependencies
@@ -6,6 +6,7 @@ import jwt from "jsonwebtoken";
 import { diff } from "jsondiffpatch";
 import SocketIOParser from "socket.io-msgpack-parser";
 
+import { logger } from "@/logger";
 import { ConfigService } from "@/config/config.service";
 
 import { SubmissionProgress, SubmissionProgressType } from "./submission-progress.interface";
@@ -84,7 +85,7 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
     try {
       return jwt.verify(subscriptionKey, this.secret) as SubmissionProgressSubscription;
     } catch (e) {
-      Logger.log(`Invalid subscription key: ${subscriptionKey}`);
+      logger.log(`Invalid subscription key: ${subscriptionKey}`);
       return null;
     }
   }
@@ -94,7 +95,7 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
   }
 
   private joinRoom(client: Socket, room: string) {
-    Logger.log(`Joining client ${client.id} to room ${room}`);
+    logger.log(`Joining client ${client.id} to room ${room}`);
     const joinedRooms = this.clientJoinedRooms.get(client.id);
     if (!joinedRooms) {
       // Already disconnected
@@ -107,7 +108,7 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
   }
 
   private leaveRoom(client: Socket, room: string) {
-    Logger.log(`Leaving client ${client.id} from room ${room}`);
+    logger.log(`Leaving client ${client.id} from room ${room}`);
     const joinedRooms = this.clientJoinedRooms.get(client.id);
     if (!joinedRooms) {
       // Already disconnected
@@ -155,7 +156,7 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
       if (delta) this.server.to(clientId).send(submissionId, delta);
     };
 
-    Logger.log(`Sending to ${typeof to === "string" ? to : (to as Socket).id}: ${JSON.stringify(message)}`);
+    logger.log(`Sending to ${typeof to === "string" ? to : (to as Socket).id}: ${JSON.stringify(message)}`);
 
     if (typeof to === "object") sendTo(to.id);
     else for (const client of this.rooms.get(to) || []) sendTo(client);
@@ -179,7 +180,7 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
       return;
     }
 
-    Logger.log(`Subscription: ${JSON.stringify(subscription)}`);
+    logger.log(`Subscription: ${JSON.stringify(subscription)}`);
 
     this.clientJoinedRooms.set(client.id, new Set());
     this.clientLastMessages.set(client.id, new Map());

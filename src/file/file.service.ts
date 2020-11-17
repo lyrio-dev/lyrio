@@ -1,13 +1,14 @@
 import { URL } from "url";
 import { Readable } from "stream";
 
-import { Injectable, OnModuleInit, Logger } from "@nestjs/common";
+import { Injectable, OnModuleInit } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
 
 import { Repository, Connection, EntityManager, In } from "typeorm";
 import { v4 as UUID } from "uuid";
 import { Client as MinioClient } from "minio";
 
+import { logger } from "@/logger";
 import { ConfigService } from "@/config/config.service";
 
 import { FileEntity } from "./file.entity";
@@ -244,14 +245,14 @@ export class FileService implements OnModuleInit {
       await transactionalEntityManager.delete(FileEntity, { uuid });
       return () =>
         this.minioClient.removeObject(this.bucket, uuid).catch(e => {
-          Logger.error(`Failed to delete file ${uuid}: ${e}`);
+          logger.error(`Failed to delete file ${uuid}: ${e}`);
         });
     }
     if (uuid.length > 0) {
       await transactionalEntityManager.delete(FileEntity, { uuid: In(uuid) });
       return () =>
         this.minioClient.removeObjects(this.bucket, uuid).catch(e => {
-          Logger.error(`Failed to delete file [${uuid}]: ${e}`);
+          logger.error(`Failed to delete file [${uuid}]: ${e}`);
         });
     }
     return () => {
@@ -265,7 +266,7 @@ export class FileService implements OnModuleInit {
   deleteUnfinishedUploadedFile(uuid: string): void {
     this.minioClient.removeObject(this.bucket, uuid).catch(e => {
       if (e.message === "The specified key does not exist.") return;
-      Logger.error(`Failed to delete unfinished uploaded file ${uuid}: ${e}`);
+      logger.error(`Failed to delete unfinished uploaded file ${uuid}: ${e}`);
     });
   }
 

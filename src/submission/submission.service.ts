@@ -1,4 +1,4 @@
-import { Injectable, Logger, Inject, forwardRef } from "@nestjs/common";
+import { Injectable, Inject, forwardRef } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
 
 import { Repository, Connection, QueryBuilder } from "typeorm";
@@ -6,6 +6,7 @@ import { ValidationError } from "class-validator";
 import { v4 as uuid } from "uuid";
 import moment from "moment-timezone";
 
+import { logger } from "@/logger";
 import { ProblemPermissionType, ProblemService } from "@/problem/problem.service";
 import { UserEntity } from "@/user/user.entity";
 import { ProblemEntity, ProblemType } from "@/problem/problem.entity";
@@ -369,7 +370,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
       try {
         await this.judgeSubmission(submission);
       } catch (e) {
-        Logger.error(`Failed to start judge for submission ${submission.id}: ${e}`);
+        logger.error(`Failed to start judge for submission ${submission.id}: ${e}`);
       }
 
       return [null, null, submission];
@@ -644,7 +645,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
       await transactionalEntityManager.save(submissionDetail);
     });
 
-    Logger.log(`Submission ${submission.id} finished with status ${submission.status}`);
+    logger.log(`Submission ${submission.id} finished with status ${submission.status}`);
 
     await this.onSubmissionUpdated(oldSubmission, submission);
   }
@@ -655,7 +656,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
   async onTaskProgress(taskId: string, progress: SubmissionProgress): Promise<boolean> {
     const submission = await this.findSubmissionByTaskId(taskId);
     if (!submission) {
-      Logger.warn(`Invalid task Id ${taskId} of task progress, maybe there's a too-early rejudge?`);
+      logger.warn(`Invalid task Id ${taskId} of task progress, maybe there's a too-early rejudge?`);
       return false;
     }
 
@@ -665,7 +666,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     // eslint-disable-next-line @typescript-eslint/no-shadow
     await this.lockSubmission(submission, finished, async (submission, problem?) => {
       if (!submission || submission.taskId !== taskId) {
-        Logger.warn(`Invalid task Id ${taskId} of task progress, maybe there's a too-early rejudge?`);
+        logger.warn(`Invalid task Id ${taskId} of task progress, maybe there's a too-early rejudge?`);
       }
 
       // First update database, then report progress
@@ -723,7 +724,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
         }
       );
     } catch (e) {
-      Logger.error(`Error in getTaskById("${taskId}"): ${e}`);
+      logger.error(`Error in getTaskById("${taskId}"): ${e}`);
       return null;
     }
   }

@@ -1,7 +1,8 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 
 import { Redis } from "ioredis";
 
+import { logger } from "@/logger";
 import { RedisService } from "@/redis/redis.service";
 
 import { SubmissionProgress, SubmissionProgressType } from "./submission-progress.interface";
@@ -44,7 +45,7 @@ export class SubmissionProgressService {
   }
 
   private async onSubmissionEvent(submissionId: number, type: SubmissionEventType, progress?: SubmissionProgress) {
-    Logger.log(`Consume event for submission ${submissionId}`);
+    logger.log(`Consume event for submission ${submissionId}`);
     this.submissionProgressGateway.onSubmissionEvent(submissionId, type, progress);
   }
 
@@ -55,7 +56,7 @@ export class SubmissionProgressService {
     type: SubmissionEventType,
     progress?: SubmissionProgress
   ): Promise<void> {
-    Logger.log(`Progress for submission ${submissionId} received, pushing to Redis`);
+    logger.log(`Progress for submission ${submissionId} received, pushing to Redis`);
     if (type === SubmissionEventType.Progress && progress.progressType !== SubmissionProgressType.Finished) {
       await this.redis.set(REDIS_KEY_SUBMISSION_PROGRESS.format(submissionId), JSON.stringify(progress));
     } else {
