@@ -648,10 +648,14 @@ export class ProblemService {
     problem: ProblemEntity,
     type: ProblemFileType,
     size: number,
-    filename: string
+    filename: string,
+    transactionalEntityManager: EntityManager
   ): Promise<"TOO_MANY_FILES" | "TOTAL_SIZE_TOO_LARGE"> {
-    const currentFiles = await this.problemFileRepository.find({ problemId: problem.id, type });
-    const fileSizes = await this.fileService.getFileSizes(currentFiles.map(file => file.uuid));
+    const currentFiles = await transactionalEntityManager.find(ProblemFileEntity, { problemId: problem.id, type });
+    const fileSizes = await this.fileService.getFileSizes(
+      currentFiles.map(file => file.uuid),
+      transactionalEntityManager
+    );
 
     let oldFileCount = 0;
     let oldFileSizeSum = 0;
@@ -725,10 +729,13 @@ export class ProblemService {
       if (!problem) return "NO_SUCH_PROBLEM";
 
       let deleteOldFileActually: () => void = null;
-      const ret = await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
+      const ret = await this.connection.transaction("REPEATABLE READ", async transactionalEntityManager => {
         const result = await this.fileService.processUploadRequest(
           uploadInfo,
-          async size => (noLimit ? null : await this.checkAddProblemFileLimit(problem, type, size, filename)),
+          async size =>
+            noLimit
+              ? null
+              : await this.checkAddProblemFileLimit(problem, type, size, filename, transactionalEntityManager),
           transactionalEntityManager
         );
 
@@ -793,27 +800,41 @@ export class ProblemService {
     });
   }
 
-  async getProblemFiles(problem: ProblemEntity, type: ProblemFileType): Promise<ProblemFileEntity[]> {
-    const problemFiles = await this.problemFileRepository.find({
-      problemId: problem.id,
-      type
-    });
+  async getProblemFiles(
+    problem: ProblemEntity,
+    type: ProblemFileType,
+    transcationalEntityManager?: EntityManager
+  ): Promise<ProblemFileEntity[]> {
+    const problemFiles = transcationalEntityManager
+      ? await transcationalEntityManager.find(ProblemFileEntity, {
+          problemId: problem.id,
+          type
+        })
+      : await this.problemFileRepository.find({
+          problemId: problem.id,
+          type
+        });
 
     return problemFiles;
   }
 
   async listProblemFiles(problem: ProblemEntity, type: ProblemFileType, withSize = false): Promise<ProblemFileDto[]> {
-    const problemFiles = await this.getProblemFiles(problem, type);
+    return await this.connection.transaction("REPEATABLE READ", async transcationalEntityManager => {
+      const problemFiles = await this.getProblemFiles(problem, type, transcationalEntityManager);
 
-    if (withSize) {
-      const fileSizes = await this.fileService.getFileSizes(problemFiles.map(problemFile => problemFile.uuid));
-      return problemFiles.map((problemFile, i) => ({
-        ...problemFile,
-        size: fileSizes[i]
-      }));
-    }
+      if (withSize) {
+        const fileSizes = await this.fileService.getFileSizes(
+          problemFiles.map(problemFile => problemFile.uuid),
+          transcationalEntityManager
+        );
+        return problemFiles.map((problemFile, i) => ({
+          ...problemFile,
+          size: fileSizes[i]
+        }));
+      }
 
-    return problemFiles;
+      return problemFiles;
+    });
   }
 
   async renameProblemFile(
@@ -1014,7 +1035,7 @@ export class ProblemService {
    */
   async deleteProblem(problem: ProblemEntity): Promise<void> {
     let deleteFilesActually: () => void = null;
-    await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
+    await this.connection.transaction("REPEATABLE READ", async transactionalEntityManager => {
       // update user submission count and accepted problem count
       await this.userService.onDeleteProblem(problem.id, transactionalEntityManager);
 

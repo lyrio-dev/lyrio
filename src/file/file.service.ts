@@ -269,10 +269,10 @@ export class FileService implements OnModuleInit {
     });
   }
 
-  async getFileSizes(uuids: string[]): Promise<number[]> {
+  async getFileSizes(uuids: string[], transcationalEntityManager: EntityManager): Promise<number[]> {
     if (uuids.length === 0) return [];
     const uniqueUuids = Array.from(new Set(uuids));
-    const files = await this.fileRepository.find({
+    const files = await transcationalEntityManager.find(FileEntity, {
       uuid: In(uniqueUuids)
     });
     const map = Object.fromEntries(files.map(file => [file.uuid, file]));
