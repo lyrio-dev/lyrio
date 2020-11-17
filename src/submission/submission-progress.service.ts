@@ -20,12 +20,12 @@ const REDIS_CHANNEL_SUBMISSION_EVENT = "submission-event";
 // 1. If its type is "Finished", it's converted to a "result" and stored to the database,
 //    anything related to the submission will be updated, its previous progress will be removed from Redis.
 //    Otherwise (non-finished) the progress is stored to Redis.
-// 2. A message is published to other all clusters to tell all clusters about the progress.
+// 2. A message is published to other all nodes to tell all nodes about the progress.
 // 3. Once a cluster recived the Redis message of progress, it will lookup for its clients who has subscribed
 //    the submission's progress and send them the progress via WebSocket.
 @Injectable()
 export class SubmissionProgressService {
-  private readonly redisSubscribe: Redis;
+  private readonly redisForSubscribe: Redis;
 
   private readonly redis: Redis;
 
@@ -34,13 +34,13 @@ export class SubmissionProgressService {
     private readonly submissionProgressGateway: SubmissionProgressGateway
   ) {
     this.redis = this.redisService.getClient();
-    this.redisSubscribe = this.redisService.getClient();
+    this.redisForSubscribe = this.redisService.getClient();
 
-    this.redisSubscribe.on("message", (channel: string, message: string) => {
+    this.redisForSubscribe.on("message", (channel: string, message: string) => {
       const { submissionId, type, progress } = JSON.parse(message);
       this.onSubmissionEvent(submissionId, type, progress);
     });
-    this.redisSubscribe.subscribe(REDIS_CHANNEL_SUBMISSION_EVENT);
+    this.redisForSubscribe.subscribe(REDIS_CHANNEL_SUBMISSION_EVENT);
   }
 
   private async onSubmissionEvent(submissionId: number, type: SubmissionEventType, progress?: SubmissionProgress) {

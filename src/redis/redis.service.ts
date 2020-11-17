@@ -28,7 +28,7 @@ export class RedisService implements OnModuleInit {
       enableReadyCheck: true
     });
     this.redlock = new Redlock([this.client], {
-      retryCount: 20,
+      retryCount: -1,
       retryDelay: 500
     });
 

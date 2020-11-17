@@ -3,6 +3,7 @@ server:
   port: 2002
   trustProxy:
     - loopback
+  clusters: 0
 services:
   database:
     type: mariadb

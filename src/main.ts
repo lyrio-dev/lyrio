@@ -1,4 +1,5 @@
 import util from "util";
+import cluster from "cluster";
 
 import { NestFactory } from "@nestjs/core";
 import { NestExpressApplication } from "@nestjs/platform-express";
@@ -14,6 +15,7 @@ import { ConfigService } from "./config/config.service";
 import { MigrationService } from "./migration/migration.service";
 import { ErrorFilter } from "./error.filter";
 import { RecaptchaFilter } from "./recaptcha.filter";
+import { ClusterService } from "./cluster/cluster.service";
 
 // eslint-disable-next-line no-extend-native
 String.prototype.format = function format(...args) {
@@ -33,7 +35,7 @@ async function initialize(): Promise<[packageInfo: any, configService: ConfigSer
       )})`
     : "";
 
-  Logger.log(`Starting ${packageInfo.name} version ${appVersion}${gitRepoVersion}`, "Bootstrap");
+  if (cluster.isMaster) Logger.log(`Starting ${packageInfo.name} version ${appVersion}${gitRepoVersion}`, "Bootstrap");
 
   // Create nestjs app
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -43,9 +45,6 @@ async function initialize(): Promise<[packageInfo: any, configService: ConfigSer
   app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }));
   app.use(json({ limit: "1024mb" }));
   app.set("trust proxy", configService.config.server.trustProxy);
-
-  // Configure swagger
-  Logger.log(`Setting up Swagger API document builder`, "Bootstrap");
 
   const options = new DocumentBuilder()
     .setTitle(packageInfo.name)
@@ -82,7 +81,10 @@ async function bootstrap() {
     // Start migration
     await runMigration(app, migrationConfigFile);
   // Start Nest.js app
-  else await startApp(packageInfo, configService, app);
+  else {
+    const clusterService = app.get(ClusterService);
+    await clusterService.initialization(async () => await startApp(packageInfo, configService, app));
+  }
 }
 
 bootstrap().catch(err => {

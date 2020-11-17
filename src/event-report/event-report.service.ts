@@ -7,6 +7,7 @@ import { TelegrafContext } from "telegraf/typings/context";
 import randomstring from "randomstring";
 
 import { ConfigService } from "@/config/config.service";
+import { ClusterService } from "@/cluster/cluster.service";
 import { RequestWithSession } from "@/auth/auth.middleware";
 
 const logger = new Logger("EventReporter");
@@ -25,31 +26,51 @@ const emoji: Record<EventReportType, string> = {
   [EventReportType.Success]: "✅"
 };
 
+interface EventMessage {
+  message: string;
+  filename: string;
+  fileContent: string;
+}
+
+const IPC_CHANNEL = "event-report";
+
 export function escapeTelegramHtml(text: string) {
   return text.split("&").join("&amp;").split("<").join("&lt;").split(">").join("&gt;");
 }
 
 @Injectable()
 export class EventReportService {
+  readonly enabled: boolean;
+
   private readonly telegramBot: Telegraf<TelegrafContext>;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(private readonly configService: ConfigService, private readonly clusterSerivce: ClusterService) {
     const eventReportConfig = this.configService.config.eventReport;
-    this.telegramBot = eventReportConfig.telegramBotToken
-      ? new Telegraf(eventReportConfig.telegramBotToken, {
-          telegram: {
-            // ProxyAgent's typing is wrong
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            agent: eventReportConfig.proxyUrl ? (new ProxyAgent(eventReportConfig.proxyUrl) as any) : null,
-            ...(eventReportConfig.telegramApiRoot
-              ? {
-                  apiRoot: eventReportConfig.telegramApiRoot
-                }
-              : null)
-          }
-        })
-      : null;
-    if (this.telegramBot) this.telegramBot.launch();
+    this.enabled = !!eventReportConfig.telegramBotToken;
+    if (!this.enabled) return;
+
+    // A telegram bot could only be logged-in on one client
+    // So login only on master process
+    if (this.clusterSerivce.isMaster) {
+      this.telegramBot = eventReportConfig.telegramBotToken
+        ? new Telegraf(eventReportConfig.telegramBotToken, {
+            telegram: {
+              // ProxyAgent's typing is wrong
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              agent: eventReportConfig.proxyUrl ? (new ProxyAgent(eventReportConfig.proxyUrl) as any) : null,
+              ...(eventReportConfig.telegramApiRoot
+                ? {
+                    apiRoot: eventReportConfig.telegramApiRoot
+                  }
+                : null)
+            }
+          })
+        : null;
+      if (this.telegramBot) this.telegramBot.launch();
+
+      // Listen worker process's message
+      this.clusterSerivce.onMessageFromWorker<EventMessage>(IPC_CHANNEL, message => this.doReport(message));
+    }
   }
 
   async report({
@@ -64,7 +85,7 @@ export class EventReportService {
     request?: RequestWithSession;
     message?: string;
   }) {
-    if (!this.telegramBot) return;
+    if (!this.enabled) return;
 
     try {
       const { siteName } = this.configService.config.preference;
@@ -92,21 +113,29 @@ export class EventReportService {
       if (message) finalMessage += `\n${message}\n`;
       if (errorDisplayMessage) finalMessage += `\n${errorDisplayMessage}`;
 
-      await this.telegramBot.telegram.sendMessage(
-        this.configService.config.eventReport.sentTo,
-        `<pre>${escapeTelegramHtml(finalMessage.trim())}</pre>`,
-        Extra.HTML().markup("")
-      );
-
-      if (requestBody) {
-        await this.telegramBot.telegram.sendDocument(this.configService.config.eventReport.sentTo, {
-          filename: `RequestBody_${eventId}.json`,
-          source: Buffer.from(requestBody)
-        });
-      }
+      this.clusterSerivce.postMessageToMaster(IPC_CHANNEL, <EventMessage>{
+        message: finalMessage,
+        filename: requestBody && `RequestBody_${eventId}.json`,
+        fileContent: requestBody
+      });
     } catch (e) {
       if (e instanceof Error) logger.error(e.message, e.stack);
       else logger.error(e);
+    }
+  }
+
+  private async doReport(message: EventMessage) {
+    await this.telegramBot.telegram.sendMessage(
+      this.configService.config.eventReport.sentTo,
+      `<pre>${escapeTelegramHtml(message.message.trim())}</pre>`,
+      Extra.HTML().markup("")
+    );
+
+    if (message.filename) {
+      await this.telegramBot.telegram.sendDocument(this.configService.config.eventReport.sentTo, {
+        filename: message.filename,
+        source: Buffer.from(message.fileContent)
+      });
     }
   }
 }

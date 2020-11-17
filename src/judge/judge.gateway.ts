@@ -38,6 +38,8 @@ interface SubmissionProgressMessage {
 const REDIS_KEY_JUDGE_CLIENT_TEMPORARILY_DISCONNENTED = "judge-client-temporarily-disconnected:%d";
 const JUDGE_CLIENT_TEMPORARILY_DISCONNENTED_MAX_TIME = 60;
 
+const REDIS_CHANNEL_CANCEL_TASK = "cancel-task";
+
 @WebSocketGateway({ namespace: "judge", path: "/api/socket", transports: ["websocket"], parser: SocketIOParser })
 export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
@@ -49,6 +51,9 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private redis: Redis;
 
+  // To subscribe the "cancel task" event
+  private redisForSubscribe: Redis;
+
   constructor(
     private readonly judgeClientService: JudgeClientService,
     private readonly judgeQueueService: JudgeQueueService,
@@ -59,16 +64,23 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly redisService: RedisService
   ) {
     this.redis = this.redisService.getClient();
+
+    this.redisForSubscribe = this.redisService.getClient();
+
+    this.redisForSubscribe.on("message", (channel: string, message: string) => {
+      this.onCancelTask(message);
+    });
+    this.redisForSubscribe.subscribe(REDIS_CHANNEL_CANCEL_TASK);
   }
 
-  cancelTask(taskId: string): void {
+  // Send the cancel task operation to ALL nodes
+  cancelTask(taskId: string) {
+    this.redis.publish(REDIS_CHANNEL_CANCEL_TASK, taskId);
+  }
+
+  onCancelTask(taskId: string): void {
     const client = this.mapTaskIdToSocket.get(taskId);
-    if (!client) {
-      Logger.warn(
-        `JudgeGateway.cancelTask() called with a task that we can't determine its judging client socket, ignoring`
-      );
-      return;
-    }
+    if (!client) return;
 
     client.emit("cancel", taskId);
   }

@@ -31,6 +31,11 @@ class ServerConfig {
   @IsArray()
   @IsString({ each: true })
   readonly trustProxy: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  readonly clusters: number;
 }
 
 class ServicesConfigDatabase {
