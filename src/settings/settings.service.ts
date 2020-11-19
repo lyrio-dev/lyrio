@@ -20,9 +20,9 @@ export class SettingsService {
       key: getSettingsKey(Class)
     });
 
-    if (item) return plainToClass(Class, item.value);
+    const result = item ? item.value : ((Class as unknown) as { defaultValue: T }).defaultValue;
 
-    return ((Class as unknown) as { defaultValue: T }).defaultValue;
+    return plainToClass(Class, result);
   }
 
   async set<T>(value: T): Promise<void> {
