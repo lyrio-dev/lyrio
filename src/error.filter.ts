@@ -44,6 +44,7 @@ export class ErrorFilter implements ExceptionFilter {
 
   isignoredError(error: Error) {
     if (error instanceof LockError) return true;
+    if (error.message.includes("Too many connections")) return true;
 
     return false;
   }
