@@ -3,12 +3,16 @@ import { Entity, PrimaryColumn, Index, ManyToOne, JoinColumn } from "typeorm";
 import { UserEntity } from "@/user/user.entity";
 
 export enum UserPrivilegeType {
+  // Management privileges
   EditHomepage = "EditHomepage",
   ManageUser = "ManageUser",
   ManageUserGroup = "ManageUserGroup",
   ManageProblem = "ManageProblem",
   ManageContest = "ManageContest",
-  ManageDiscussion = "ManageDiscussion"
+  ManageDiscussion = "ManageDiscussion",
+
+  // Other privileges
+  SkipRecaptcha = "SkipRecaptcha"
 }
 
 @Entity("user_privilege")

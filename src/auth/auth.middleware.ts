@@ -5,6 +5,7 @@ import { NestMiddleware, Injectable } from "@nestjs/common";
 import { Request, Response } from "express"; // eslint-disable-line import/no-extraneous-dependencies
 
 import { UserEntity } from "@/user/user.entity";
+import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.service";
 
 import { AuthSessionService } from "./auth-session.service";
 
@@ -14,6 +15,7 @@ export interface Session {
   sessionKey?: string;
   sessionId?: number;
   user?: UserEntity;
+  userCanSkipRecaptcha: () => Promise<boolean>;
 }
 
 export interface RequestWithSession extends Request {
@@ -22,7 +24,10 @@ export interface RequestWithSession extends Request {
 
 @Injectable()
 export class AuthMiddleware implements NestMiddleware {
-  constructor(private readonly authSessionService: AuthSessionService) {}
+  constructor(
+    private readonly authSessionService: AuthSessionService,
+    private readonly userPrivilegeService: UserPrivilegeService
+  ) {}
 
   async use(req: RequestWithSession, res: Response, next: () => void): Promise<void> {
     const authHeader = req.headers.authorization;
@@ -33,7 +38,8 @@ export class AuthMiddleware implements NestMiddleware {
         req.session = {
           sessionKey,
           sessionId,
-          user
+          user,
+          userCanSkipRecaptcha: () => this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.SkipRecaptcha)
         };
       }
     }

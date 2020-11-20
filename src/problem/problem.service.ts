@@ -79,6 +79,7 @@ export class ProblemService {
     private readonly problemTagMapRepository: Repository<ProblemTagMapEntity>,
     private readonly problemTypeFactoryService: ProblemTypeFactoryService,
     private readonly localizedContentService: LocalizedContentService,
+    @Inject(forwardRef(() => UserPrivilegeService))
     private readonly userPrivilegeService: UserPrivilegeService,
     @Inject(forwardRef(() => UserService))
     private readonly userService: UserService,

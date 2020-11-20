@@ -129,6 +129,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     private readonly auditService: AuditService,
     private readonly fileService: FileService,
     private readonly configService: ConfigService,
+    @Inject(forwardRef(() => UserPrivilegeService))
     private readonly userPrivilegeService: UserPrivilegeService
   ) {
     this.judgeQueueService.registerTaskType(JudgeTaskType.Submission, this);
