@@ -116,14 +116,14 @@ export class AuthController {
 
     const checkNonMigratedUserPassword = async (
       userMigrationInfo: UserMigrationInfoEntity
-    ): Promise<LoginResponseError> => {
+    ): Promise<LoginResponseDto> => {
       if (!(await this.userMigrationService.checkOldPassword(userMigrationInfo, request.password))) {
         await this.auditService.log(userMigrationInfo.userId, "auth.login_failed.wrong_password");
 
-        return LoginResponseError.WRONG_PASSWORD;
+        return { error: LoginResponseError.WRONG_PASSWORD };
       }
 
-      return LoginResponseError.USER_NOT_MIGRATED;
+      return { error: LoginResponseError.USER_NOT_MIGRATED, username: userMigrationInfo.oldUsername };
     };
 
     const user = request.username
@@ -133,10 +133,7 @@ export class AuthController {
       if (request.username) {
         // The username may be a non-migrated old user
         const userMigrationInfo = await this.userMigrationService.findUserMigrationInfoByOldUsername(request.username);
-        if (userMigrationInfo)
-          return {
-            error: await checkNonMigratedUserPassword(userMigrationInfo)
-          };
+        if (userMigrationInfo) return await checkNonMigratedUserPassword(userMigrationInfo);
       }
 
       return {
@@ -147,11 +144,7 @@ export class AuthController {
     const userAuth = await this.authService.findUserAuthByUserId(user.id);
 
     if (!this.authService.checkUserMigrated(userAuth))
-      return {
-        error: await checkNonMigratedUserPassword(
-          await this.userMigrationService.findUserMigrationInfoByUserId(user.id)
-        )
-      };
+      return await checkNonMigratedUserPassword(await this.userMigrationService.findUserMigrationInfoByUserId(user.id));
 
     if (!(await this.authService.checkPassword(userAuth, request.password))) {
       await this.auditService.log(user.id, "auth.login_failed.wrong_password");
