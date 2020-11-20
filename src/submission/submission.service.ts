@@ -484,7 +484,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
           .getRawOne<{ total: number }>()
           .then(result => result.total),
         // avgAndStdEveryUsersOccupiedTimeRecently
-        this.submissionRepository
+        this.connection
           .createQueryBuilder()
           .select("AVG(total)", "avg")
           .addSelect("STD(total)", "std")
