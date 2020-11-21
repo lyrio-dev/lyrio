@@ -102,14 +102,16 @@ function parseSamples(sample: string): [sample: ProblemSampleDataMember, text: s
       if (!result) return null;
       samples[iIn][0].inputData = result[0];
       samples[iIn][1] += `\n\n${result[1].trim()}`;
-    }
-
-    if (title.indexOf("出") !== -1 || title.toLowerCase().indexOf("output") !== -1) {
+    } else if (title.indexOf("出") !== -1 || title.toLowerCase().indexOf("output") !== -1) {
       ensureSampleIndex(++iOut);
       const result = extractSampleData(content);
       if (!result) return null;
       samples[iOut][0].outputData = result[0];
       samples[iOut][1] += `\n\n${result[1].trim()}`;
+    } else {
+      const i = iIn >= 0 ? iIn : 0;
+      ensureSampleIndex(i);
+      samples[i][1] += `\n\n${content}`;
     }
   }
 
