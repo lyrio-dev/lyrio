@@ -292,6 +292,17 @@ export function getLanguageAndOptions(
   };
 }
 
+function detectDefaultChecker(migratedTestDataFiles: ProblemFileEntity[]) {
+  for (const file of migratedTestDataFiles) {
+    if (file.filename.startsWith("spj_")) {
+      const { name } = path.parse(file.filename);
+      const [, language] = name.split("_");
+      return { language, fileName: file.filename };
+    }
+  }
+  return null;
+}
+
 async function parseJudgeInfo(
   oldProblem: OldDatabaseProblemEntity,
   typeService: ProblemTypeServiceInterface<ProblemJudgeInfo, SubmissionContent, SubmissionTestcaseResult>,
@@ -365,8 +376,38 @@ async function parseJudgeInfo(
     // nothing to do here
   }
 
-  if (oldConfig) {
-    try {
+  try {
+    const specialJudge = oldConfig?.specialJudge || detectDefaultChecker(migratedTestDataFiles);
+
+    if (oldProblem.type === "traditional" || oldProblem.type === "submit-answer") {
+      if (specialJudge) {
+        const useTestlib =
+          specialJudge.language.startsWith("cpp") &&
+          (await fs.promises.readFile(path.join(oldDataDirectory, specialJudge.fileName), "utf-8")).indexOf(
+            "testlib.h"
+          ) !== -1;
+
+        (judgeInfo as ProblemJudgeInfoSubmitAnswer).checker = {
+          type: "custom",
+          interface: useTestlib ? "testlib" : "legacy",
+          filename: specialJudge.fileName,
+          ...getLanguageAndOptions(specialJudge.language, `problem ${displayProblem(oldProblem)}`, true, useTestlib),
+          ...(oldProblem.type === "submit-answer"
+            ? {
+                timeLimit: 1000,
+                memoryLimit: 512
+              }
+            : {})
+        };
+      } else {
+        (judgeInfo as ProblemJudgeInfoSubmitAnswer).checker = {
+          type: "lines",
+          caseSensitive: true
+        };
+      }
+    }
+
+    if (oldConfig) {
       judgeInfo.subtasks = oldConfig.subtasks.map(subtask => ({
         scoringType: getScoringType(subtask.type),
         points: subtask.score,
@@ -385,39 +426,6 @@ async function parseJudgeInfo(
           return testcase as any;
         })
       }));
-
-      if (oldProblem.type === "traditional" || oldProblem.type === "submit-answer") {
-        if (oldConfig.specialJudge) {
-          const useTestlib =
-            oldConfig.specialJudge.language.startsWith("cpp") &&
-            (await fs.promises.readFile(path.join(oldDataDirectory, oldConfig.specialJudge.fileName), "utf-8")).indexOf(
-              "testlib.h"
-            ) !== -1;
-
-          (judgeInfo as ProblemJudgeInfoSubmitAnswer).checker = {
-            type: "custom",
-            interface: useTestlib ? "testlib" : "legacy",
-            filename: oldConfig.specialJudge.fileName,
-            ...getLanguageAndOptions(
-              oldConfig.specialJudge.language,
-              `problem ${displayProblem(oldProblem)}`,
-              true,
-              useTestlib
-            ),
-            ...(oldProblem.type === "submit-answer"
-              ? {
-                  timeLimit: 1000,
-                  memoryLimit: 512
-                }
-              : {})
-          };
-        } else {
-          (judgeInfo as ProblemJudgeInfoSubmitAnswer).checker = {
-            type: "lines",
-            caseSensitive: true
-          };
-        }
-      }
 
       if (oldProblem.type === "interaction") {
         if (!oldConfig.interactor) throw new Error("Interactor not configured in data.yml");
@@ -455,11 +463,10 @@ async function parseJudgeInfo(
           );
         }
       }
-
-      typeService.validateAndFilterJudgeInfo(judgeInfo, migratedTestDataFiles, true);
-    } catch (e) {
-      Logger.error(`Failed to parse config of problem ${displayProblem(oldProblem)}, ${e}`);
     }
+    typeService.validateAndFilterJudgeInfo(judgeInfo, migratedTestDataFiles, true);
+  } catch (e) {
+    Logger.error(`Failed to parse config of problem ${displayProblem(oldProblem)}, ${e}`);
   }
 
   return judgeInfo;
