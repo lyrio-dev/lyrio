@@ -282,7 +282,7 @@ export function getLanguageAndOptions(
 
   if (!onUnknownReturnDefault) return null;
 
-  Logger.warn(`Unspported language "${oldLanguageName}" while processing ${errorObjectDescription}. Default to C++.`);
+  Logger.warn(`Unsupported language "${oldLanguageName}" while processing ${errorObjectDescription}. Default to C++.`);
   return {
     language: CodeLanguage.Cpp,
     compileAndRunOptions: <CompileAndRunOptionsCpp>{
