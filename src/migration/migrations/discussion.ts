@@ -49,7 +49,7 @@ export const migrationDiscussion: MigrationInterface = {
       1000
     );
 
-    annoucementIds.sort((a, b) => a - b);
+    annoucementIds.sort((a, b) => b - a);
     if (annoucementIds.length > 0) {
       const homepageService = app.get(HomepageService);
       const settings = await homepageService.getSettings();
