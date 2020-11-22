@@ -21,7 +21,10 @@ export const migrationUser: MigrationInterface = {
       `user_${id}_${randomstring.generate({ length: 8, charset: "alphanumeric" })}`;
     const getAvatarInfo = (email: string) => {
       const i = email.toLowerCase().indexOf("@qq.com");
-      if (i !== -1) return `qq:${email.substr(0, i)}`;
+      if (i !== -1) {
+        const qq = email.substr(0, i);
+        if (Number.isSafeInteger(Number(qq))) return `qq:${qq}`;
+      }
       return "gravatar:";
     };
 
