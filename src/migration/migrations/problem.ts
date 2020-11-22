@@ -102,14 +102,16 @@ function parseSamples(sample: string): [sample: ProblemSampleDataMember, text: s
       if (!result) return null;
       samples[iIn][0].inputData = result[0];
       samples[iIn][1] += `\n\n${result[1].trim()}`;
-    }
-
-    if (title.indexOf("出") !== -1 || title.toLowerCase().indexOf("output") !== -1) {
+    } else if (title.indexOf("出") !== -1 || title.toLowerCase().indexOf("output") !== -1) {
       ensureSampleIndex(++iOut);
       const result = extractSampleData(content);
       if (!result) return null;
       samples[iOut][0].outputData = result[0];
       samples[iOut][1] += `\n\n${result[1].trim()}`;
+    } else {
+      const i = iIn >= 0 ? iIn : 0;
+      ensureSampleIndex(i);
+      samples[i][1] += `\n\n${content}`;
     }
   }
 
@@ -280,7 +282,7 @@ export function getLanguageAndOptions(
 
   if (!onUnknownReturnDefault) return null;
 
-  Logger.warn(`Unspported language "${oldLanguageName}" while processing ${errorObjectDescription}. Default to C++.`);
+  Logger.warn(`Unsupported language "${oldLanguageName}" while processing ${errorObjectDescription}. Default to C++.`);
   return {
     language: CodeLanguage.Cpp,
     compileAndRunOptions: <CompileAndRunOptionsCpp>{
@@ -290,6 +292,17 @@ export function getLanguageAndOptions(
       m: "64"
     }
   };
+}
+
+function detectDefaultChecker(migratedTestDataFiles: ProblemFileEntity[]) {
+  for (const file of migratedTestDataFiles) {
+    if (file.filename.startsWith("spj_")) {
+      const { name } = path.parse(file.filename);
+      const [, language] = name.split("_");
+      return { language, fileName: file.filename };
+    }
+  }
+  return null;
 }
 
 async function parseJudgeInfo(
@@ -365,8 +378,38 @@ async function parseJudgeInfo(
     // nothing to do here
   }
 
-  if (oldConfig) {
-    try {
+  try {
+    const specialJudge = oldConfig?.specialJudge || detectDefaultChecker(migratedTestDataFiles);
+
+    if (oldProblem.type === "traditional" || oldProblem.type === "submit-answer") {
+      if (specialJudge) {
+        const useTestlib =
+          specialJudge.language.startsWith("cpp") &&
+          (await fs.promises.readFile(path.join(oldDataDirectory, specialJudge.fileName), "utf-8")).indexOf(
+            "testlib.h"
+          ) !== -1;
+
+        (judgeInfo as ProblemJudgeInfoSubmitAnswer).checker = {
+          type: "custom",
+          interface: useTestlib ? "testlib" : "legacy",
+          filename: specialJudge.fileName,
+          ...getLanguageAndOptions(specialJudge.language, `problem ${displayProblem(oldProblem)}`, true, useTestlib),
+          ...(oldProblem.type === "submit-answer"
+            ? {
+                timeLimit: 1000,
+                memoryLimit: 512
+              }
+            : {})
+        };
+      } else {
+        (judgeInfo as ProblemJudgeInfoSubmitAnswer).checker = {
+          type: "lines",
+          caseSensitive: true
+        };
+      }
+    }
+
+    if (oldConfig) {
       judgeInfo.subtasks = oldConfig.subtasks.map(subtask => ({
         scoringType: getScoringType(subtask.type),
         points: subtask.score,
@@ -385,39 +428,6 @@ async function parseJudgeInfo(
           return testcase as any;
         })
       }));
-
-      if (oldProblem.type === "traditional" || oldProblem.type === "submit-answer") {
-        if (oldConfig.specialJudge) {
-          const useTestlib =
-            oldConfig.specialJudge.language.startsWith("cpp") &&
-            (await fs.promises.readFile(path.join(oldDataDirectory, oldConfig.specialJudge.fileName), "utf-8")).indexOf(
-              "testlib.h"
-            ) !== -1;
-
-          (judgeInfo as ProblemJudgeInfoSubmitAnswer).checker = {
-            type: "custom",
-            interface: useTestlib ? "testlib" : "legacy",
-            filename: oldConfig.specialJudge.fileName,
-            ...getLanguageAndOptions(
-              oldConfig.specialJudge.language,
-              `problem ${displayProblem(oldProblem)}`,
-              true,
-              useTestlib
-            ),
-            ...(oldProblem.type === "submit-answer"
-              ? {
-                  timeLimit: 1000,
-                  memoryLimit: 512
-                }
-              : {})
-          };
-        } else {
-          (judgeInfo as ProblemJudgeInfoSubmitAnswer).checker = {
-            type: "lines",
-            caseSensitive: true
-          };
-        }
-      }
 
       if (oldProblem.type === "interaction") {
         if (!oldConfig.interactor) throw new Error("Interactor not configured in data.yml");
@@ -455,11 +465,10 @@ async function parseJudgeInfo(
           );
         }
       }
-
-      typeService.validateAndFilterJudgeInfo(judgeInfo, migratedTestDataFiles, true);
-    } catch (e) {
-      Logger.error(`Failed to parse config of problem ${displayProblem(oldProblem)}, ${e}`);
     }
+    typeService.validateAndFilterJudgeInfo(judgeInfo, migratedTestDataFiles, true);
+  } catch (e) {
+    Logger.error(`Failed to parse config of problem ${displayProblem(oldProblem)}, ${e}`);
   }
 
   return judgeInfo;
