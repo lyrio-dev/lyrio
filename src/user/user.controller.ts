@@ -176,7 +176,7 @@ export class UserController {
         error: UpdateUserProfileResponseError.PERMISSION_DENIED
       };
 
-    if (request.username) {
+    if (request.username !== user.username) {
       if (!this.configService.config.preference.security.allowUserChangeUsername) {
         // Normal users are not allowed to change their usernames
         if (!hasPrivilege)
