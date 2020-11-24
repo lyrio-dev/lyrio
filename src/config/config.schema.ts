@@ -286,6 +286,20 @@ class PreferenceConfigPagination {
 
 // These config items will be sent to client
 class PreferenceConfigMisc {
+  @IsString()
+  @IsOptional()
+  @ApiProperty()
+  readonly appLogo: string;
+
+  @IsString()
+  @IsOptional()
+  @ApiProperty()
+  readonly googleAnalyticsId: string;
+
+  @IsString()
+  @ApiProperty()
+  readonly gravatarCdn: string;
+
   @IsBoolean()
   @ApiProperty()
   readonly redirectLegacyUrls: boolean;

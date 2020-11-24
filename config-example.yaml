@@ -66,6 +66,9 @@ preference:
     discussionRepliesHead: 20
     discussionRepliesMore: 20
   misc:
+    appLogo: default
+    googleAnalyticsId: null
+    gravatarCdn: https://gravatar.com
     redirectLegacyUrls: false
     legacyContestsEntryUrl: null
     homepageUserListOnMainView: true
