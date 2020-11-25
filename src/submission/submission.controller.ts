@@ -93,6 +93,12 @@ export class SubmissionController {
           error: SubmitResponseError.PERMISSION_DENIED
         };
 
+      const [, submittable] = await this.problemService.getProblemJudgeInfo(problem);
+      if (!submittable)
+        return {
+          error: SubmitResponseError.PERMISSION_DENIED
+        };
+
       const [validationError, fileErrorOrUploadRequest, submission] = await this.submissionService.createSubmission(
         currentUser,
         problem,

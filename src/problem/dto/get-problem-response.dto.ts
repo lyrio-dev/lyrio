@@ -81,6 +81,9 @@ export class GetProblemResponseDto {
   @ApiProperty()
   judgeInfo?: ProblemJudgeInfo;
 
+  @ApiProperty()
+  submittable?: boolean;
+
   @ApiProperty({ type: ProblemFileDto, isArray: true })
   testData?: ProblemFileDto[];
 

@@ -689,7 +689,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
       const submissionDetail = await this.getSubmissionDetail(submission);
 
       const problem = await this.problemService.findProblemById(submission.problemId);
-      const preprocessedJudgeInfo = await this.problemService.getProblemPreprocessedJudgeInfo(problem);
+      const [preprocessedJudgeInfo] = await this.problemService.getProblemPreprocessedJudgeInfo(problem);
       const testData = await this.problemService.getProblemFiles(problem, ProblemFileType.TestData);
 
       const problemTypeService = this.problemTypeFactoryService.type(problem.type);

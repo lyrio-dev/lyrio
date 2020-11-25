@@ -13,4 +13,7 @@ export class ProblemJudgeInfoEntity {
 
   @Column({ type: "json" })
   judgeInfo: unknown;
+
+  @Column({ type: "boolean", default: true })
+  submittable: boolean;
 }

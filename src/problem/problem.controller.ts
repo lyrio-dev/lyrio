@@ -361,7 +361,7 @@ export class ProblemController {
     }
 
     if (request.judgeInfo) {
-      result.judgeInfo = request.judgeInfoToBePreprocessed
+      [result.judgeInfo, result.submittable] = request.judgeInfoToBePreprocessed
         ? await this.problemService.getProblemPreprocessedJudgeInfo(problem)
         : await this.problemService.getProblemJudgeInfo(problem);
     }
@@ -777,9 +777,14 @@ export class ProblemController {
         error: UpdateProblemJudgeInfoResponseError.PERMISSION_DENIED
       };
 
-    const oldJudgeInfo = await this.problemService.getProblemJudgeInfo(problem);
+    const old = await this.problemService.getProblemJudgeInfo(problem);
 
-    const judgeInfoError = await this.problemService.updateProblemJudgeInfo(problem, request.judgeInfo, hasPrivilege);
+    const judgeInfoError = await this.problemService.updateProblemJudgeInfo(
+      problem,
+      request.judgeInfo,
+      request.submittable,
+      hasPrivilege
+    );
     if (judgeInfoError)
       return {
         error: UpdateProblemJudgeInfoResponseError.INVALID_JUDGE_INFO,
@@ -787,8 +792,8 @@ export class ProblemController {
       };
 
     await this.auditService.log("problem.update_judge_info", AuditLogObjectType.Problem, problem.id, {
-      oldJudgeInfo,
-      newJudgeInfo: request.judgeInfo
+      old,
+      new: [request.judgeInfo, request.submittable]
     });
 
     return {};
@@ -1045,7 +1050,7 @@ export class ProblemController {
           };
 
         const oldType = problem.type;
-        const oldJudgeInfo = await this.problemService.getProblemJudgeInfo(problem);
+        const [oldJudgeInfo] = await this.problemService.getProblemJudgeInfo(problem);
 
         if (!(await this.problemService.changeProblemType(problem, request.type)))
           return {

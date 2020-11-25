@@ -58,7 +58,7 @@ export enum ProblemPermissionLevel {
 /**
  * See `ProblemService.getPreprocessedJudgeInfo()`
  */
-const REDIS_KEY_PROBLEM_PREPROCESSED_JUDGE_INFO = "problem-preprocessed-judge-info:%d";
+const REDIS_KEY_PROBLEM_PREPROCESSED_JUDGE_INFO = "problem-preprocessed-judge-info-and-submittable:%d";
 
 @Injectable()
 export class ProblemService {
@@ -478,6 +478,7 @@ export class ProblemService {
   async updateProblemJudgeInfo(
     problem: ProblemEntity,
     judgeInfo: ProblemJudgeInfo,
+    submittable: boolean,
     ignoreLimitsOnValidation: boolean
   ): Promise<string[]> {
     const testData = await this.getProblemFiles(problem, ProblemFileType.TestData);
@@ -495,6 +496,7 @@ export class ProblemService {
     });
 
     problemJudgeInfo.judgeInfo = judgeInfo;
+    problemJudgeInfo.submittable = submittable;
     await this.problemJudgeInfoRepository.save(problemJudgeInfo);
 
     await this.redisService.cacheDelete(REDIS_KEY_PROBLEM_PREPROCESSED_JUDGE_INFO.format(problem.id));
@@ -530,9 +532,9 @@ export class ProblemService {
     return problemSample.data;
   }
 
-  async getProblemJudgeInfo(problem: ProblemEntity): Promise<ProblemJudgeInfo> {
+  async getProblemJudgeInfo(problem: ProblemEntity): Promise<[judgeInfo: ProblemJudgeInfo, submittable: boolean]> {
     const problemJudgeInfo = await this.problemJudgeInfoRepository.findOne({ problemId: problem.id });
-    return problemJudgeInfo.judgeInfo;
+    return [problemJudgeInfo.judgeInfo, problemJudgeInfo.submittable];
   }
 
   /**
@@ -541,20 +543,22 @@ export class ProblemService {
    *
    * The cache gets cleared when the testdata files or judge info changed.
    */
-  async getProblemPreprocessedJudgeInfo(problem: ProblemEntity): Promise<ProblemJudgeInfo> {
+  async getProblemPreprocessedJudgeInfo(
+    problem: ProblemEntity
+  ): Promise<[judgeInfo: ProblemJudgeInfo, submittable: boolean]> {
     const key = REDIS_KEY_PROBLEM_PREPROCESSED_JUDGE_INFO.format(problem.id);
-    const cachedResult: ProblemJudgeInfo = JSON.parse(await this.redisService.cacheGet(key));
+    const cachedResult: [judgeInfo: ProblemJudgeInfo, submittable: boolean] = JSON.parse(
+      await this.redisService.cacheGet(key)
+    );
     if (cachedResult) return cachedResult;
 
-    const result = this.problemTypeFactoryService
+    const [judgeInfo, submittable] = await this.getProblemJudgeInfo(problem);
+    const preprocessed = this.problemTypeFactoryService
       .type(problem.type)
-      .preprocessJudgeInfo(
-        await this.getProblemJudgeInfo(problem),
-        await this.getProblemFiles(problem, ProblemFileType.TestData)
-      );
-    await this.redisService.cacheSet(key, JSON.stringify(result));
+      .preprocessJudgeInfo(judgeInfo, await this.getProblemFiles(problem, ProblemFileType.TestData));
+    await this.redisService.cacheSet(key, JSON.stringify([preprocessed, submittable]));
 
-    return result;
+    return [preprocessed, submittable];
   }
 
   /**
