@@ -23,6 +23,7 @@ export class SubmissionEntity {
   // An uuid to identify the judge task of the submission
   // (different for each rejudge, cleared on finish judging)
   @Column({ type: "varchar", nullable: true, length: 36 })
+  @Index()
   taskId: string;
 
   // By default it equals to the problem's isPublic
