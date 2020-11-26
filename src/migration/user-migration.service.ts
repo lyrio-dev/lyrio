@@ -60,9 +60,21 @@ export class UserMigrationService {
     return user;
   }
 
-  async checkOldPassword(userMigrationInfo: UserMigrationInfoEntity, oldPassword: string): Promise<boolean> {
+  private hashOldPassword(oldPassword: string) {
     // The magic salt of SYZOJ 2 -- "syzoj2_xxx"
-    const oldPasswordHash = createHash("md5").update(`${oldPassword}syzoj2_xxx`).digest("hex").toLowerCase();
+    return createHash("md5").update(`${oldPassword}syzoj2_xxx`).digest("hex").toLowerCase();
+  }
+
+  async checkOldPassword(userMigrationInfo: UserMigrationInfoEntity, oldPassword: string): Promise<boolean> {
+    const oldPasswordHash = this.hashOldPassword(oldPassword);
     return await bcrypt.compare(oldPasswordHash, userMigrationInfo.oldPasswordHashBcrypt);
+  }
+
+  // If an user has NOT been migrated, but we need to change its password
+  // We must change its "password in old system" so that the user can migrate with its "new password"
+  async changeOldPassword(userMigrationInfo: UserMigrationInfoEntity, oldPassword: string): Promise<void> {
+    const oldPasswordHash = this.hashOldPassword(oldPassword);
+    userMigrationInfo.oldPasswordHashBcrypt = await bcrypt.hash(oldPasswordHash, 10);
+    await this.userMigrationInfoRepository.save(userMigrationInfo);
   }
 }

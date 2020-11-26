@@ -7,6 +7,7 @@ import { ConfigService } from "@/config/config.service";
 import { SubmissionService } from "@/submission/submission.service";
 import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
 import { AuthIpLocationService } from "@/auth/auth-ip-location.service";
+import { UserMigrationService } from "@/migration/user-migration.service";
 
 import { UserEntity } from "./user.entity";
 import { UserService } from "./user.service";
@@ -65,7 +66,8 @@ export class UserController {
     @Inject(forwardRef(() => SubmissionService))
     private readonly submissionService: SubmissionService,
     private readonly auditService: AuditService,
-    private readonly authIpLocationService: AuthIpLocationService
+    private readonly authIpLocationService: AuthIpLocationService,
+    private readonly userMigrationService: UserMigrationService
   ) {}
 
   @Get("searchUser")
@@ -571,7 +573,12 @@ export class UserController {
         };
     }
 
-    await this.authService.changePassword(userAuth, request.password);
+    if (this.authService.checkUserMigrated(userAuth)) await this.authService.changePassword(userAuth, request.password);
+    else {
+      // If the user has NOT been migrated, change its "password in old system"
+      const userMigrationInfo = await this.userMigrationService.findUserMigrationInfoByUserId(user.id);
+      await this.userMigrationService.changeOldPassword(userMigrationInfo, request.password);
+    }
 
     if (request.userId === user.id) {
       await this.auditService.log("auth.change_password");

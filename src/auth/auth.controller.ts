@@ -244,12 +244,6 @@ export class AuthController {
           error: SendEmailVerificationCodeResponseError.NO_SUCH_USER
         };
 
-      const userAuth = await this.authService.findUserAuthByUserId(user.id);
-      if (!this.authService.checkUserMigrated(userAuth))
-        return {
-          error: SendEmailVerificationCodeResponseError.USER_NOT_MIGRATED
-        };
-
       // Audit logging
       await this.auditService.log(user.id, "auth.request_reset_password");
     }
@@ -359,7 +353,13 @@ export class AuthController {
         error: ResetPasswordResponseError.INVALID_EMAIL_VERIFICATION_CODE
       };
 
-    await this.authService.changePassword(userAuth, request.newPassword);
+    if (this.authService.checkUserMigrated(userAuth))
+      await this.authService.changePassword(userAuth, request.newPassword);
+    else {
+      // If the user has NOT been migrated, change its "password in old system"
+      const userMigrationInfo = await this.userMigrationService.findUserMigrationInfoByUserId(user.id);
+      await this.userMigrationService.changeOldPassword(userMigrationInfo, request.newPassword);
+    }
     await this.authEmailVerificationCodeService.revoke(request.email, request.emailVerificationCode);
 
     // Revoke ALL previous sessions

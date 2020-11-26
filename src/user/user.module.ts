@@ -5,6 +5,7 @@ import { AuthModule } from "@/auth/auth.module";
 import { SubmissionModule } from "@/submission/submission.module";
 import { RedisModule } from "@/redis/redis.module";
 import { AuditModule } from "@/audit/audit.module";
+import { MigrationModule } from "@/migration/migration.module";
 
 import { UserEntity } from "./user.entity";
 import { UserPrivilegeEntity } from "./user-privilege.entity";
@@ -23,7 +24,8 @@ import { UserController } from "./user.controller";
     forwardRef(() => AuthModule),
     forwardRef(() => SubmissionModule),
     forwardRef(() => RedisModule),
-    forwardRef(() => AuditModule)
+    forwardRef(() => AuditModule),
+    forwardRef(() => MigrationModule)
   ],
   providers: [UserService, UserPrivilegeService],
   controllers: [UserController],
