@@ -456,14 +456,16 @@ export class ProblemService {
           problem.id,
           LocalizedContentType.ProblemTitle,
           localizedContent.locale,
-          localizedContent.title
+          localizedContent.title,
+          transactionalEntityManager
         );
         // eslint-disable-next-line no-await-in-loop
         await this.localizedContentService.createOrUpdate(
           problem.id,
           LocalizedContentType.ProblemContent,
           localizedContent.locale,
-          JSON.stringify(localizedContent.contentSections)
+          JSON.stringify(localizedContent.contentSections),
+          transactionalEntityManager
         );
       }
 
