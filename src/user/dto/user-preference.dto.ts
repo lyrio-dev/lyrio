@@ -26,6 +26,10 @@ class UserPreferenceLocaleDto {
   @IsEnum(Locale)
   @IsOptional()
   content?: Locale;
+
+  @IsBoolean()
+  @IsOptional()
+  hideUnavailableMessage?: boolean;
 }
 
 class UserPreferenceFontDto {

@@ -4,6 +4,7 @@ export interface UserPreference {
   locale?: {
     system?: Locale;
     content?: Locale;
+    hideUnavailableMessage?: boolean;
   };
   font?: {
     contentFontFace?: string;
