@@ -413,17 +413,23 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
       .startOf("day")
       .subtract(days - 1, "day");
 
+    const localTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const getConvertTimezoneExpression = (valueToBeConverted: string) =>
+      timezone === localTimezone ? valueToBeConverted : `CONVERT_TZ(${valueToBeConverted}, :localTimezone, :timezone)`;
     const queryResult: { submitDate: Date; count: string }[] = await this.submissionRepository
       .createQueryBuilder()
-      .select('DATE(CONVERT_TZ(submitTime, "UTC", :timezone))', "submitDate")
+      .select(`DATE(${getConvertTimezoneExpression("submitTime")})`, "submitDate")
       .addSelect("COUNT(*)", "count")
       .where("submitterId = :submitterId", { submitterId: user.id })
-      .andWhere('submitTime >= DATE_SUB(CONVERT_TZ(:now, "UTC", :timezone), INTERVAL :offsetDays DAY)', {
+      .andWhere(`submitTime >= DATE_SUB(${getConvertTimezoneExpression(":now")}, INTERVAL :offsetDays DAY)`, {
         now,
         offsetDays: days - 1
       })
       .groupBy("submitDate")
-      .setParameter("timezone", timezone)
+      .setParameters({
+        localTimezone,
+        timezone
+      })
       .getRawMany();
 
     // The database doesn't support timezone
@@ -431,7 +437,11 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
 
     const map = new Map(
       queryResult.map(row => [
-        moment.tz(row.submitDate.toISOString().substr(0, 10), timezone).valueOf(),
+        // Get the timestemp of result datetime
+        // 1. Get the date string of result datetime
+        // 2. Get the moment() object in requested timezone of the date
+        // 3. Get its timestamp
+        moment.tz(moment(row.submitDate).format("YYYY-MM-DD"), timezone).valueOf(),
         Number(row.count)
       ])
     );
