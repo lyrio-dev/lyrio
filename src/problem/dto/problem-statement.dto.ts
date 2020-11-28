@@ -12,19 +12,19 @@ import { ProblemContentSectionDto } from "./problem-content-section.dto";
 export class ProblemLocalizedContentDto {
   @ApiProperty()
   @IsEnum(Locale)
-  readonly locale: Locale;
+  locale: Locale;
 
   @ApiProperty()
   @IsString()
   @Length(0, 120)
-  readonly title: string;
+  title: string;
 
   @ApiProperty({ type: ProblemContentSectionDto, isArray: true })
   @ValidateNested({ each: true })
   @Type(() => ProblemContentSectionDto)
   @IsArray()
   @ArrayMaxSize(20)
-  readonly contentSections: ProblemContentSectionDto[];
+  contentSections: ProblemContentSectionDto[];
 }
 
 export class ProblemStatementDto {
@@ -40,17 +40,17 @@ export class ProblemStatementDto {
   )
   @ArrayNotEmpty()
   @IsArray()
-  readonly localizedContents: ProblemLocalizedContentDto[];
+  localizedContents: ProblemLocalizedContentDto[];
 
   @ApiProperty({ type: ProblemSampleDataMemberDto, isArray: true })
   @ValidateNested({ each: true })
   @Type(() => ProblemSampleDataMemberDto)
   @IsArray()
-  readonly samples: ProblemSampleDataMemberDto[];
+  samples: ProblemSampleDataMemberDto[];
 
   @ApiProperty({ type: [Number] })
   @IsInt({ each: true })
   @IsArray()
   @ArrayMaxSize(20)
-  readonly problemTagIds: number[];
+  problemTagIds: number[];
 }

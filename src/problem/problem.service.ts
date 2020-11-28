@@ -517,11 +517,10 @@ export class ProblemService {
   }
 
   async getProblemAllLocalizedContents(problem: ProblemEntity): Promise<ProblemLocalizedContentDto[]> {
-    const titles = await this.localizedContentService.getOfAllLocales(problem.id, LocalizedContentType.ProblemTitle);
-    const contents = await this.localizedContentService.getOfAllLocales(
-      problem.id,
-      LocalizedContentType.ProblemContent
-    );
+    const [titles, contents] = await Promise.all([
+      this.localizedContentService.getOfAllLocales(problem.id, LocalizedContentType.ProblemTitle),
+      this.localizedContentService.getOfAllLocales(problem.id, LocalizedContentType.ProblemContent)
+    ]);
     return Object.keys(titles).map((locale: Locale) => ({
       locale,
       title: titles[locale],

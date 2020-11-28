@@ -177,12 +177,10 @@ export class SubmissionController {
     );
 
     const submissionMetas: SubmissionMetaDto[] = new Array(queryResult.result.length);
-    const problems = await this.problemService.findProblemsByExistingIds(
-      queryResult.result.map(submission => submission.problemId)
-    );
-    const submitters = await this.userService.findUsersByExistingIds(
-      queryResult.result.map(submission => submission.submitterId)
-    );
+    const [problems, submitters] = await Promise.all([
+      this.problemService.findProblemsByExistingIds(queryResult.result.map(submission => submission.problemId)),
+      this.userService.findUsersByExistingIds(queryResult.result.map(submission => submission.submitterId))
+    ]);
     const pendingSubmissionIds: number[] = [];
     await Promise.all(
       queryResult.result.map(async (_, i) => {
@@ -248,20 +246,67 @@ export class SubmissionController {
         error: GetSubmissionDetailResponseError.NO_SUCH_SUBMISSION
       };
 
-    const problem = await this.problemService.findProblemById(submission.problemId);
-    if (!(await this.submissionService.userHasPermission(currentUser, submission, SubmissionPermissionType.View)))
+    const [problem, hasPrivilege] = await Promise.all([
+      this.problemService.findProblemById(submission.problemId),
+      this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.ManageProblem)
+    ]);
+
+    if (
+      !(await this.submissionService.userHasPermission(
+        currentUser,
+        submission,
+        SubmissionPermissionType.View,
+        problem,
+        hasPrivilege
+      ))
+    )
       return {
         error: GetSubmissionDetailResponseError.PERMISSION_DENIED
       };
-    const submitter = await this.userService.findUserById(submission.submitterId);
-    const submissionDetail = await this.submissionService.getSubmissionDetail(submission);
-
     const titleLocale = problem.locales.includes(request.locale) ? request.locale : problem.locales[0];
-
     const pending = submission.status === SubmissionStatus.Pending;
-    const progress = !pending
-      ? submissionDetail.result
-      : await this.submissionProgressService.getPendingSubmissionProgress(submission.id);
+
+    const [
+      submitter,
+      submissionDetail,
+      progress,
+      permissionRejudge,
+      permissionCancel,
+      permissionSetPublic,
+      permissionDelete
+    ] = await Promise.all([
+      this.userService.findUserById(submission.submitterId),
+      this.submissionService.getSubmissionDetail(submission),
+      pending && this.submissionProgressService.getPendingSubmissionProgress(submission.id),
+      this.submissionService.userHasPermission(
+        currentUser,
+        submission,
+        SubmissionPermissionType.Rejudge,
+        problem,
+        hasPrivilege
+      ),
+      this.submissionService.userHasPermission(
+        currentUser,
+        submission,
+        SubmissionPermissionType.Cancel,
+        problem,
+        hasPrivilege
+      ),
+      this.submissionService.userHasPermission(
+        currentUser,
+        submission,
+        SubmissionPermissionType.ManagePublicness,
+        problem,
+        hasPrivilege
+      ),
+      this.submissionService.userHasPermission(
+        currentUser,
+        submission,
+        SubmissionPermissionType.Delete,
+        problem,
+        hasPrivilege
+      )
+    ]);
 
     return {
       meta: {
@@ -279,33 +324,17 @@ export class SubmissionController {
         memoryUsed: submission.memoryUsed
       },
       content: submissionDetail.content,
-      progress,
+      progress: progress || submissionDetail.result,
       progressSubscriptionKey: !pending
         ? null
         : this.submissionProgressGateway.encodeSubscription({
             type: SubmissionProgressSubscriptionType.Detail,
             submissionIds: [submission.id]
           }),
-      permissionRejudge: await this.submissionService.userHasPermission(
-        currentUser,
-        submission,
-        SubmissionPermissionType.Rejudge
-      ),
-      permissionCancel: await this.submissionService.userHasPermission(
-        currentUser,
-        submission,
-        SubmissionPermissionType.Cancel
-      ),
-      permissionSetPublic: await this.submissionService.userHasPermission(
-        currentUser,
-        submission,
-        SubmissionPermissionType.ManagePublicness
-      ),
-      permissionDelete: await this.submissionService.userHasPermission(
-        currentUser,
-        submission,
-        SubmissionPermissionType.Delete
-      )
+      permissionRejudge,
+      permissionCancel,
+      permissionSetPublic,
+      permissionDelete
     };
   }
 
@@ -374,19 +403,24 @@ export class SubmissionController {
         error: QuerySubmissionStatisticsResponseError.PERMISSION_DENIED
       };
 
-    const [submissions, count] = await this.submissionStatisticsService.querySubmissionStatisticsAndCount(
-      problem,
-      request.statisticsType,
-      request.skipCount,
-      request.takeCount
-    );
+    const titleLocale = problem.locales.includes(request.locale) ? request.locale : problem.locales[0];
+
+    const [[submissions, count], scores, problemTitle] = await Promise.all([
+      this.submissionStatisticsService.querySubmissionStatisticsAndCount(
+        problem,
+        request.statisticsType,
+        request.skipCount,
+        request.takeCount
+      ),
+      this.submissionStatisticsService.querySubmissionScoreStatistics(problem),
+      this.problemService.getProblemLocalizedTitle(problem, titleLocale)
+    ]);
 
     const submissionMetas: SubmissionMetaDto[] = new Array(submissions.length);
-    const titleLocale = problem.locales.includes(request.locale) ? request.locale : problem.locales[0];
-    const problemTitle = await this.problemService.getProblemLocalizedTitle(problem, titleLocale);
     const submitters = await this.userService.findUsersByExistingIds(
       submissions.map(submission => submission.submitterId)
     );
+
     await Promise.all(
       submissions.map(async (submission, i) => {
         submissionMetas[i] = {
@@ -408,7 +442,7 @@ export class SubmissionController {
 
     return {
       submissions: submissionMetas,
-      scores: await this.submissionStatisticsService.querySubmissionScoreStatistics(problem),
+      scores,
       count
     };
   }

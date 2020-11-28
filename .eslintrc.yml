@@ -116,3 +116,5 @@ rules:
   guard-for-in: error       # Disallow for...in
   no-with: error            # Disallow with
   no-labels: error          # Disallow labels
+
+  no-return-assign: [error, except-parens]

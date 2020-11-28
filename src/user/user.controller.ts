@@ -285,15 +285,15 @@ export class UserController {
         error: GetUserDetailResponseError.NO_SUCH_USER
       };
 
-    const userInformation = await this.userService.findUserInformationByUserId(user.id);
-
     const days = 53 * 7 + 6;
-    const submissionCountPerDay = await this.submissionService.getUserRecentlySubmissionCountPerDay(
-      user,
-      days,
-      request.timezone,
-      request.now
-    );
+    const [userInformation, submissionCountPerDay, rank, hasPrivilege] = await Promise.all([
+      this.userService.findUserInformationByUserId(user.id),
+      this.submissionService.getUserRecentlySubmissionCountPerDay(user, days, request.timezone, request.now),
+      this.userService.getUserRank(user),
+      currentUser &&
+        (currentUser.id === user.id ||
+          this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.ManageUser))
+    ]);
 
     return {
       meta: await this.userService.getUserMeta(user, currentUser),
@@ -306,11 +306,8 @@ export class UserController {
         github: userInformation.github
       },
       submissionCountPerDay,
-      rank: await this.userService.getUserRank(user),
-      hasPrivilege:
-        currentUser &&
-        (currentUser.id === user.id ||
-          (await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.ManageUser)))
+      rank,
+      hasPrivilege
     };
   }
 

@@ -154,17 +154,14 @@ export class ProblemController {
       }
     }
 
-    const acceptedSubmissions =
+    const [acceptedSubmissions, nonAcceptedSubmissions] = await Promise.all([
       !request.titleOnly &&
-      currentUser &&
-      (await this.submissionService.getUserLatestSubmissionByProblems(currentUser, problems, true));
-    const nonAcceptedSubmissions =
+        currentUser &&
+        this.submissionService.getUserLatestSubmissionByProblems(currentUser, problems, true),
       !request.titleOnly &&
-      currentUser &&
-      (await this.submissionService.getUserLatestSubmissionByProblems(
-        currentUser,
-        problems.filter(problem => !acceptedSubmissions.has(problem.id))
-      ));
+        currentUser &&
+        this.submissionService.getUserLatestSubmissionByProblems(currentUser, problems)
+    ]);
 
     return {
       count,
@@ -325,106 +322,159 @@ export class ProblemController {
       meta: await this.problemService.getProblemMeta(problem, request.statistics)
     };
 
+    const promises: Promise<unknown>[] = [];
+
     if (request.owner) {
-      const owner = await this.userService.findUserById(problem.ownerId);
-      result.owner = await this.userService.getUserMeta(owner, currentUser);
+      promises.push(
+        this.userService
+          .findUserById(problem.ownerId)
+          .then(owner => this.userService.getUserMeta(owner, currentUser))
+          .then(owner => (result.owner = owner))
+      );
     }
 
     if (request.localizedContentsOfLocale != null) {
       const resultLocale = problem.locales.includes(request.localizedContentsOfLocale)
         ? request.localizedContentsOfLocale
         : problem.locales[0];
-      const title = await this.problemService.getProblemLocalizedTitle(problem, resultLocale);
-      const contentSections = request.localizedContentsTitleOnly
-        ? null
-        : await this.problemService.getProblemLocalizedContent(problem, resultLocale);
+
       result.localizedContentsOfLocale = {
         locale: resultLocale,
-        title,
-        contentSections
+        title: null,
+        contentSections: null
       };
+
+      promises.push(
+        this.problemService
+          .getProblemLocalizedTitle(problem, resultLocale)
+          .then(title => (result.localizedContentsOfLocale.title = title))
+      );
+      if (!request.localizedContentsTitleOnly) {
+        promises.push(
+          this.problemService
+            .getProblemLocalizedContent(problem, resultLocale)
+            .then(contentSections => (result.localizedContentsOfLocale.contentSections = contentSections))
+        );
+      }
     }
 
     if (request.localizedContentsOfAllLocales) {
-      result.localizedContentsOfAllLocales = await this.problemService.getProblemAllLocalizedContents(problem);
+      promises.push(
+        this.problemService
+          .getProblemAllLocalizedContents(problem)
+          .then(localizedContentsOfAllLocales => (result.localizedContentsOfAllLocales = localizedContentsOfAllLocales))
+      );
     }
 
     if (request.tagsOfLocale) {
-      const problemTags = await this.problemService.getProblemTagsByProblem(problem);
-      result.tagsOfLocale = await Promise.all(
-        problemTags.map(problemTag => this.problemService.getProblemTagLocalized(problemTag, request.tagsOfLocale))
+      promises.push(
+        this.problemService
+          .getProblemTagsByProblem(problem)
+          .then(problemTags =>
+            Promise.all(
+              problemTags.map(problemTag =>
+                this.problemService.getProblemTagLocalized(problemTag, request.tagsOfLocale)
+              )
+            )
+          )
+          .then(tagsOfLocale => (result.tagsOfLocale = tagsOfLocale))
       );
     }
 
     if (request.samples) {
-      result.samples = await this.problemService.getProblemSamples(problem);
+      promises.push(this.problemService.getProblemSamples(problem).then(samples => (result.samples = samples)));
     }
 
     if (request.judgeInfo) {
-      [result.judgeInfo, result.submittable] = request.judgeInfoToBePreprocessed
-        ? await this.problemService.getProblemPreprocessedJudgeInfo(problem)
-        : await this.problemService.getProblemJudgeInfo(problem);
+      promises.push(
+        (request.judgeInfoToBePreprocessed
+          ? this.problemService.getProblemPreprocessedJudgeInfo(problem)
+          : this.problemService.getProblemJudgeInfo(problem)
+        ).then(tuple => ([result.judgeInfo, result.submittable] = tuple))
+      );
     }
 
     if (request.testData) {
-      result.testData = await this.problemService.listProblemFiles(problem, ProblemFileType.TestData, true);
+      promises.push(
+        this.problemService
+          .listProblemFiles(problem, ProblemFileType.TestData, true)
+          .then(testData => (result.testData = testData))
+      );
     }
 
     if (request.additionalFiles) {
-      result.additionalFiles = await this.problemService.listProblemFiles(
-        problem,
-        ProblemFileType.AdditionalFile,
-        true
+      promises.push(
+        this.problemService
+          .listProblemFiles(problem, ProblemFileType.AdditionalFile, true)
+          .then(additionalFiles => (result.additionalFiles = additionalFiles))
       );
     }
 
     if (request.discussionCount)
-      result.discussionCount = await this.discussionService.getDiscussionCountOfProblem(problem);
+      promises.push(
+        this.discussionService
+          .getDiscussionCountOfProblem(problem)
+          .then(discussionCount => (result.discussionCount = discussionCount))
+      );
 
     if (request.permissionOfCurrentUser) {
-      result.permissionOfCurrentUser = await this.problemService.getUserPermissions(currentUser, problem);
+      promises.push(
+        this.problemService
+          .getUserPermissions(currentUser, problem)
+          .then(permissions => (result.permissionOfCurrentUser = permissions))
+      );
     }
 
     if (request.permissions) {
-      const [userPermissions, groupPermissions] = await this.problemService.getProblemPermissions(problem);
+      promises.push(
+        (async () => {
+          const [userPermissions, groupPermissions] = await this.problemService.getProblemPermissions(problem);
 
-      result.permissions = {
-        userPermissions: await Promise.all(
-          userPermissions.map(async ([user, permissionLevel]) => ({
-            user: await this.userService.getUserMeta(user, currentUser),
-            permissionLevel
-          }))
-        ),
-        groupPermissions: await Promise.all(
-          groupPermissions.map(async ([group, permissionLevel]) => ({
-            group: await this.groupService.getGroupMeta(group),
-            permissionLevel
-          }))
-        )
-      };
+          result.permissions = {
+            userPermissions: await Promise.all(
+              userPermissions.map(async ([user, permissionLevel]) => ({
+                user: await this.userService.getUserMeta(user, currentUser),
+                permissionLevel
+              }))
+            ),
+            groupPermissions: await Promise.all(
+              groupPermissions.map(async ([group, permissionLevel]) => ({
+                group: await this.groupService.getGroupMeta(group),
+                permissionLevel
+              }))
+            )
+          };
+        })()
+      );
     }
 
     if (request.lastSubmissionAndLastAcceptedSubmission) {
-      if (currentUser) {
-        const lastSubmission = (
-          await this.submissionService.getUserLatestSubmissionByProblems(currentUser, [problem], false)
-        ).get(problem.id);
-        const lastAcceptedSubmission =
-          lastSubmission && lastSubmission.status === SubmissionStatus.Accepted
-            ? lastSubmission
-            : (await this.submissionService.getUserLatestSubmissionByProblems(currentUser, [problem], true)).get(
-                problem.id
-              );
+      promises.push(
+        (async () => {
+          if (currentUser) {
+            const lastSubmission = (
+              await this.submissionService.getUserLatestSubmissionByProblems(currentUser, [problem], false)
+            ).get(problem.id);
+            const lastAcceptedSubmission =
+              lastSubmission && lastSubmission.status === SubmissionStatus.Accepted
+                ? lastSubmission
+                : (await this.submissionService.getUserLatestSubmissionByProblems(currentUser, [problem], true)).get(
+                    problem.id
+                  );
 
-        result.lastSubmission = {
-          lastSubmission: lastSubmission && (await this.submissionService.getSubmissionBasicMeta(lastSubmission)),
-          lastAcceptedSubmission:
-            lastAcceptedSubmission && (await this.submissionService.getSubmissionBasicMeta(lastAcceptedSubmission)),
-          lastSubmissionContent:
-            lastSubmission && (await this.submissionService.getSubmissionDetail(lastSubmission)).content
-        };
-      } else result.lastSubmission = {};
+            result.lastSubmission = {
+              lastSubmission: lastSubmission && (await this.submissionService.getSubmissionBasicMeta(lastSubmission)),
+              lastAcceptedSubmission:
+                lastAcceptedSubmission && (await this.submissionService.getSubmissionBasicMeta(lastAcceptedSubmission)),
+              lastSubmissionContent:
+                lastSubmission && (await this.submissionService.getSubmissionDetail(lastSubmission)).content
+            };
+          } else result.lastSubmission = {};
+        })()
+      );
     }
+
+    await Promise.all(promises);
 
     return result;
   }

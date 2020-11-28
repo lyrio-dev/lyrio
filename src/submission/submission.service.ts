@@ -163,7 +163,9 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
   async userHasPermission(
     user: UserEntity,
     submission: SubmissionEntity,
-    type: SubmissionPermissionType
+    type: SubmissionPermissionType,
+    problem?: ProblemEntity,
+    hasPrivilege?: boolean
   ): Promise<boolean> {
     switch (type) {
       // Everyone can read a public submission
@@ -174,8 +176,9 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
         if (user.id === submission.submitterId) return true;
         return await this.problemService.userHasPermission(
           user,
-          await this.problemService.findProblemById(submission.problemId),
-          ProblemPermissionType.Modify
+          problem ?? (await this.problemService.findProblemById(submission.problemId)),
+          ProblemPermissionType.Modify,
+          hasPrivilege
         );
 
       // Submitter and those who has the Modify permission of the submission's problem can Cancel a submission
@@ -184,16 +187,18 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
         if (user.id === submission.submitterId) return true;
         return await this.problemService.userHasPermission(
           user,
-          await this.problemService.findProblemById(submission.problemId),
-          ProblemPermissionType.Modify
+          problem ?? (await this.problemService.findProblemById(submission.problemId)),
+          ProblemPermissionType.Modify,
+          hasPrivilege
         );
 
       // Those who has the Modify permission of the submission's problem can Rejudge a submission
       case SubmissionPermissionType.Rejudge:
         return await this.problemService.userHasPermission(
           user,
-          await this.problemService.findProblemById(submission.problemId),
-          ProblemPermissionType.Modify
+          problem ?? (await this.problemService.findProblemById(submission.problemId)),
+          ProblemPermissionType.Modify,
+          hasPrivilege
         );
 
       // Admins can manage a submission's publicness or delete a submission
@@ -201,7 +206,11 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
       case SubmissionPermissionType.Delete:
         if (!user) return false;
         else if (user.isAdmin) return true;
-        else if (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageProblem)) return true;
+        else if (
+          hasPrivilege ??
+          (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageProblem))
+        )
+          return true;
         else return false;
 
       default:
