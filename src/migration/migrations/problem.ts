@@ -698,6 +698,12 @@ export const migrationProblem: MigrationInterface = {
           })
           .flat()
           .filter(x => x);
+        if (contentSections.length === 0)
+          contentSections.push({
+            sectionTitle: "",
+            type: ProblemContentSectionType.Text,
+            text: ""
+          });
 
         await localizedContentService.createOrUpdate(
           problem.id,
