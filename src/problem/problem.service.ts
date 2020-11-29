@@ -172,7 +172,7 @@ export class ProblemService {
         if (
           user &&
           user.id === problem.ownerId &&
-          this.configService.config.preference.security.allowNonPrivilegedUserEditPublicProblem
+          (!problem.isPublic || this.configService.config.preference.security.allowNonPrivilegedUserEditPublicProblem)
         )
           return true;
         if (hasPrivilege ?? (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageProblem)))
