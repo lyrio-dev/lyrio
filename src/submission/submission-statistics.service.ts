@@ -21,7 +21,7 @@ export enum SubmissionStatisticsType {
 }
 
 interface SubmissionStatisticsField {
-  field: string;
+  field: keyof SubmissionEntity;
   sort: "ASC" | "DESC";
 }
 
@@ -185,7 +185,7 @@ export class SubmissionStatisticsService {
         const key = REDIS_KEY_SUBMISSION_SCORE_STATISTICS.format(oldSubmission.problemId, statisticsType);
         const tuples = await this.parseFromRedis<SubmissionStatisticsCache[]>(key);
 
-        if (!tuples || tuples.length === 0) return;
+        if (!tuples) return;
 
         const isFirstBetter = (value: number, anotherValue: number) =>
           (sort === "ASC" && value < anotherValue) || (sort === "DESC" && value > anotherValue);
@@ -208,7 +208,10 @@ export class SubmissionStatisticsService {
             return newValue != null && isFirstBetter(newValue, submitterBestValue);
           }
 
-          // If the new value is better than the last of the ranklist
+          // If the ranklist is not full
+          if (tuples.length < SUBMISSION_STATISTICS_TOP_COUNT) return true;
+
+          // If the ranklist is full, but new value is better than the last of the ranklist
           const [, , lastValue] = tuples[tuples.length - 1];
           return newValue != null && isFirstBetter(newValue, lastValue);
         };
