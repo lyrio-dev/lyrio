@@ -82,7 +82,7 @@ export class SubmissionStatisticsService {
   ): Promise<[submissions: SubmissionEntity[], count: number]> {
     const { field, sort } = submissionStatisticsFields[statisticsType];
 
-    const key = REDIS_KEY_SUBMISSION_SCORE_STATISTICS.format(problem.id, statisticsType);
+    const key = REDIS_KEY_SUBMISSION_STATISTICS.format(problem.id, statisticsType);
     let tuples = await this.parseFromRedis<SubmissionStatisticsCache[]>(key);
 
     const rebuildCache = async () => {
@@ -141,7 +141,7 @@ export class SubmissionStatisticsService {
    * Return how many submissions with each score (0 ~ 100) are there.
    */
   async querySubmissionScoreStatistics(problem: ProblemEntity): Promise<number[]> {
-    const key = REDIS_KEY_SUBMISSION_STATISTICS.format(problem.id);
+    const key = REDIS_KEY_SUBMISSION_SCORE_STATISTICS.format(problem.id);
     const cachedResult = await this.parseFromRedis<number[]>(key);
     if (cachedResult) return cachedResult;
 
@@ -170,7 +170,7 @@ export class SubmissionStatisticsService {
   async onSubmissionUpdated(oldSubmission: SubmissionEntity, submission?: SubmissionEntity): Promise<void> {
     // Submission score statistics
     if (!submission || oldSubmission.score !== submission.score) {
-      await this.redisService.cacheDelete(REDIS_KEY_SUBMISSION_STATISTICS.format(oldSubmission.problemId));
+      await this.redisService.cacheDelete(REDIS_KEY_SUBMISSION_SCORE_STATISTICS.format(oldSubmission.problemId));
     }
 
     // Submission statistics
@@ -182,7 +182,7 @@ export class SubmissionStatisticsService {
     await Promise.all(
       Object.values(SubmissionStatisticsType).map(async statisticsType => {
         const { field, sort } = submissionStatisticsFields[statisticsType];
-        const key = REDIS_KEY_SUBMISSION_SCORE_STATISTICS.format(oldSubmission.problemId, statisticsType);
+        const key = REDIS_KEY_SUBMISSION_STATISTICS.format(oldSubmission.problemId, statisticsType);
         const tuples = await this.parseFromRedis<SubmissionStatisticsCache[]>(key);
 
         if (!tuples) return;
@@ -229,9 +229,9 @@ export class SubmissionStatisticsService {
   async onProblemDeleted(problemId: number): Promise<void> {
     await Promise.all([
       ...Object.values(SubmissionStatisticsType).map(type =>
-        this.redisService.cacheDelete(REDIS_KEY_SUBMISSION_SCORE_STATISTICS.format(problemId, type))
+        this.redisService.cacheDelete(REDIS_KEY_SUBMISSION_STATISTICS.format(problemId, type))
       ),
-      this.redisService.cacheDelete(REDIS_KEY_SUBMISSION_STATISTICS.format(problemId))
+      this.redisService.cacheDelete(REDIS_KEY_SUBMISSION_SCORE_STATISTICS.format(problemId))
     ]);
   }
 }
