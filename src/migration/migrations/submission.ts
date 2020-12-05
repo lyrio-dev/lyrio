@@ -143,6 +143,8 @@ function convertTestcaseStatus(
     case OldSubmissionTestcaseResultType.InvalidInteraction:
     case OldSubmissionTestcaseResultType.WrongAnswer:
       return SubmissionTestcaseStatusTraditional.WrongAnswer;
+    default:
+      return SubmissionTestcaseStatusTraditional.SystemError;
   }
 }
 
