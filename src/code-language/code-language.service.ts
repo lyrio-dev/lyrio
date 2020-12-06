@@ -34,6 +34,9 @@ const CompileAndRunOptionsClasses = {
 @Injectable()
 export class CodeLanguageService {
   validateCompileAndRunOptions(language: CodeLanguage, compileAndRunOptions: unknown): ValidationError[] {
-    return validateSync(plainToClass(CompileAndRunOptionsClasses[language], compileAndRunOptions));
+    return validateSync(plainToClass(CompileAndRunOptionsClasses[language], compileAndRunOptions), {
+      whitelist: true,
+      forbidNonWhitelisted: true
+    });
   }
 }
