@@ -381,6 +381,29 @@ export class ProblemController {
       );
     }
 
+    if (request.tagsOfAllLocales) {
+      promises.push(
+        this.problemService
+          .getProblemTagsByProblem(problem)
+          .then(problemTags =>
+            Promise.all(
+              problemTags.map(async problemTag => {
+                const localizedNames = await this.problemService.getProblemTagAllLocalizedNames(problemTag);
+                return {
+                  id: problemTag.id,
+                  color: problemTag.color,
+                  localizedNames: Object.entries(localizedNames).map(([locale, name]) => ({
+                    locale: locale as Locale,
+                    name
+                  }))
+                };
+              })
+            )
+          )
+          .then(tagsOfAllLocales => (result.tagsOfAllLocales = tagsOfAllLocales))
+      );
+    }
+
     if (request.samples) {
       promises.push(this.problemService.getProblemSamples(problem).then(samples => (result.samples = samples)));
     }

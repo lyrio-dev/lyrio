@@ -43,6 +43,11 @@ export class GetProblemRequestDto {
   @ApiProperty({ required: false })
   @IsBoolean()
   @IsOptional()
+  readonly tagsOfAllLocales?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
   readonly samples?: boolean;
 
   @ApiProperty({ required: false })

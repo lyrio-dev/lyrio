@@ -9,6 +9,7 @@ import { ProblemSampleDataMemberDto } from "./problem-sample-data-member.dto";
 import { ProblemFileDto } from "./problem-file.dto";
 import { ProblemLocalizedContentDto } from "./problem-statement.dto";
 import { LocalizedProblemTagDto } from "./localized-problem-tag.dto";
+import { ProblemTagWithAllLocalesDto } from "./get-all-problem-tags-of-all-locales-response.dto";
 
 import { UserMetaDto } from "@/user/dto";
 import { GroupMetaDto } from "@/group/dto";
@@ -74,6 +75,9 @@ export class GetProblemResponseDto {
 
   @ApiProperty({ type: [LocalizedProblemTagDto] })
   tagsOfLocale?: LocalizedProblemTagDto[];
+
+  @ApiProperty({ type: [ProblemTagWithAllLocalesDto] })
+  tagsOfAllLocales?: ProblemTagWithAllLocalesDto[];
 
   @ApiProperty({ type: ProblemSampleDataMemberDto, isArray: true })
   samples?: ProblemSampleDataMemberDto[];
