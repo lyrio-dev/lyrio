@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "The next generation SYZOJ server",
   "repository": "https://github.com/syzoj/syzoj-ng",
-  "license": "AGPL-3.0",
+  "license": "MIT",
   "author": "Menci",
   "scripts": {
     "prebuild": "rimraf dist",
