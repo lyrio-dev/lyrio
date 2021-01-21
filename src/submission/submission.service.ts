@@ -483,8 +483,11 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
       avgEveryUsersOccupiedTimeRecently,
       stdEveryUsersOccupiedTimeRecently
     ] = await (async () => {
+      // For performance reasons, dynamic task priority could be disabled to reduce database stress
+      if (!this.configService.config.preference.serverSideOnly.dynamicTaskPriority) return [0, 0, 0, 0];
+
       // If we are rejudging some submission, don't consider the user's influence to judge queue for priority
-      if (isRejudge) return [0, 0, 0];
+      if (isRejudge) return [0, 0, 0, 0];
 
       const selectTotalOccupiedTimeRecently = (qb: QueryBuilder<SubmissionEntity>) =>
         qb.select("SUM(totalOccupiedTime)", "total").andWhere("submitTime >= NOW() - INTERVAL 15 MINUTE");

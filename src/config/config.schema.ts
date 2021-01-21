@@ -343,6 +343,9 @@ class PreferenceConfigServerSideOnly {
     })(blacklist)
   )
   discussionReactionCustomEmojisBlacklist: string | unknown[];
+
+  @IsBoolean()
+  dynamicTaskPriority: boolean;
 }
 
 // These config items will be sent to client

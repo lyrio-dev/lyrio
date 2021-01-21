@@ -78,6 +78,7 @@ preference:
     discussionReactionAllowCustomEmojis: true
   serverSideOnly:
     discussionReactionCustomEmojisBlacklist: /(\uD83C[\uDDE6-\uDDFF]){2}/
+    dynamicTaskPriority: true
 resourceLimit:
   problemTestdataFiles: 40
   problemTestdataSize: 134217728
