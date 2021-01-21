@@ -59,14 +59,14 @@ class ServicesConfigDatabase {
 }
 
 class ServicesConfigMinio {
-  @IsUrl()
+  @IsUrl({ require_tld: false })
   readonly endpoint: string;
 
-  @IsUrl()
+  @IsUrl({ require_tld: false })
   @IsOptional()
   readonly endpointForUser: string;
 
-  @IsUrl()
+  @IsUrl({ require_tld: false })
   @IsOptional()
   readonly endpointForJudge: string;
 
