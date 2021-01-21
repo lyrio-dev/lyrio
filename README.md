@@ -54,7 +54,7 @@ After starting MinIO server, create a bucket with MinIO's management tool `mc`:
 ```
 $ wget https://dl.min.io/client/mc/release/linux-amd64/mc
 $ chmod +x mc
-$ ./mc config host add minio http://127.0.0.1:9000 "AKAK" "SKSK"
+$ ./mc alias set minio http://127.0.0.1:9000 "AKAK" "SKSK"
 $ ./mc mb -p minio/syzoj-ng-files
 ```
 
