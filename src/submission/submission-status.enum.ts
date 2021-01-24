@@ -12,7 +12,6 @@ export enum SubmissionStatus {
   TimeLimitExceeded = "TimeLimitExceeded",
   MemoryLimitExceeded = "MemoryLimitExceeded",
   OutputLimitExceeded = "OutputLimitExceeded",
-  InvalidInteraction = "InvalidInteraction",
 
   PartiallyCorrect = "PartiallyCorrect",
   WrongAnswer = "WrongAnswer",
