@@ -98,7 +98,7 @@ export class JudgeQueueService {
       REDIS_CONSUME_TIMEOUT
     );
     if (!redisResponse) {
-      logger.verbose("Consuming task queue - timeout");
+      logger.verbose("Consuming task queue - timeout or empty");
       return null;
     }
 
