@@ -287,9 +287,12 @@ class PreferenceConfigPagination {
 // These config items will be sent to client
 class PreferenceConfigMisc {
   @IsString()
-  @IsOptional()
   @ApiProperty()
   readonly appLogo: string;
+
+  @If(value => typeof value === "object" && Object.values(value).every(s => typeof s === "string"))
+  @ApiProperty()
+  readonly appLogoForTheme: Record<string, string>;
 
   @IsString()
   @IsOptional()

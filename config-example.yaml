@@ -67,6 +67,9 @@ preference:
     discussionRepliesMore: 20
   misc:
     appLogo: default
+    appLogoForTheme:
+      pure: original
+      far: inverted
     googleAnalyticsId: null
     gravatarCdn: https://gravatar.com
     redirectLegacyUrls: false

@@ -6,6 +6,7 @@ export interface UserPreference {
     content?: Locale;
     hideUnavailableMessage?: boolean;
   };
+  theme?: string;
   font?: {
     contentFontFace?: string;
     codeFontFace?: string;

@@ -91,6 +91,10 @@ export class UserPreferenceDto implements UserPreference {
   @Type(() => UserPreferenceLocaleDto)
   locale?: UserPreferenceLocaleDto;
 
+  @IsString()
+  @MaxLength(20)
+  theme?: string;
+
   @IsOptional()
   @ValidateNested()
   @Type(() => UserPreferenceFontDto)
