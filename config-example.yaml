@@ -114,4 +114,4 @@ eventReport:
   sentTo: "@example"
   proxyUrl: null
 vendor:
-  ip2region: /opt/ip2region/ip2region.db
+  ip2region: null

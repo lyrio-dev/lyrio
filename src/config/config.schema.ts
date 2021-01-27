@@ -497,10 +497,19 @@ class EventReportConfig {
   readonly proxyUrl?: string;
 }
 
-class VendorConfig {
+class VendorIp2RegionConfig {
   @IsString()
+  readonly ipv4db: string;
+
+  @IsString()
+  readonly ipv6db: string;
+}
+
+class VendorConfig {
+  @ValidateNested()
+  @Type(() => VendorIp2RegionConfig)
   @IsOptional()
-  readonly ip2region: string;
+  readonly ip2region: VendorIp2RegionConfig;
 }
 
 export class AppConfig {

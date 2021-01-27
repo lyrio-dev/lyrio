@@ -2,8 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 
 import moment from "moment";
 import ProxyAgent from "proxy-agent";
-import Telegraf, { Extra } from "telegraf";
-import { TelegrafContext } from "telegraf/typings/context";
+import { Telegraf } from "telegraf";
 import randomstring from "randomstring";
 
 import { ConfigService } from "@/config/config.service";
@@ -42,7 +41,7 @@ export function escapeTelegramHtml(text: string) {
 export class EventReportService {
   readonly enabled: boolean;
 
-  private readonly telegramBot: Telegraf<TelegrafContext>;
+  private readonly telegramBot: Telegraf;
 
   constructor(private readonly configService: ConfigService, private readonly clusterSerivce: ClusterService) {
     const eventReportConfig = this.configService.config.eventReport;
@@ -128,7 +127,9 @@ export class EventReportService {
     await this.telegramBot.telegram.sendMessage(
       this.configService.config.eventReport.sentTo,
       `<pre>${escapeTelegramHtml(message.message.trim())}</pre>`,
-      Extra.HTML().markup("")
+      {
+        parse_mode: "HTML"
+      }
     );
 
     if (message.filename) {

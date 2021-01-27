@@ -1,5 +1,3 @@
-import fs from "fs-extra";
-
 import { Injectable } from "@nestjs/common";
 
 import IP2Region from "ip2region";
@@ -11,12 +9,7 @@ export class AuthIpLocationService {
   private readonly ip2region: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
   constructor(private configService: ConfigService) {
-    this.ip2region = new IP2Region(
-      fs.pathExistsSync(this.configService.config.vendor.ip2region) && {
-        dbPath: this.configService.config.vendor.ip2region,
-        inMemory: true
-      }
-    );
+    this.ip2region = new IP2Region(this.configService.config.vendor.ip2region || {});
   }
 
   query(ip: string): string {

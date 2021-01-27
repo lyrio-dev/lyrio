@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 
-import { plainToClass } from "class-transformer";
-import { ClassType } from "class-transformer/ClassTransformer";
+import { plainToClass, ClassConstructor } from "class-transformer";
+
 import { Repository } from "typeorm";
 
 import { getSettingsKey } from "./settings.decorator";
@@ -15,7 +15,7 @@ export class SettingsService {
     private readonly settingsRepository: Repository<SettingsEntity>
   ) {}
 
-  async get<T>(Class: ClassType<T>): Promise<T> {
+  async get<T>(Class: ClassConstructor<T>): Promise<T> {
     const item = await this.settingsRepository.findOne({
       key: getSettingsKey(Class)
     });

@@ -355,7 +355,7 @@ async function parseJudgeInfo(
   };
 
   try {
-    oldConfig = yaml.safeLoad(await fs.promises.readFile(path.join(oldDataDirectory, "data.yml"), "utf-8")) as any;
+    oldConfig = yaml.load(await fs.promises.readFile(path.join(oldDataDirectory, "data.yml"), "utf-8")) as any;
   } catch (e) {}
 
   if (oldProblem.type === "traditional") {

@@ -18,7 +18,7 @@ export class ConfigService {
       throw new Error("Please specify configuration file with environment variable SYZOJ_NG_CONFIG_FILE");
     }
 
-    const config = yaml.safeLoad(fs.readFileSync(filePath).toString());
+    const config = yaml.load(fs.readFileSync(filePath).toString());
     this.config = this.validateInput(config);
 
     this.preferenceConfigToBeSentToUser = this.getPreferenceConfigToBeSentToUser();

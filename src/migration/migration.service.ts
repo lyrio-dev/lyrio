@@ -34,7 +34,7 @@ export class MigrationService {
 
   async migrate(configFilename: string, app: NestExpressApplication): Promise<void> {
     this.entityManager = this.connection.createEntityManager();
-    this.config = yaml.safeLoad(await fs.readFile(configFilename, "utf-8")) as MigrationConfig;
+    this.config = yaml.load(await fs.readFile(configFilename, "utf-8")) as MigrationConfig;
     this.oldDatabase = await MariaDB.createConnection({
       host: this.config.database.host,
       port: this.config.database.port,
