@@ -12,6 +12,7 @@ import CompileAndRunOptionsKotlin from "./compile-and-run-options/kotlin";
 import CompileAndRunOptionsPascal from "./compile-and-run-options/pascal";
 import CompileAndRunOptionsPython from "./compile-and-run-options/python";
 import CompileAndRunOptionsRust from "./compile-and-run-options/rust";
+import CompileAndRunOptionsSwift from "./compile-and-run-options/swift";
 import CompileAndRunOptionsGo from "./compile-and-run-options/go";
 import CompileAndRunOptionsHaskell from "./compile-and-run-options/haskell";
 import CompileAndRunOptionsCSharp from "./compile-and-run-options/csharp";
@@ -25,6 +26,7 @@ const CompileAndRunOptionsClasses = {
   [CodeLanguage.Pascal]: CompileAndRunOptionsPascal,
   [CodeLanguage.Python]: CompileAndRunOptionsPython,
   [CodeLanguage.Rust]: CompileAndRunOptionsRust,
+  [CodeLanguage.Swift]: CompileAndRunOptionsSwift,
   [CodeLanguage.Go]: CompileAndRunOptionsGo,
   [CodeLanguage.Haskell]: CompileAndRunOptionsHaskell,
   [CodeLanguage.CSharp]: CompileAndRunOptionsCSharp,

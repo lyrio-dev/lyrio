@@ -5,6 +5,7 @@ export enum CodeLanguage {
   Kotlin = "kotlin",
   Pascal = "pascal",
   Python = "python",
+  Swift = "swift",
   Rust = "rust",
   Go = "go",
   Haskell = "haskell",
