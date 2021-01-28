@@ -75,7 +75,8 @@ export class ProblemTypeInteractionService
       enableOutputFile: false,
       enableUserOutputFilename: false,
       hardTimeLimit,
-      hardMemoryLimit
+      hardMemoryLimit,
+      testcaseLimit: ignoreLimits ? null : this.configService.config.resourceLimit.problemTestcases
     });
 
     const { interactor } = judgeInfo;

@@ -74,7 +74,8 @@ export class ProblemTypeTraditionalService
       enableOutputFile: true,
       enableUserOutputFilename: false,
       hardTimeLimit: ignoreLimits ? null : this.configService.config.resourceLimit.problemTimeLimit,
-      hardMemoryLimit: ignoreLimits ? null : this.configService.config.resourceLimit.problemMemoryLimit
+      hardMemoryLimit: ignoreLimits ? null : this.configService.config.resourceLimit.problemMemoryLimit,
+      testcaseLimit: ignoreLimits ? null : this.configService.config.resourceLimit.problemTestcases
     });
 
     validateChecker(judgeInfo, testData, {

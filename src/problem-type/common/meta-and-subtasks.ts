@@ -42,6 +42,7 @@ interface ValidateMetaAndSubtasksOptions {
   enableTimeMemoryLimit: boolean;
   hardTimeLimit?: number;
   hardMemoryLimit?: number;
+  testcaseLimit?: number;
 
   enableFileIo: boolean;
   enableInputFile: boolean | "optional";
@@ -216,4 +217,10 @@ export function validateMetaAndSubtasks(
   } catch (e) {
     throw ["CYCLICAL_SUBTASK_DEPENDENCY"];
   }
+
+  if (
+    options.testcaseLimit != null &&
+    judgeInfo.subtasks.reduce((count, subtask) => count + subtask.testcases.length, 0) > options.testcaseLimit
+  )
+    throw ["TOO_MANY_TESTCASES"];
 }
