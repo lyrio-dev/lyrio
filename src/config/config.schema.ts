@@ -395,6 +395,10 @@ class ResourceLimitConfig {
   readonly problemAdditionalFileSize: number;
 
   @IsInt()
+  @Min(0)
+  readonly problemSamplesToRun: number;
+
+  @IsInt()
   @Min(1)
   readonly problemTestcases: number;
 

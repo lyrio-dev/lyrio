@@ -727,7 +727,10 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
           samples:
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             preprocessedJudgeInfo && (preprocessedJudgeInfo as any).runSamples
-              ? await this.problemService.getProblemSamples(problem)
+              ? (await this.problemService.getProblemSamples(problem)).slice(
+                  0,
+                  this.configService.config.resourceLimit.problemSamplesToRun
+                )
               : null,
           testData: Object.fromEntries(testData.map(problemFile => [problemFile.filename, problemFile.uuid])),
           submissionContent: submissionDetail.content,

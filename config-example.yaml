@@ -87,6 +87,7 @@ resourceLimit:
   problemTestdataSize: 134217728
   problemAdditionalFileFiles: 40
   problemAdditionalFileSize: 134217728
+  problemSamplesToRun: 10
   problemTestcases: 20
   problemTimeLimit: 2000
   problemMemoryLimit: 512
