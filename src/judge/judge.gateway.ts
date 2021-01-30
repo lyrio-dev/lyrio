@@ -39,6 +39,8 @@ interface SubmissionProgressMessage {
 const REDIS_KEY_JUDGE_CLIENT_TEMPORARILY_DISCONNENTED = "judge-client-temporarily-disconnected:%d";
 const JUDGE_CLIENT_TEMPORARILY_DISCONNENTED_MAX_TIME = 60;
 
+const REDIS_LOCK_JUDGE_CLIENT_CONNECT_DISCONNECT = "judge-client-connect-disconnect:%d";
+
 const REDIS_CHANNEL_CANCEL_TASK = "cancel-task";
 
 @WebSocketGateway({ namespace: "judge", path: "/api/socket", transports: ["websocket"], parser: SocketIOParser })
@@ -112,15 +114,22 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // Maybe the socket "disconnect" event is emitted before the query finished
     if (!client.connected) return;
 
-    await this.judgeClientService.setJudgeClientOnlineSessionId(judgeClient, client.id);
-    if (!client.connected) {
-      await this.judgeClientService.disconnectJudgeClient(judgeClient);
-    }
+    await this.redisService.lock(REDIS_LOCK_JUDGE_CLIENT_CONNECT_DISCONNECT.format(judgeClient.id), async () => {
+      await this.judgeClientService.setJudgeClientOnlineSessionId(judgeClient, client.id);
 
-    this.mapSessionIdToJudgeClient.set(client.id, {
-      judgeClient,
-      pendingTasks: new Set()
+      if (!client.connected) {
+        await this.judgeClientService.disconnectJudgeClient(judgeClient);
+      }
+
+      this.mapSessionIdToJudgeClient.set(client.id, {
+        judgeClient,
+        pendingTasks: new Set()
+      });
     });
+
+    if (!client.connected) {
+      return;
+    }
 
     // Now we are ready for consuming task
     client.emit("ready", judgeClient.name, this.configService.config.judge);
@@ -148,7 +157,13 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     this.mapSessionIdToJudgeClient.delete(client.id);
 
-    await this.judgeClientService.disconnectJudgeClient(state.judgeClient);
+    // Another "connect" may be fired before the disconnect event
+    // So directly call "disconnectJudgeClient" will disconnect the newly connected client
+    await this.redisService.lock(REDIS_LOCK_JUDGE_CLIENT_CONNECT_DISCONNECT.format(state.judgeClient.id), async () => {
+      // Ensure if this session holds the client
+      if (await this.judgeClientService.checkJudgeClientSession(state.judgeClient, client.id))
+        await this.judgeClientService.disconnectJudgeClient(state.judgeClient);
+    });
 
     if (state.pendingTasks.size !== 0) {
       logger.log(
