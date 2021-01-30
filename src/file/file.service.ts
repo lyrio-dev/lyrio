@@ -178,7 +178,7 @@ export class FileService implements OnModuleInit {
   ): Promise<FileEntity | SignedFileUploadRequestDto | LimitCheckErrorType | "FILE_UUID_EXISTS" | "FILE_NOT_UPLOADED"> {
     const limitCheckError = await checkLimit(uploadInfo.size);
     if (limitCheckError) {
-      this.deleteUnfinishedUploadedFile(uploadInfo.uuid);
+      if (uploadInfo.uuid) this.deleteUnfinishedUploadedFile(uploadInfo.uuid);
       return limitCheckError;
     }
 
