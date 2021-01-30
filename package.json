@@ -9,6 +9,7 @@
     "prebuild": "rimraf dist",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\"",
+    "check-style": "prettier --check \"src/**/*.ts\"",
     "lint": "eslint src --ext ts --cache",
     "start": "nest start",
     "start:debug": "nest start --debug --watch",

@@ -24,4 +24,4 @@ jobs:
     - name: Lint
       run: yarn lint
     - name: Check style
-      run: yarn format --check
+      run: yarn check-style
