@@ -22,7 +22,7 @@ import { ProblemFileType } from "@/problem/problem-file.entity";
 import { ProblemJudgeInfo } from "@/problem/problem-judge-info.interface";
 import { UserService } from "@/user/user.service";
 import { ProblemSampleData } from "@/problem/problem-sample-data.interface";
-import { RedisService } from "@/redis/redis.service";
+import { LockService } from "@/redis/lock.service";
 import { JudgeGateway } from "@/judge/judge.gateway";
 import { ProblemTypeFactoryService } from "@/problem-type/problem-type-factory.service";
 import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
@@ -122,7 +122,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     @Inject(forwardRef(() => UserService))
     private readonly userService: UserService,
     private readonly judgeQueueService: JudgeQueueService,
-    private readonly redisService: RedisService,
+    private readonly lockService: LockService,
     private readonly submissionProgressService: SubmissionProgressService,
     private readonly submissionStatisticsService: SubmissionStatisticsService,
     private readonly judgeGateway: JudgeGateway,
@@ -324,6 +324,8 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     ]
   > {
     const problemTypeService = this.problemTypeFactoryService.type(problem.type);
+
+    await new Promise(r => setTimeout(r, 10000));
 
     const validationError = await problemTypeService.validateSubmissionContent(content);
     if (validationError && validationError.length > 0) return [validationError, null, null];
@@ -766,13 +768,13 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     if (lockProblem) {
       return await this.problemService.lockProblemById(submission.problemId, "Read", async problem => {
         if (!problem) return await callback(null);
-        return await this.redisService.lock(
+        return await this.lockService.lock(
           `Submission_${submission.id}`,
           async () => await callback(await this.findSubmissionById(submission.id), problem)
         );
       });
     }
-    return await this.redisService.lock(
+    return await this.lockService.lock(
       `Submission_${submission.id}`,
       async () => await callback(await this.findSubmissionById(submission.id))
     );

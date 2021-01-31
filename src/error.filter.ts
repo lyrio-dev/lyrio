@@ -1,7 +1,6 @@
 import { ExceptionFilter, Catch, ArgumentsHost, HttpException, Logger } from "@nestjs/common";
 
 import { Response } from "express"; // eslint-disable-line import/no-extraneous-dependencies
-import { LockError } from "redlock";
 
 import { RequestWithSession } from "./auth/auth.middleware";
 import { EventReportService, EventReportType } from "./event-report/event-report.service";
@@ -43,7 +42,6 @@ export class ErrorFilter implements ExceptionFilter {
   }
 
   isignoredError(error: Error) {
-    if (error instanceof LockError) return true;
     if (error.message.includes("Too many connections")) return true;
     if (error.message === "connect ETIMEDOUT") return true;
     if (error.message === "Connection lost: The server closed the connection.") return true;

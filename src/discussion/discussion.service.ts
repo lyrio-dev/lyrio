@@ -12,7 +12,7 @@ import { PermissionObjectType, PermissionService } from "@/permission/permission
 import { GroupEntity } from "@/group/group.entity";
 import { GroupService } from "@/group/group.service";
 import { ProblemEntity } from "@/problem/problem.entity";
-import { RedisService } from "@/redis/redis.service";
+import { LockService } from "@/redis/lock.service";
 import { escapeLike } from "@/database/database.utils";
 import { ProblemPermissionType, ProblemService } from "@/problem/problem.service";
 
@@ -73,7 +73,7 @@ export class DiscussionService {
     private readonly userPrivilegeService: UserPrivilegeService,
     private readonly permissionService: PermissionService,
     private readonly problemService: ProblemService,
-    private readonly redisService: RedisService
+    private readonly lockService: LockService
   ) {
     this.auditService.registerObjectTypeQueryHandler(AuditLogObjectType.Discussion, async discussionId => {
       const discussion = await this.findDiscussionById(discussionId);
@@ -435,7 +435,7 @@ export class DiscussionService {
     type: "Read" | "Write",
     callback: (discussion: DiscussionEntity) => Promise<T>
   ): Promise<T> {
-    return await this.redisService.lockReadWrite(
+    return await this.lockService.lockReadWrite(
       `AcquireDiscussion_${id}`,
       type,
       async () => await callback(await this.findDiscussionById(id))

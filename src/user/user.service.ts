@@ -6,7 +6,7 @@ import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
 import { Repository, Connection, Like, MoreThan, EntityManager } from "typeorm";
 
 import { escapeLike } from "@/database/database.utils";
-import { RedisService } from "@/redis/redis.service";
+import { LockService } from "@/redis/lock.service";
 import { SubmissionService } from "@/submission/submission.service";
 import { SubmissionEntity } from "@/submission/submission.entity";
 import { SubmissionStatus } from "@/submission/submission-status.enum";
@@ -43,8 +43,8 @@ export class UserService {
     private readonly userPreferenceRepository: Repository<UserPreferenceEntity>,
     @Inject(forwardRef(() => AuthEmailVerificationCodeService))
     private readonly authEmailVerificationCodeService: AuthEmailVerificationCodeService,
-    @Inject(forwardRef(() => RedisService))
-    private readonly redisService: RedisService,
+    @Inject(forwardRef(() => LockService))
+    private readonly lockService: LockService,
     @Inject(forwardRef(() => ConfigService))
     private readonly configService: ConfigService,
     @Inject(forwardRef(() => SubmissionService))
@@ -311,7 +311,7 @@ export class UserService {
     problemId: number,
     type: "NON_AC_TO_AC" | "AC_TO_NON_AC"
   ): Promise<void> {
-    await this.redisService.lock(`updateUserAcceptedCount_${userId}_${problemId}`, async () => {
+    await this.lockService.lock(`updateUserAcceptedCount_${userId}_${problemId}`, async () => {
       if (type === "NON_AC_TO_AC") {
         if ((await this.submissionService.getUserProblemAcceptedSubmissionCount(userId, problemId)) === 1) {
           await this.userRepository.increment({ id: userId }, "acceptedProblemCount", 1);

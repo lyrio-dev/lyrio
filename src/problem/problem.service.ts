@@ -15,6 +15,7 @@ import { GroupService } from "@/group/group.service";
 import { FileService } from "@/file/file.service";
 import { ConfigService } from "@/config/config.service";
 import { RedisService } from "@/redis/redis.service";
+import { LockService } from "@/redis/lock.service";
 import { SubmissionService } from "@/submission/submission.service";
 import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
 import { ProblemTypeFactoryService } from "@/problem-type/problem-type-factory.service";
@@ -90,6 +91,7 @@ export class ProblemService {
     private readonly submissionService: SubmissionService,
     private readonly configService: ConfigService,
     private readonly redisService: RedisService,
+    private readonly lockService: LockService,
     private readonly auditService: AuditService
   ) {
     this.auditService.registerObjectTypeQueryHandler(AuditLogObjectType.Problem, async (problemId, locale) => {
@@ -701,7 +703,7 @@ export class ProblemService {
       problemId,
       "Read",
       async problem =>
-        await this.redisService.lock(`ManageProblemFile_${type}_${problem.id}`, async () => await callback(problem))
+        await this.lockService.lock(`ManageProblemFile_${type}_${problem.id}`, async () => await callback(problem))
     );
   }
 
@@ -1029,7 +1031,7 @@ export class ProblemService {
     type: "Read" | "Write",
     callback: (problem: ProblemEntity) => Promise<T>
   ): Promise<T> {
-    return await this.redisService.lockReadWrite(
+    return await this.lockService.lockReadWrite(
       `AcquireProblem_${id}`,
       type,
       async () => await callback(await this.findProblemById(id))

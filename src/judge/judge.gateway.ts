@@ -19,6 +19,7 @@ import { SubmissionProgress } from "@/submission/submission-progress.interface";
 import { ConfigService } from "@/config/config.service";
 import { EventReportService, EventReportType } from "@/event-report/event-report.service";
 import { RedisService } from "@/redis/redis.service";
+import { LockService } from "@/redis/lock.service";
 
 import { JudgeClientService } from "./judge-client.service";
 import { JudgeClientEntity } from "./judge-client.entity";
@@ -64,7 +65,8 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly configService: ConfigService,
     @Inject(forwardRef(() => EventReportService))
     private readonly eventReportService: EventReportService,
-    private readonly redisService: RedisService
+    private readonly redisService: RedisService,
+    private readonly lockService: LockService
   ) {
     this.redis = this.redisService.getClient();
 
@@ -114,7 +116,7 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // Maybe the socket "disconnect" event is emitted before the query finished
     if (!client.connected) return;
 
-    await this.redisService.lock(REDIS_LOCK_JUDGE_CLIENT_CONNECT_DISCONNECT.format(judgeClient.id), async () => {
+    await this.lockService.lock(REDIS_LOCK_JUDGE_CLIENT_CONNECT_DISCONNECT.format(judgeClient.id), async () => {
       await this.judgeClientService.setJudgeClientOnlineSessionId(judgeClient, client.id);
 
       if (!client.connected) {
@@ -159,7 +161,7 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     // Another "connect" may be fired before the disconnect event
     // So directly call "disconnectJudgeClient" will disconnect the newly connected client
-    await this.redisService.lock(REDIS_LOCK_JUDGE_CLIENT_CONNECT_DISCONNECT.format(state.judgeClient.id), async () => {
+    await this.lockService.lock(REDIS_LOCK_JUDGE_CLIENT_CONNECT_DISCONNECT.format(state.judgeClient.id), async () => {
       // Ensure if this session holds the client
       if (await this.judgeClientService.checkJudgeClientSession(state.judgeClient, client.id))
         await this.judgeClientService.disconnectJudgeClient(state.judgeClient);
