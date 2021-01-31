@@ -551,7 +551,12 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     // eslint-disable-next-line @typescript-eslint/no-shadow
     await this.lockSubmission(submission, true, async submission => {
       if (!submission) return;
-      this.judgeSubmission(submission, true);
+
+      await this.judgeSubmission(submission, true);
+
+      const submissionDetail = await this.getSubmissionDetail(submission);
+      submissionDetail.result = null;
+      await this.submissionDetailRepository.save(submissionDetail);
     });
   }
 
