@@ -220,6 +220,7 @@ export function validateMetaAndSubtasks(
 
   if (
     options.testcaseLimit != null &&
+    judgeInfo.subtasks &&
     judgeInfo.subtasks.reduce((count, subtask) => count + subtask.testcases.length, 0) > options.testcaseLimit
   )
     throw ["TOO_MANY_TESTCASES"];
