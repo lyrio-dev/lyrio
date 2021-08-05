@@ -39,13 +39,9 @@ import { CodeLanguage } from "@/code-language/code-language.type";
 import CompileAndRunOptionsCpp from "@/code-language/compile-and-run-options/cpp";
 import CompileAndRunOptionsC from "@/code-language/compile-and-run-options/c";
 import CompileAndRunOptionsJava from "@/code-language/compile-and-run-options/java";
-import CompileAndRunOptionsKotlin from "@/code-language/compile-and-run-options/kotlin";
 import CompileAndRunOptionsPascal from "@/code-language/compile-and-run-options/pascal";
 import CompileAndRunOptionsPython from "@/code-language/compile-and-run-options/python";
-import CompileAndRunOptionsRust from "@/code-language/compile-and-run-options/rust";
-import CompileAndRunOptionsGo from "@/code-language/compile-and-run-options/go";
 import CompileAndRunOptionsHaskell from "@/code-language/compile-and-run-options/haskell";
-import CompileAndRunOptionsCSharp from "@/code-language/compile-and-run-options/csharp";
 import CompileAndRunOptionsFSharp from "@/code-language/compile-and-run-options/fsharp";
 
 import { MigrationInterface } from "./migration.interface";
@@ -485,7 +481,6 @@ export const migrationProblem: MigrationInterface = {
   async migrate(entityManager, config, oldDatabase, queryTablePaged, app) {
     const localizedContentService = app.get(LocalizedContentService);
     const problemTypeFactoryService = app.get(ProblemTypeFactoryService);
-    const configService = app.get(ConfigService);
     const fileService = app.get(FileService);
 
     await queryTablePaged<OldDatabaseProblemTagEntity>("problem_tag", "id", async oldProblemTag => {
