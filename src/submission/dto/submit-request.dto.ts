@@ -11,6 +11,11 @@ export class SubmitRequestDto {
   readonly problemId: number;
 
   @ApiProperty()
+  @IsInt()
+  @IsOptional()
+  readonly contestId?: number;
+
+  @ApiProperty()
   @IsObject()
   readonly content: unknown;
 

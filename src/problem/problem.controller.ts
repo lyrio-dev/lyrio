@@ -9,13 +9,14 @@ import { GroupService } from "@/group/group.service";
 import { AlternativeUrlFor, FileService } from "@/file/file.service";
 import { CurrentUser } from "@/common/user.decorator";
 import { UserEntity } from "@/user/user.entity";
-import { GroupEntity } from "@/group/group.entity";
 import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.service";
 import { Locale } from "@/common/locale.type";
 import { SubmissionService } from "@/submission/submission.service";
 import { SubmissionStatus } from "@/submission/submission-status.enum";
 import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
 import { DiscussionService } from "@/discussion/discussion.service";
+import { PermissionService } from "@/permission/permission.service";
+import { ContestService } from "@/contest/contest.service";
 
 import { ProblemFileType } from "./problem-file.entity";
 import { ProblemEntity } from "./problem.entity";
@@ -31,9 +32,9 @@ import {
   GetProblemRequestDto,
   GetProblemResponseDto,
   GetProblemResponseError,
-  SetProblemPermissionsRequestDto,
-  SetProblemPermissionsResponseDto,
-  SetProblemPermissionsResponseError,
+  SetProblemAccessControlListRequestDto,
+  SetProblemAccessControlListResponseDto,
+  SetProblemAccessControlListResponseError,
   SetProblemDisplayIdRequestDto,
   SetProblemDisplayIdResponseDto,
   SetProblemDisplayIdResponseError,
@@ -90,11 +91,12 @@ export class ProblemController {
     private readonly problemService: ProblemService,
     private readonly userService: UserService,
     private readonly userPrivilegeService: UserPrivilegeService,
-    private readonly groupService: GroupService,
     private readonly fileService: FileService,
     private readonly submissionService: SubmissionService,
     private readonly auditService: AuditService,
-    private readonly discussionService: DiscussionService
+    private readonly discussionService: DiscussionService,
+    private readonly permissionService: PermissionService,
+    private readonly contestService: ContestService
   ) {}
 
   @Post("queryProblemSet")
@@ -107,9 +109,7 @@ export class ProblemController {
     @Body() request: QueryProblemSetRequestDto
   ): Promise<QueryProblemSetResponseDto> {
     if (request.takeCount > this.configService.config.queryLimit.problemSet)
-      return {
-        error: QueryProblemSetResponseError.TAKE_TOO_MANY
-      };
+      request.takeCount = this.configService.config.queryLimit.problemSet;
 
     const hasPrivilege = await this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.ManageProblem);
 
@@ -167,18 +167,14 @@ export class ProblemController {
       count,
       result: await Promise.all(
         problems.map(async problem => {
-          const titleLocale = problem.locales.includes(request.locale) ? request.locale : problem.locales[0];
-          const title = await this.problemService.getProblemLocalizedTitle(problem, titleLocale);
           const problemTags = !request.titleOnly && (await this.problemService.getProblemTagsByProblem(problem));
           return {
-            meta: await this.problemService.getProblemMeta(problem, true),
-            title,
+            meta: await this.problemService.getProblemMeta(problem, request.locale, true),
             tags:
               !request.titleOnly &&
               (await Promise.all(
                 problemTags.map(problemTag => this.problemService.getProblemTagLocalized(problemTag, request.locale))
               )),
-            resultLocale: titleLocale,
             submission:
               !request.titleOnly &&
               currentUser &&
@@ -304,25 +300,81 @@ export class ProblemController {
     @CurrentUser() currentUser: UserEntity,
     @Body() request: GetProblemRequestDto
   ): Promise<GetProblemResponseDto> {
+    const contest = await this.contestService.findContestById(request.contestId);
+    if (request.contestId && !contest)
+      return {
+        error: GetProblemResponseError.NO_SUCH_CONTEST
+      };
+
     let problem: ProblemEntity;
     if (request.id) problem = await this.problemService.findProblemById(request.id);
     else if (request.displayId) problem = await this.problemService.findProblemByDisplayId(request.displayId);
+    else if (contest && request.contestProblemAlias) {
+      const contestProblem = await this.contestService.getContestProblem(contest, request.contestProblemAlias);
+      if (contestProblem) problem = await this.problemService.findProblemById(contestProblem.problemId);
+    }
 
     if (!problem)
       return {
         error: GetProblemResponseError.NO_SUCH_PROBLEM
       };
 
-    if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.View)))
+    const userRoleInContest = contest && (await this.contestService.getUserRoleInContest(currentUser, contest));
+
+    if (
+      contest
+        ? !((await this.contestService.isProblemUsedInContest(problem, contest)) && userRoleInContest != null)
+        : !(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.View))
+    )
       return {
         error: GetProblemResponseError.PERMISSION_DENIED
       };
 
+    // Restrict what a participant can access during contest
+    const restrictedByContest =
+      userRoleInContest === "Participant" && !(await this.contestService.isEndedFor(contest, currentUser));
+
+    const contestOptions = contest && (await this.contestService.getContestOptions(contest.id));
+    if (restrictedByContest) {
+      if (
+        // Tags
+        ((request.tagsOfAllLocales || request.tagsOfLocale) && !contestOptions.allowSeeingProblemTags) ||
+        // TestData
+        (request.testData && !contestOptions.allowAccessingTestData) ||
+        // Statistics
+        (request.statistics && !contestOptions.showProblemStatistics) ||
+        // Other things
+        request.discussionCount ||
+        request.accessControlList
+      )
+        return {
+          error: GetProblemResponseError.PERMISSION_DENIED
+        };
+    }
+
     const result: GetProblemResponseDto = {
-      meta: await this.problemService.getProblemMeta(problem, request.statistics)
+      // If requesting problem statistics in contest, querying it in contest
+      meta: await this.problemService.getProblemMeta(
+        problem,
+        request.localizedContentsOfLocale,
+        request.statistics &&
+          (!contest
+            ? true
+            : await this.contestService.getProblemStatisticsInContest(
+                contest.id,
+                problem.id,
+                !restrictedByContest || contestOptions.ranklistDuringContest === "Real"
+              ))
+      )
     };
 
     const promises: Promise<unknown>[] = [];
+
+    if (request.contestId) {
+      promises.push(
+        this.contestService.getContestMeta(request.contestId).then(contestMeta => (result.contest = contestMeta))
+      );
+    }
 
     if (request.owner) {
       promises.push(
@@ -333,29 +385,20 @@ export class ProblemController {
       );
     }
 
-    if (request.localizedContentsOfLocale != null) {
+    if (request.localizedContentsOfLocale != null && !request.localizedContentsTitleOnly) {
       const resultLocale = problem.locales.includes(request.localizedContentsOfLocale)
         ? request.localizedContentsOfLocale
         : problem.locales[0];
 
-      result.localizedContentsOfLocale = {
-        locale: resultLocale,
-        title: null,
-        contentSections: null
-      };
-
       promises.push(
         this.problemService
-          .getProblemLocalizedTitle(problem, resultLocale)
-          .then(title => (result.localizedContentsOfLocale.title = title))
+          .getProblemLocalizedContent(problem, resultLocale)
+          .then(contentSections => (result.localizedContentsOfLocale = {
+            locale: resultLocale,
+            title: null,
+            contentSections
+          }))
       );
-      if (!request.localizedContentsTitleOnly) {
-        promises.push(
-          this.problemService
-            .getProblemLocalizedContent(problem, resultLocale)
-            .then(contentSections => (result.localizedContentsOfLocale.contentSections = contentSections))
-        );
-      }
     }
 
     if (request.localizedContentsOfAllLocales) {
@@ -448,26 +491,11 @@ export class ProblemController {
       );
     }
 
-    if (request.permissions) {
+    if (request.accessControlList) {
       promises.push(
-        (async () => {
-          const [userPermissions, groupPermissions] = await this.problemService.getProblemPermissions(problem);
-
-          result.permissions = {
-            userPermissions: await Promise.all(
-              userPermissions.map(async ([user, permissionLevel]) => ({
-                user: await this.userService.getUserMeta(user, currentUser),
-                permissionLevel
-              }))
-            ),
-            groupPermissions: await Promise.all(
-              groupPermissions.map(async ([group, permissionLevel]) => ({
-                group: await this.groupService.getGroupMeta(group),
-                permissionLevel
-              }))
-            )
-          };
-        })()
+        this.problemService
+          .getProblemAccessControlListWithSubjectMeta(problem, currentUser)
+          .then(accessControlList => (result.accessControlList = accessControlList))
       );
     }
 
@@ -479,16 +507,26 @@ export class ProblemController {
               await this.submissionService.getUserLatestSubmissionByProblems(currentUser, [problem], false)
             ).get(problem.id);
             const lastAcceptedSubmission =
-              lastSubmission && lastSubmission.status === SubmissionStatus.Accepted
+              !restrictedByContest &&
+              (lastSubmission && lastSubmission.status === SubmissionStatus.Accepted
                 ? lastSubmission
                 : (await this.submissionService.getUserLatestSubmissionByProblems(currentUser, [problem], true)).get(
                     problem.id
-                  );
+                  ));
 
             result.lastSubmission = {
-              lastSubmission: lastSubmission && (await this.submissionService.getSubmissionBasicMeta(lastSubmission)),
+              lastSubmission:
+                lastSubmission &&
+                (await this.submissionService.getSubmissionBasicMeta(
+                  lastSubmission,
+                  restrictedByContest && contestOptions.submissionMetaVisibility
+                )),
               lastAcceptedSubmission:
-                lastAcceptedSubmission && (await this.submissionService.getSubmissionBasicMeta(lastAcceptedSubmission)),
+                lastAcceptedSubmission &&
+                (await this.submissionService.getSubmissionBasicMeta(
+                  lastAcceptedSubmission,
+                  restrictedByContest && contestOptions.submissionMetaVisibility
+                )),
               lastSubmissionContent:
                 lastSubmission && (await this.submissionService.getSubmissionDetail(lastSubmission)).content
             };
@@ -502,27 +540,27 @@ export class ProblemController {
     return result;
   }
 
-  @Post("setProblemPermissions")
+  @Post("setProblemAccessControlList")
   @ApiBearerAuth()
   @ApiOperation({
     summary: "Set who and which groups have permission to read / write this problem."
   })
-  async setProblemPermissions(
+  async setProblemAccessControlList(
     @CurrentUser() currentUser: UserEntity,
-    @Body() request: SetProblemPermissionsRequestDto
-  ): Promise<SetProblemPermissionsResponseDto> {
+    @Body() request: SetProblemAccessControlListRequestDto
+  ): Promise<SetProblemAccessControlListResponseDto> {
     if (!currentUser)
       return {
-        error: SetProblemPermissionsResponseError.PERMISSION_DENIED
+        error: SetProblemAccessControlListResponseError.PERMISSION_DENIED
       };
 
-    return await this.problemService.lockProblemById<SetProblemPermissionsResponseDto>(
+    return await this.problemService.lockProblemById<SetProblemAccessControlListResponseDto>(
       request.problemId,
       "Read",
       async problem => {
         if (!problem)
           return {
-            error: SetProblemPermissionsResponseError.NO_SUCH_PROBLEM,
+            error: SetProblemAccessControlListResponseError.NO_SUCH_PROBLEM,
             errorObjectId: request.problemId
           };
 
@@ -530,58 +568,22 @@ export class ProblemController {
           !(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.ManagePermission))
         )
           return {
-            error: SetProblemPermissionsResponseError.PERMISSION_DENIED
+            error: SetProblemAccessControlListResponseError.PERMISSION_DENIED
           };
 
-        const users = await this.userService.findUsersByExistingIds(
-          request.userPermissions.map(userPermission => userPermission.userId)
+        const error = await this.permissionService.validateAccessControlList(
+          request.accessControlList,
+          ProblemPermissionLevel
         );
-        const userPermissions: [UserEntity, ProblemPermissionLevel][] = [];
-        for (const i of request.userPermissions.keys()) {
-          const { userId, permissionLevel } = request.userPermissions[i];
-          if (!users[i])
-            return {
-              error: SetProblemPermissionsResponseError.NO_SUCH_USER,
-              errorObjectId: userId
-            };
+        if (error) return error;
 
-          userPermissions.push([users[i], permissionLevel]);
-        }
+        const old = await this.problemService.getProblemAccessControlListWithSubjectId(problem);
 
-        const groups = await this.groupService.findGroupsByExistingIds(
-          request.groupPermissions.map(groupPermission => groupPermission.groupId)
-        );
-        const groupPermissions: [GroupEntity, ProblemPermissionLevel][] = [];
-        for (const i of request.groupPermissions.keys()) {
-          const { groupId, permissionLevel } = request.groupPermissions[i];
-          if (!groups[i])
-            return {
-              error: SetProblemPermissionsResponseError.NO_SUCH_GROUP,
-              errorObjectId: groupId
-            };
-
-          groupPermissions.push([groups[i], permissionLevel]);
-        }
-
-        const oldPermissions = await this.problemService.getProblemPermissionsWithId(problem);
-
-        await this.problemService.setProblemPermissions(problem, userPermissions, groupPermissions);
+        await this.problemService.setProblemAccessControlList(problem, request.accessControlList);
 
         await this.auditService.log("problem.set_permissions", AuditLogObjectType.Problem, problem.id, {
-          oldPermissions: {
-            userPermissions: oldPermissions[0].map(([userId, permissionLevel]) => ({
-              userId,
-              permissionLevel
-            })),
-            groupPermissions: oldPermissions[1].map(([groupId, permissionLevel]) => ({
-              groupId,
-              permissionLevel
-            }))
-          },
-          newPermissions: {
-            userPermissions: request.userPermissions,
-            groupPermissions: request.groupPermissions
-          }
+          old,
+          new: request.accessControlList
         });
 
         return {};
@@ -1057,6 +1059,11 @@ export class ProblemController {
     if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.Delete)))
       return {
         error: DeleteProblemResponseError.PERMISSION_DENIED
+      };
+
+    if (!(await this.contestService.isProblemUsedInContest(problem)))
+      return {
+        error: DeleteProblemResponseError.PROBLEM_USED_IN_CONTEST
       };
 
     // Lock the problem after permission check to avoid DDoS attacks.

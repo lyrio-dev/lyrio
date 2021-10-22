@@ -10,7 +10,7 @@ import { validateMetaAndSubtasks } from "@/problem-type/common/meta-and-subtasks
 import { validateChecker } from "@/problem-type/common/checker";
 import { autoMatchOutputToInput } from "@/problem-type/common/auto-match-input-output";
 import { FileEntity } from "@/file/file.entity";
-import { restrictProperties } from "@/problem-type/common/restrict-properties";
+import { restrictProperties } from "@/common/restrict-properties";
 
 import { SubmissionTestcaseResultSubmitAnswer } from "./submission-testcase-result.interface";
 import { SubmissionContentSubmitAnswer } from "./submission-content.interface";

@@ -2,8 +2,8 @@ import { ApiProperty } from "@nestjs/swagger";
 
 import { IsInt } from "class-validator";
 
-export class GetDiscussionPermissionsRequestDto {
+export class DeleteContestIssueRequestDto {
   @ApiProperty()
   @IsInt()
-  id: number;
+  contestIssueId: number;
 }

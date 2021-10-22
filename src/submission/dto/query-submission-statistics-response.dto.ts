@@ -4,8 +4,7 @@ import { SubmissionMetaDto } from "./submission-meta.dto";
 
 export enum QuerySubmissionStatisticsResponseError {
   NO_SUCH_PROBLEM = "NO_SUCH_PROBLEM",
-  PERMISSION_DENIED = "PERMISSION_DENIED",
-  TAKE_TOO_MANY = "TAKE_TOO_MANY"
+  PERMISSION_DENIED = "PERMISSION_DENIED"
 }
 
 export class QuerySubmissionStatisticsResponseDto {

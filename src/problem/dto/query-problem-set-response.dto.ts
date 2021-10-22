@@ -11,22 +11,15 @@ import { UserMetaDto } from "@/user/dto";
 import { SubmissionBasicMetaDto } from "@/submission/dto";
 
 export enum QueryProblemSetResponseError {
-  PERMISSION_DENIED = "PERMISSION_DENIED",
-  TAKE_TOO_MANY = "TAKE_TOO_MANY"
+  PERMISSION_DENIED = "PERMISSION_DENIED"
 }
 
 export class QueryProblemSetResponseItemDto {
   @ApiProperty()
   meta: ProblemMetaDto;
 
-  @ApiProperty()
-  title: string;
-
   @ApiProperty({ type: [LocalizedProblemTagDto] })
   tags?: LocalizedProblemTagDto[];
-
-  @ApiProperty({ enum: Locale })
-  resultLocale?: Locale;
 
   @ApiProperty()
   submission?: SubmissionBasicMetaDto;

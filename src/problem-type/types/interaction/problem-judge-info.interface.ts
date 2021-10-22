@@ -53,6 +53,9 @@ export interface ProblemJudgeInfoInteraction extends ProblemJudgeInfo {
     // The IDs of subtasks this subtask depends
     // A subtask will be skipped if one of it dependencies fails
     dependencies?: number[];
+
+    // Is the subtask included in pretests? (for contest)
+    includedInPretests?: boolean;
   }[];
 
   // The program to send command and data to user's program and outputs user's score

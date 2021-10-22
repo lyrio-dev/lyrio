@@ -1,10 +1,20 @@
 import { ApiProperty } from "@nestjs/swagger";
 
-import { IsInt, IsOptional, IsEnum, IsBoolean } from "class-validator";
+import { IsInt, IsOptional, IsEnum, IsBoolean, IsString } from "class-validator";
 
 import { Locale } from "@/common/locale.type";
 
 export class GetProblemRequestDto {
+  @ApiProperty({ required: false })
+  @IsInt()
+  @IsOptional()
+  readonly contestId?: number;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  readonly contestProblemAlias?: string;
+
   @ApiProperty({ required: false })
   @IsInt()
   @IsOptional()
@@ -88,9 +98,9 @@ export class GetProblemRequestDto {
   @ApiProperty({ required: false })
   @IsBoolean()
   @IsOptional()
-  readonly permissions?: boolean;
+  readonly accessControlList?: boolean;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, description: "Last accepted submission is NOT accessable during contest" })
   @IsBoolean()
   @IsOptional()
   readonly lastSubmissionAndLastAcceptedSubmission?: boolean;

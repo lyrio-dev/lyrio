@@ -1,8 +1,8 @@
 import { ApiProperty } from "@nestjs/swagger";
 
-import { ProblemPermissionType, ProblemPermissionLevel } from "@/problem/problem.service";
-
+import { ProblemPermissionType } from "@/problem/problem.service";
 import { SubmissionContent } from "@/submission/submission-content.interface";
+import { AccessControlListWithSubjectMeta } from "@/permission/permission.service";
 
 import { ProblemMetaDto } from "./problem-meta.dto";
 import { ProblemSampleDataMemberDto } from "./problem-sample-data-member.dto";
@@ -11,39 +11,16 @@ import { ProblemLocalizedContentDto } from "./problem-statement.dto";
 import { LocalizedProblemTagDto } from "./localized-problem-tag.dto";
 import { ProblemTagWithAllLocalesDto } from "./get-all-problem-tags-of-all-locales-response.dto";
 
-import { UserMetaDto } from "@/user/dto";
-import { GroupMetaDto } from "@/group/dto";
-import { SubmissionBasicMetaDto } from "@/submission/dto";
+import type { UserMetaDto } from "@/user/dto";
+import type { SubmissionBasicMetaDto } from "@/submission/dto";
+import type { ContestMetaDto } from "@/contest/dto";
 
 import { ProblemJudgeInfo } from "../problem-judge-info.interface";
 
 export enum GetProblemResponseError {
   PERMISSION_DENIED = "PERMISSION_DENIED",
-  NO_SUCH_PROBLEM = "NO_SUCH_PROBLEM"
-}
-
-class ProblemUserPermissionDto {
-  @ApiProperty()
-  user: UserMetaDto;
-
-  @ApiProperty({ enum: Object.values(ProblemPermissionLevel).filter(x => typeof x === "number") })
-  permissionLevel: ProblemPermissionLevel;
-}
-
-class ProblemGroupPermissionDto {
-  @ApiProperty()
-  group: GroupMetaDto;
-
-  @ApiProperty({ enum: Object.values(ProblemPermissionLevel).filter(x => typeof x === "number") })
-  permissionLevel: ProblemPermissionLevel;
-}
-
-class ProblemPermissionsDto {
-  @ApiProperty({ type: [ProblemUserPermissionDto] })
-  userPermissions: ProblemUserPermissionDto[];
-
-  @ApiProperty({ type: [ProblemGroupPermissionDto] })
-  groupPermissions: ProblemGroupPermissionDto[];
+  NO_SUCH_PROBLEM = "NO_SUCH_PROBLEM",
+  NO_SUCH_CONTEST = "NO_SUCH_CONTEST"
 }
 
 class ProblemLastSubmissionDto {
@@ -60,6 +37,9 @@ class ProblemLastSubmissionDto {
 export class GetProblemResponseDto {
   @ApiProperty({ enum: GetProblemResponseError })
   error?: GetProblemResponseError;
+
+  @ApiProperty()
+  contest?: ContestMetaDto;
 
   @ApiProperty()
   meta?: ProblemMetaDto;
@@ -101,7 +81,7 @@ export class GetProblemResponseDto {
   permissionOfCurrentUser?: ProblemPermissionType[];
 
   @ApiProperty()
-  permissions?: ProblemPermissionsDto;
+  accessControlList?: AccessControlListWithSubjectMeta;
 
   @ApiProperty()
   lastSubmission?: ProblemLastSubmissionDto;

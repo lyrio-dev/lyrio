@@ -1,9 +1,12 @@
 import { ApiProperty } from "@nestjs/swagger";
 
+import { ContestMetaDto } from "@/contest/dto";
+
 import { SubmissionMetaDto } from "./submission-meta.dto";
 
 import { SubmissionContent } from "../submission-content.interface";
 import { SubmissionProgress } from "../submission-progress.interface";
+import { SubmissionPermissionType } from "../submission.service";
 
 export enum GetSubmissionDetailResponseError {
   NO_SUCH_SUBMISSION = "NO_SUCH_SUBMISSION",
@@ -27,14 +30,8 @@ export class GetSubmissionDetailResponseDto {
   progressSubscriptionKey?: string;
 
   @ApiProperty()
-  permissionRejudge?: boolean;
+  contest?: ContestMetaDto;
 
-  @ApiProperty()
-  permissionCancel?: boolean;
-
-  @ApiProperty()
-  permissionSetPublic?: boolean;
-
-  @ApiProperty()
-  permissionDelete?: boolean;
+  @ApiProperty({ enum: SubmissionPermissionType, isArray: true })
+  permissions?: SubmissionPermissionType[];
 }

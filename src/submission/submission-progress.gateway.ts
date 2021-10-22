@@ -13,28 +13,41 @@ import { SubmissionProgress, SubmissionProgressType } from "./submission-progres
 import { SubmissionService } from "./submission.service";
 import { SubmissionStatus } from "./submission-status.enum";
 import { SubmissionEventType } from "./submission-progress.service";
+import { SubmissionEntity } from "./submission.entity";
 
 import { SubmissionBasicMetaDto } from "./dto";
 
 export enum SubmissionProgressSubscriptionType {
-  Meta,
-  Detail
+  Meta = "Meta",
+  Detail = "Detail"
+}
+
+export enum SubmissionProgressVisibility {
+  Hidden,
+  PretestsOnly,
+  Visible
+}
+
+export interface SubmissionProgressVisibilities {
+  submissionMetaVisibility: SubmissionProgressVisibility;
+  submissionTestcaseResultVisibility: SubmissionProgressVisibility;
+  submissionTestcaseDetailVisibility: SubmissionProgressVisibility;
 }
 
 export interface SubmissionProgressSubscription {
   type: SubmissionProgressSubscriptionType;
-  submissionIds: number[];
+  items: {
+    visibilities: SubmissionProgressVisibilities;
+    submissionId: number;
+  }[];
 }
 
 interface SubmissionProgressMessage {
-  // These properties exist if NOT finished
-  // "progressMeta" always exists while "progressDetail" only exists when the client subscribes the detail
   // null if the task is still waiting in queue
   progressMeta?: {
     progressType: SubmissionProgressType;
     resultMeta?: SubmissionBasicMetaDto;
   };
-  // status and score are not calculated to reduce server load
   progressDetail?: SubmissionProgress;
 }
 
@@ -54,10 +67,14 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
 
   // We don't use Socket.IO rooms since we push message additionally
   // rooms: each set is created on first joins and deleted on last leaves
+  // Clients in one room can have different visibilities
   private rooms: Map<string, Set<string>> = new Map();
 
   // clientJoinedRooms: each set is created and deleted on the client connects and disconnects
   private clientJoinedRooms: Map<string, Set<string>> = new Map();
+
+  // clientVisibilities: each client's subscription visibilities
+  private clientVisibilities: Map<string, Map<number, SubmissionProgressVisibilities>> = new Map();
 
   // This map of arraies is used to store the last message sent to each client,
   // to help us calculate the delta with jsondiffpatch
@@ -78,6 +95,7 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
   // submission's progress. The authorization is done before the key is encoded, and when a client connect
   // to the WebSocket, we don't require its user id or session key, only the key is verified.
   encodeSubscription(subscription: SubmissionProgressSubscription): string {
+    if (subscription.items?.length === 0) return null;
     return jwt.sign(subscription, this.secret);
   }
 
@@ -91,7 +109,7 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
   }
 
   private getRoom(subscriptionType: SubmissionProgressSubscriptionType, submissionId: number) {
-    return `${subscriptionType}_${submissionId}`;
+    return `${subscriptionType}:${submissionId}`;
   }
 
   private joinRoom(client: Socket, room: string) {
@@ -141,9 +159,13 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
   }
 
   // sendMessage: send a message to a client or a room of clients
-  private sendMessage(to: Socket | string, submissionId: number, message: SubmissionProgressMessage) {
+  private async sendMessage(
+    to: Socket | string,
+    submissionId: number,
+    getMessageByVisibilities: (visibilities: SubmissionProgressVisibilities) => Promise<SubmissionProgressMessage>
+  ) {
     // sendTo: calculate the message delta and send to a specfied client
-    const sendTo = (clientId: string) => {
+    const sendTo = (clientId: string, message: SubmissionProgressMessage) => {
       const lastMessageBySubmissionId = this.clientLastMessages.get(clientId);
       if (!lastMessageBySubmissionId) {
         // Already disconnected
@@ -156,10 +178,57 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
       if (delta) this.server.to(clientId).send(submissionId, delta);
     };
 
-    logger.log(`Sending to ${typeof to === "string" ? to : (to as Socket).id}: ${JSON.stringify(message)}`);
+    const serializeVisibilities = (visibilities: SubmissionProgressVisibilities) =>
+      [
+        visibilities.submissionMetaVisibility,
+        visibilities.submissionTestcaseResultVisibility,
+        visibilities.submissionTestcaseDetailVisibility
+      ].toString();
 
-    if (typeof to === "object") sendTo(to.id);
-    else for (const client of this.rooms.get(to) || []) sendTo(client);
+    const clients = typeof to === "object" ? [to.id] : this.rooms.get(to) || [];
+
+    const messageByVisibilities = new Map<string, SubmissionProgressMessage>();
+    for (const client of clients) {
+      const visibilities = this.clientVisibilities.get(client).get(submissionId);
+      const serializedVisibilities = serializeVisibilities(visibilities);
+      let message = messageByVisibilities.get(serializedVisibilities);
+      if (!message) {
+        message = await getMessageByVisibilities(visibilities);
+        messageByVisibilities.set(serializedVisibilities, message);
+      }
+
+      sendTo(client, message);
+    }
+  }
+
+  private async sendMeta(to: Socket, progressType: SubmissionProgressType, submission: SubmissionEntity) {
+    this.sendMessage(
+      to || this.getRoom(SubmissionProgressSubscriptionType.Meta, submission.id),
+      submission.id,
+      async visibilities => {
+        const resultMeta = await this.submissionService.getSubmissionBasicMeta(
+          submission,
+          visibilities.submissionMetaVisibility
+        );
+        const finished = resultMeta.status !== SubmissionStatus.Pending; // Whether the submission looks "finished" in the client's view
+        return {
+          progressMeta: {
+            progressType: finished ? SubmissionProgressType.Finished : progressType,
+            resultMeta: finished ? resultMeta : null
+          }
+        };
+      }
+    );
+  }
+
+  private async sendDetail(to: Socket, submission: SubmissionEntity, progress: SubmissionProgress) {
+    this.sendMessage(
+      to || this.getRoom(SubmissionProgressSubscriptionType.Detail, submission.id),
+      submission.id,
+      async visibilities => ({
+        progressDetail: await this.submissionService.processSubmissionProgress(progress, visibilities)
+      })
+    );
   }
 
   handleDisconnect(client: Socket): void {
@@ -171,6 +240,7 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
       }
     }
     this.clientLastMessages.delete(client.id);
+    this.clientVisibilities.delete(client.id);
   }
 
   async handleConnection(client: Socket): Promise<void> {
@@ -184,40 +254,31 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
 
     this.clientJoinedRooms.set(client.id, new Set());
     this.clientLastMessages.set(client.id, new Map());
+    this.clientVisibilities.set(
+      client.id,
+      new Map(subscription.items.map(({ submissionId, visibilities }) => [submissionId, visibilities]))
+    );
 
     // Join the rooms first to prevent missing the finished message
-    for (const submissionId of subscription.submissionIds) {
+    for (const { submissionId } of subscription.items) {
       this.joinRoom(client, this.getRoom(subscription.type, submissionId));
     }
 
     // Send messages for the already finished submissions
     await Promise.all(
-      subscription.submissionIds.map(async submissionId => {
+      subscription.items.map(async ({ submissionId }) => {
         const submission = await this.submissionService.findSubmissionById(submissionId);
         if (submission.status === SubmissionStatus.Pending) return;
 
         // This submission has already finished
 
-        const basicMeta = await this.submissionService.getSubmissionBasicMeta(submission);
-
         switch (subscription.type) {
           case SubmissionProgressSubscriptionType.Meta:
-            this.sendMessage(client, submissionId, {
-              progressMeta: {
-                progressType: SubmissionProgressType.Finished,
-                resultMeta: basicMeta
-              }
-            });
+            await this.sendMeta(client, SubmissionProgressType.Finished, submission);
             break;
           case SubmissionProgressSubscriptionType.Detail: {
             const submissionDetail = await this.submissionService.getSubmissionDetail(submission);
-            this.sendMessage(client, submissionId, {
-              progressMeta: {
-                progressType: SubmissionProgressType.Finished,
-                resultMeta: basicMeta
-              },
-              progressDetail: submissionDetail.result
-            });
+            await this.sendDetail(client, submission, submissionDetail.result);
             break;
           }
           default:
@@ -243,22 +304,10 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
 
     if (!isDeleted) {
       // If the progressType is "Finished", it's called after database updated
-      const submission = isFinished && (await this.submissionService.findSubmissionById(submissionId));
-      const basicMeta = isFinished && (await this.submissionService.getSubmissionBasicMeta(submission));
+      const submission = await this.submissionService.findSubmissionById(submissionId);
 
-      this.sendMessage(this.getRoom(SubmissionProgressSubscriptionType.Meta, submissionId), submissionId, {
-        progressMeta: {
-          progressType,
-          resultMeta: basicMeta
-        }
-      });
-      this.sendMessage(this.getRoom(SubmissionProgressSubscriptionType.Detail, submissionId), submissionId, {
-        progressMeta: {
-          progressType,
-          resultMeta: basicMeta
-        },
-        progressDetail: progress
-      });
+      await this.sendMeta(null, progressType, submission);
+      await this.sendDetail(null, submission, progress);
     }
 
     if (isFinished) {

@@ -27,8 +27,14 @@ export class ProblemMetaDto {
   locales: Locale[];
 
   @ApiProperty()
-  submissionCount?: number;
+  statisticsSubmitted?: number;
 
   @ApiProperty()
-  acceptedSubmissionCount?: number;
+  statisticsAccepted?: number;
+
+  @ApiProperty()
+  title?: string;
+
+  @ApiProperty()
+  titleLocale?: Locale;
 }

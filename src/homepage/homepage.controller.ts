@@ -88,11 +88,7 @@ export class HomepageController {
               currentUser && (acceptedSubmissions.get(problem.id) || nonAcceptedSubmissions.get(problem.id));
 
             return <GetHomepageResponseProblemDto>{
-              meta: await this.problemService.getProblemMeta(problem),
-              title: await this.problemService.getProblemLocalizedTitle(
-                problem,
-                problem.locales.includes(request.locale) ? request.locale : problem.locales[0]
-              ),
+              meta: await this.problemService.getProblemMeta(problem, request.locale),
               submission: submission && (await this.submissionService.getSubmissionBasicMeta(submission))
             };
           })

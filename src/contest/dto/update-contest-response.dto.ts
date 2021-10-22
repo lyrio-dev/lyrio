@@ -1,0 +1,15 @@
+import { ApiProperty } from "@nestjs/swagger";
+
+export enum UpdateContestResponseError {
+  PERMISSION_DENIED = "PERMISSION_DENIED",
+  NO_SUCH_CONTEST = "NO_SUCH_CONTEST",
+  NO_SUCH_PROBLEM = "NO_SUCH_PROBLEM",
+  INVALID_CONTEST_TYPE_OPTIONS = "INVALID_CONTEST_TYPE_OPTIONS",
+  SUBMITTED_EARLIER_THAN_NEW_START_TIME = "SUBMITTED_EARLIER_THAN_NEW_START_TIME",
+  DELETING_PROBLEM_SUMITTED = "DELETING_PROBLEM_SUMITTED"
+}
+
+export class UpdateContestResponseDto {
+  @ApiProperty()
+  error?: UpdateContestResponseError;
+}

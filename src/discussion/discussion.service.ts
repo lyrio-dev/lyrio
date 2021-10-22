@@ -8,9 +8,12 @@ import { UserEntity } from "@/user/user.entity";
 import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
 import { ConfigService } from "@/config/config.service";
 import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.service";
-import { PermissionObjectType, PermissionService } from "@/permission/permission.service";
-import { GroupEntity } from "@/group/group.entity";
-import { GroupService } from "@/group/group.service";
+import {
+  AccessControlList,
+  AccessControlListWithSubjectMeta,
+  PermissionObjectType,
+  PermissionService
+} from "@/permission/permission.service";
 import { ProblemEntity } from "@/problem/problem.entity";
 import { LockService } from "@/redis/lock.service";
 import { escapeLike } from "@/database/database.utils";
@@ -65,9 +68,6 @@ export class DiscussionService {
     private readonly discussionReactionRepository: Repository<DiscussionReactionEntity>,
     @InjectRepository(DiscussionReplyReactionEntity)
     private readonly discussionReplyReactionRepository: Repository<DiscussionReplyReactionEntity>,
-    @Inject(forwardRef(() => UserService))
-    private readonly userService: UserService,
-    private readonly groupService: GroupService,
     private readonly configService: ConfigService,
     private readonly auditService: AuditService,
     private readonly userPrivilegeService: UserPrivilegeService,
@@ -96,11 +96,11 @@ export class DiscussionService {
   }
 
   async findDiscussionById(id: number): Promise<DiscussionEntity> {
-    return await this.discussionRepository.findOne(id);
+    return id && await this.discussionRepository.findOne(id);
   }
 
   async findDiscussionReplyById(id: number): Promise<DiscussionReplyEntity> {
-    return await this.discussionReplyRepository.findOne(id);
+    return id && await this.discussionReplyRepository.findOne(id);
   }
 
   async findDiscussionsByExistingIds(discussionIds: number[]): Promise<DiscussionEntity[]> {
@@ -442,66 +442,41 @@ export class DiscussionService {
     );
   }
 
-  async setDiscussionPermissions(
+  async setDiscussionAccessControlList(
     discussion: DiscussionEntity,
-    userPermissions: [user: UserEntity, permission: DiscussionPermissionLevel][],
-    groupPermissions: [group: GroupEntity, permission: DiscussionPermissionLevel][]
+    accessControlList: AccessControlList<DiscussionPermissionLevel>
   ): Promise<void> {
     await this.lockDiscussionById(
       discussion.id,
       "Read",
       // eslint-disable-next-line @typescript-eslint/no-shadow
       async discussion =>
-        await this.permissionService.replaceUsersAndGroupsPermissionForObject(
+        await this.permissionService.setAccessControlList(
           discussion.id,
           PermissionObjectType.Discussion,
-          userPermissions,
-          groupPermissions
+          accessControlList
         )
     );
   }
 
-  async getDiscussionPermissionsWithId(
+  async getDiscussionAccessControlListWithSubjectId(
     discussion: DiscussionEntity
-  ): Promise<
-    [
-      [userId: number, permission: DiscussionPermissionLevel][],
-      [groupId: number, permission: DiscussionPermissionLevel][]
-    ]
-  > {
-    return await this.permissionService.getUserAndGroupPermissionListOfObject<DiscussionPermissionLevel>(
+  ): Promise<AccessControlList<DiscussionPermissionLevel>> {
+    return await this.permissionService.getAccessControlList<DiscussionPermissionLevel>(
       discussion.id,
       PermissionObjectType.Discussion
     );
   }
 
-  async getDiscussionPermissions(
-    discussion: DiscussionEntity
-  ): Promise<
-    [
-      [user: UserEntity, permission: DiscussionPermissionLevel][],
-      [group: GroupEntity, permission: DiscussionPermissionLevel][]
-    ]
-  > {
-    const [userPermissionList, groupPermissionList] = await this.getDiscussionPermissionsWithId(discussion);
-    return [
-      await Promise.all(
-        userPermissionList.map(
-          async ([userId, permission]): Promise<[user: UserEntity, permission: DiscussionPermissionLevel]> => [
-            await this.userService.findUserById(userId),
-            permission
-          ]
-        )
-      ),
-      await Promise.all(
-        groupPermissionList.map(
-          async ([groupId, permission]): Promise<[group: GroupEntity, discussion: DiscussionPermissionLevel]> => [
-            await this.groupService.findGroupById(groupId),
-            permission
-          ]
-        )
-      )
-    ];
+  async getDiscussionAccessControlListWithSubjectMeta(
+    discussion: DiscussionEntity,
+    currentUser: UserEntity
+  ): Promise<AccessControlListWithSubjectMeta<DiscussionPermissionLevel>> {
+    return await this.permissionService.getAccessControlListWithSubjectMeta<DiscussionPermissionLevel>(
+      discussion.id,
+      PermissionObjectType.Discussion,
+      currentUser
+    );
   }
 
   private async updateSortTime(discussionId: number, transactionalEntityManager: EntityManager, editTime?: Date) {
@@ -686,11 +661,10 @@ export class DiscussionService {
   async deleteDiscussion(discussion: DiscussionEntity): Promise<void> {
     await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
       // delete permissions
-      await this.permissionService.replaceUsersAndGroupsPermissionForObject(
+      await this.permissionService.setAccessControlList(
         discussion.id,
         PermissionObjectType.Discussion,
-        [],
-        [],
+        null,
         transactionalEntityManager
       );
 

@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { forwardRef, Inject, Injectable } from "@nestjs/common";
 
 import { Redis } from "ioredis";
 
@@ -32,6 +32,7 @@ export class SubmissionProgressService {
 
   constructor(
     private readonly redisService: RedisService,
+    @Inject(forwardRef(() => SubmissionProgressGateway))
     private readonly submissionProgressGateway: SubmissionProgressGateway
   ) {
     this.redis = this.redisService.getClient();

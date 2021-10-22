@@ -11,7 +11,7 @@ import { validateMetaAndSubtasks } from "@/problem-type/common/meta-and-subtasks
 import { validateChecker } from "@/problem-type/common/checker";
 import { validateExtraSourceFiles } from "@/problem-type/common/extra-source-files";
 import { autoMatchInputToOutput } from "@/problem-type/common/auto-match-input-output";
-import { restrictProperties } from "@/problem-type/common/restrict-properties";
+import { restrictProperties } from "@/common/restrict-properties";
 
 import { SubmissionTestcaseResultTraditional } from "./submission-testcase-result.interface";
 import { SubmissionContentTraditional } from "./submission-content.interface";

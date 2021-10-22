@@ -22,10 +22,19 @@ interface TestcaseProgressReference {
 export interface SubmissionProgress<TestcaseResult extends SubmissionTestcaseResult = SubmissionTestcaseResult>
   extends JudgeTaskProgress {
   progressType: SubmissionProgressType;
+  pretestsFinished?: boolean;
+
+  // Only valid when pretests finished
+  pretestsStatus?: SubmissionStatus;
+  pretestsScore?: number;
+  pretestsTimeUsed?: number;
+  pretestsMemoryUsed?: number;
 
   // Only valid when finished
   status?: SubmissionStatus;
   score?: number;
+  timeUsed?: number;
+  memoryUsed?: number;
   totalOccupiedTime?: number;
 
   compile?: {
@@ -42,6 +51,7 @@ export interface SubmissionProgress<TestcaseResult extends SubmissionTestcaseRes
   testcaseResult?: Record<string, TestcaseResult>;
   samples?: TestcaseProgressReference[];
   subtasks?: {
+    isPretest?: boolean;
     score: number;
     fullScore: number;
     testcases: TestcaseProgressReference[];

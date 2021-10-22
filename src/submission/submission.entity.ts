@@ -2,20 +2,23 @@ import { Entity, PrimaryGeneratedColumn, Index, ManyToOne, Column, JoinColumn, O
 
 import { UserEntity } from "@/user/user.entity";
 import { ProblemEntity } from "@/problem/problem.entity";
+import { ContestEntity } from "@/contest/contest.entity";
 
 import { SubmissionStatus } from "./submission-status.enum";
 import { SubmissionDetailEntity } from "./submission-detail.entity";
 
 @Entity("submission")
-@Index(["isPublic", "problemId", "submitterId", "status", "codeLanguage"])
-@Index(["isPublic", "problemId", "status", "codeLanguage"])
-@Index(["isPublic", "problemId", "codeLanguage", "submitterId"])
-@Index(["isPublic", "submitterId", "status", "codeLanguage"])
-@Index(["isPublic", "codeLanguage", "submitterId"])
-@Index(["isPublic", "status", "codeLanguage"])
-@Index(["problemId", "submitterId"])
-@Index(["submitterId", "status"])
-@Index(["submitTime", "submitterId"])
+@Index(["contestId", "isPublic", "problemId", "submitterId", "status", "codeLanguage"])
+@Index(["contestId", "isPublic", "problemId", "status", "codeLanguage"])
+@Index(["contestId", "isPublic", "problemId", "codeLanguage", "submitterId"])
+@Index(["contestId", "isPublic", "submitterId", "status", "codeLanguage"])
+@Index(["contestId", "isPublic", "codeLanguage", "submitterId"])
+@Index(["contestId", "isPublic", "status", "codeLanguage"])
+@Index(["contestId", "problemId", "submitterId"])
+@Index(["contestId", "submitterId", "status", "id"])
+@Index(["contestId", "submitterId", "pretestsStatus", "id"])
+@Index(["contestId", "submitTime", "submitterId"])
+@Index(["contestId", "pretestsStatus"])
 export class SubmissionEntity {
   @PrimaryGeneratedColumn()
   id: number;
@@ -44,11 +47,23 @@ export class SubmissionEntity {
 
   @Column({ type: "integer", nullable: true })
   memoryUsed: number;
+
+  @Column({ type: "integer", nullable: true })
+  pretestsTimeUsed: number;
+
+  @Column({ type: "integer", nullable: true })
+  pretestsMemoryUsed: number;
   // End: Fields for "some of the problem types" only
 
   @Column({ type: "integer", nullable: true })
   @Index()
   score: number;
+
+  @Column({ type: "integer", nullable: true })
+  pretestsScore: number;
+
+  @Column({ type: "enum", enum: SubmissionStatus, nullable: true })
+  pretestsStatus: SubmissionStatus;
 
   @Column({ type: "enum", enum: SubmissionStatus })
   @Index()
@@ -77,6 +92,14 @@ export class SubmissionEntity {
   @Column()
   @Index()
   submitterId: number;
+
+  @ManyToOne(() => ContestEntity, { onDelete: "SET NULL" })
+  @JoinColumn()
+  contest: Promise<ContestEntity>;
+
+  @Column({ nullable: true })
+  @Index()
+  contestId: number;
 
   @OneToOne(() => SubmissionDetailEntity, submissionDetail => submissionDetail.submission)
   detail: Promise<SubmissionDetailEntity>;

@@ -122,7 +122,7 @@ export class UserService {
    * If the current user is admin or have manage user pervilege, the email will be returned
    * even if the user set public email to false.
    */
-  async getUserMeta(user: UserEntity, currentUser: UserEntity): Promise<UserMetaDto> {
+  async getUserMeta(user: UserEntity, currentUser?: UserEntity): Promise<UserMetaDto> {
     return {
       id: user.id,
       username: user.username,

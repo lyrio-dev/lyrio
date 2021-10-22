@@ -6,8 +6,7 @@ import { UserMetaDto } from "./user-meta.dto";
 
 export enum QueryAuditLogsResponseError {
   NO_SUCH_USER = "NO_SUCH_USER",
-  PERMISSION_DENIED = "PERMISSION_DENIED",
-  TAKE_TOO_MANY = "TAKE_TOO_MANY"
+  PERMISSION_DENIED = "PERMISSION_DENIED"
 }
 
 export class QueryAuditLogsResponseItemDto {

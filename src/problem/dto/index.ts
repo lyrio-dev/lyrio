@@ -5,6 +5,7 @@ export * from "./problem-statement.dto";
 export * from "./problem-file.dto";
 export * from "./problem-tag-localized-name.dto";
 export * from "./localized-problem-tag.dto";
+export * from "./problem-title.dto";
 
 export * from "./query-problem-set-request.dto";
 export * from "./query-problem-set-response.dto";
@@ -18,8 +19,8 @@ export * from "./update-problem-statement-response.dto";
 export * from "./get-problem-request.dto";
 export * from "./get-problem-response.dto";
 
-export * from "./set-problem-permissions-request.dto";
-export * from "./set-problem-permissions-response.dto";
+export * from "./set-problem-access-control-list-request.dto";
+export * from "./set-problem-access-control-list-response.dto";
 
 export * from "./set-problem-display-id-request.dto";
 export * from "./set-problem-display-id-response.dto";

@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 
-import { ProblemMetaDto } from "@/problem/dto";
+import { ProblemMetaDto, ProblemTitleDto } from "@/problem/dto";
 
 import { UserMetaDto } from "@/user/dto";
 
@@ -40,9 +40,6 @@ export class SubmissionBasicMetaDto {
 export class SubmissionMetaDto extends SubmissionBasicMetaDto {
   @ApiProperty()
   problem: ProblemMetaDto;
-
-  @ApiProperty()
-  problemTitle: string;
 
   @ApiProperty()
   submitter: UserMetaDto;

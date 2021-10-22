@@ -1,9 +1,10 @@
-import { Injectable } from "@nestjs/common";
+import { forwardRef, Inject, Injectable } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
 
 import { Repository, EntityManager, Connection, FindConditions } from "typeorm";
 
 import { UserEntity } from "@/user/user.entity";
+import { UserService } from "@/user/user.service";
 import { GroupEntity } from "@/group/group.entity";
 import { GroupService } from "@/group/group.service";
 
@@ -11,7 +12,41 @@ import { PermissionForUserEntity } from "./permission-for-user.entity";
 import { PermissionForGroupEntity } from "./permission-for-group.entity";
 import { PermissionObjectType } from "./permission-object-type.enum";
 
+import { UserMetaDto } from "@/user/dto";
+import { GroupMetaDto } from "@/group/dto";
+
 export { PermissionObjectType } from "./permission-object-type.enum";
+
+export interface AccessControlListItemForUser<PermissionLevel extends number> {
+  userId: number;
+  permissionLevel: PermissionLevel;
+}
+
+export interface AccessControlListItemForGroup<PermissionLevel extends number> {
+  groupId: number;
+  permissionLevel: PermissionLevel;
+}
+
+export interface AccessControlList<PermissionLevel extends number> {
+  userPermissions: AccessControlListItemForUser<PermissionLevel>[];
+  groupPermissions: AccessControlListItemForGroup<PermissionLevel>[];
+}
+
+export interface AccessControlListValidationErrorResponse {
+  error?: any; // eslint-disable-lien @typescript/no-explicit-any
+  errorObjectId?: number;
+}
+
+export interface AccessControlListWithSubjectMeta<PermissionLevel extends number = number> {
+  userPermissions: {
+    user: UserMetaDto;
+    permissionLevel: PermissionLevel;
+  }[];
+  groupPermissions: {
+    group: GroupMetaDto;
+    permissionLevel: PermissionLevel;
+  }[];
+}
 
 @Injectable()
 export class PermissionService {
@@ -22,8 +57,58 @@ export class PermissionService {
     private readonly permissionForUserRepository: Repository<PermissionForUserEntity>,
     @InjectRepository(PermissionForGroupEntity)
     private readonly permissionForGroupRepository: Repository<PermissionForGroupEntity>,
+    @Inject(forwardRef(() => UserService))
+    private readonly userService: UserService,
     private readonly groupService: GroupService
   ) {}
+
+  /**
+   * This function validates a "set permission" request for the existence of user/groups.
+   */
+  public async validateAccessControlList<PermissionLevel extends number>(
+    acl: AccessControlList<number>,
+    PermissionLevelEnum: { [key: string]: PermissionLevel | string }
+  ): Promise<AccessControlListValidationErrorResponse> {
+    if (
+      !Array.isArray(acl.userPermissions) ||
+      !Array.isArray(acl.groupPermissions) ||
+      acl.userPermissions.some(
+        ({ userId, permissionLevel }) =>
+          !Number.isSafeInteger(userId) || !Number.isSafeInteger(userId) || !(permissionLevel in PermissionLevelEnum)
+      ) ||
+      acl.groupPermissions.some(
+        ({ groupId, permissionLevel }) =>
+          !Number.isSafeInteger(groupId) || !Number.isSafeInteger(groupId) || !(permissionLevel in PermissionLevelEnum)
+      )
+    )
+      return {
+        error: "INVALID_ACL"
+      };
+
+    const users = await this.userService.findUsersByExistingIds(
+      acl.userPermissions.map(userPermission => userPermission.userId)
+    );
+    for (const i of acl.userPermissions.keys()) {
+      const { userId } = acl.userPermissions[i];
+      if (!users[i])
+        return {
+          error: "NO_SUCH_USER",
+          errorObjectId: userId
+        };
+    }
+
+    const groups = await this.groupService.findGroupsByExistingIds(
+      acl.groupPermissions.map(groupPermission => groupPermission.groupId)
+    );
+    for (const i of acl.groupPermissions.keys()) {
+      const { groupId } = acl.groupPermissions[i];
+      if (!groups[i])
+        return {
+          error: "NO_SUCH_GROUP",
+          errorObjectId: groupId
+        };
+    }
+  }
 
   private async setUserPermissionLevel<PermissionLevel extends number>(
     user: UserEntity,
@@ -231,88 +316,91 @@ export class PermissionService {
     return Math.max(userPermission, queryResult.maxPermissionLevel) as PermissionLevel;
   }
 
-  async getUsersWithExactPermissionLevel<PermissionLevel extends number>(
-    objectId: number,
-    objectType: PermissionObjectType,
-    permissionLevel: PermissionLevel
-  ): Promise<number[]> {
-    return (
-      await this.permissionForUserRepository.find({
-        objectId,
-        objectType,
-        permissionLevel
-      })
-    ).map(permissionForUser => permissionForUser.userId);
-  }
-
-  async getGroupsWithExactPermissionLevel<PermissionLevel extends number>(
-    objectId: number,
-    objectType: PermissionObjectType,
-    permissionLevel: PermissionLevel
-  ): Promise<number[]> {
-    return (
-      await this.permissionForGroupRepository.find({
-        objectId,
-        objectType,
-        permissionLevel
-      })
-    ).map(permissionForGroup => permissionForGroup.groupId);
-  }
-
-  async getUsersAndGroupsWithExactPermissionLevel<PermissionLevel extends number>(
-    objectId: number,
-    objectType: PermissionObjectType,
-    permissionLevel: PermissionLevel
-  ): Promise<[userIds: number[], groupIds: number[]]> {
-    return [
-      await this.getUsersWithExactPermissionLevel(objectId, objectType, permissionLevel),
-      await this.getGroupsWithExactPermissionLevel(objectId, objectType, permissionLevel)
-    ];
-  }
-
-  async getUserPermissionListOfObject<PermissionLevel extends number>(
+  async getObjectAccessControlListForUser<PermissionLevel extends number>(
     objectId: number,
     objectType: PermissionObjectType
-  ): Promise<[userId: number, permissionLevel: PermissionLevel][]> {
+  ): Promise<AccessControlListItemForUser<PermissionLevel>[]> {
     return (
       await this.permissionForUserRepository.find({
         objectId,
         objectType
       })
-    ).map(permissionForUser => [permissionForUser.userId, permissionForUser.permissionLevel as PermissionLevel]);
+    ).map(permissionForUser => ({
+      userId: permissionForUser.userId,
+      permissionLevel: permissionForUser.permissionLevel as PermissionLevel
+    }));
   }
 
-  async getGroupPermissionListOfObject<PermissionLevel extends number>(
+  async getObjectAccessControlListForGroup<PermissionLevel extends number>(
     objectId: number,
     objectType: PermissionObjectType
-  ): Promise<[groupId: number, permissionLevel: PermissionLevel][]> {
+  ): Promise<AccessControlListItemForGroup<PermissionLevel>[]> {
     return (
       await this.permissionForGroupRepository.find({
         objectId,
         objectType
       })
-    ).map(permissionForGroup => [permissionForGroup.groupId, permissionForGroup.permissionLevel as PermissionLevel]);
+    ).map(permissionForGroup => ({
+      groupId: permissionForGroup.groupId,
+      permissionLevel: permissionForGroup.permissionLevel as PermissionLevel
+    }));
   }
 
-  async getUserAndGroupPermissionListOfObject<PermissionLevel extends number>(
+  async getAccessControlList<PermissionLevel extends number>(
     objectId: number,
     objectType: PermissionObjectType
-  ): Promise<
-    [[userId: number, permissionLevel: PermissionLevel][], [groupId: number, permissionLevel: PermissionLevel][]]
-  > {
-    return [
-      await this.getUserPermissionListOfObject(objectId, objectType),
-      await this.getGroupPermissionListOfObject(objectId, objectType)
-    ];
+  ): Promise<AccessControlList<PermissionLevel>> {
+    const [userPermissions, groupPermissions] = await Promise.all([
+      this.getObjectAccessControlListForUser<PermissionLevel>(objectId, objectType),
+      this.getObjectAccessControlListForGroup<PermissionLevel>(objectId, objectType)
+    ]);
+
+    return {
+      userPermissions,
+      groupPermissions
+    };
   }
 
-  async replaceUsersAndGroupsPermissionForObject<PermissionLevel extends number>(
+  async getAccessControlListWithSubjectMeta<PermissionLevel extends number>(
     objectId: number,
     objectType: PermissionObjectType,
-    userPermissions: [UserEntity, PermissionLevel][],
-    groupPermissions: [GroupEntity, PermissionLevel][],
+    currentUser: UserEntity
+  ): Promise<AccessControlListWithSubjectMeta<PermissionLevel>> {
+    const [userPermissions, groupPermissions] = await Promise.all([
+      this.getObjectAccessControlListForUser<PermissionLevel>(objectId, objectType).then(list =>
+        Promise.all(
+          list.map(async ({ userId, permissionLevel }) => ({
+            user: await this.userService.getUserMeta(await this.userService.findUserById(userId), currentUser),
+            permissionLevel
+          }))
+        )
+      ),
+      this.getObjectAccessControlListForGroup<PermissionLevel>(objectId, objectType).then(list =>
+        Promise.all(
+          list.map(async ({ groupId, permissionLevel }) => ({
+            group: await this.groupService.getGroupMeta(await this.groupService.findGroupById(groupId)),
+            permissionLevel
+          }))
+        )
+      )
+    ]);
+    return {
+      userPermissions,
+      groupPermissions
+    };
+  }
+
+  /**
+   * @param acl Set to `null` to delete.
+   */
+  async setAccessControlList<PermissionLevel extends number>(
+    objectId: number,
+    objectType: PermissionObjectType,
+    acl: AccessControlList<PermissionLevel>,
     transactionalEntityManager?: EntityManager
   ): Promise<void> {
+    const { userPermissions, groupPermissions } = acl || { userPermissions: [], groupPermissions: [] };
+
     // eslint-disable-next-line @typescript-eslint/no-shadow
     const runInTransaction = async (transactionalEntityManager: EntityManager) => {
       await transactionalEntityManager.delete(PermissionForUserEntity, {
@@ -331,10 +419,10 @@ export class PermissionService {
           .insert()
           .into(PermissionForUserEntity)
           .values(
-            userPermissions.map(([user, permissionLevel]) => ({
+            userPermissions.map(({ userId, permissionLevel }) => ({
               objectId,
               objectType,
-              userId: user.id,
+              userId: userId,
               permissionLevel
             }))
           )
@@ -347,10 +435,10 @@ export class PermissionService {
           .insert()
           .into(PermissionForGroupEntity)
           .values(
-            groupPermissions.map(([group, permissionLevel]) => ({
+            groupPermissions.map(({ groupId, permissionLevel }) => ({
               objectId,
               objectType,
-              groupId: group.id,
+              groupId: groupId,
               permissionLevel
             }))
           )

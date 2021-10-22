@@ -1,7 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
 
-import { Locale } from "@/common/locale.type";
-
 import { DiscussionOrReplyReactionsDto } from "./discussion-or-reply-reactions.dto";
 
 import { DiscussionMetaDto } from "./discussion-meta.dto";
@@ -13,19 +11,7 @@ import { DiscussionPermissionType, DiscussionReplyPermissionType } from "../disc
 
 export enum GetDiscussionAndRepliesResponseError {
   NO_SUCH_DISCUSSION = "NO_SUCH_DISCUSSION",
-  PERMISSION_DENIED = "PERMISSION_DENIED",
-  TAKE_TOO_MANY = "TAKE_TOO_MANY"
-}
-
-export class GetDiscussionAndRepliesResponseProblemDto {
-  @ApiProperty()
-  meta: ProblemMetaDto;
-
-  @ApiProperty()
-  title: string;
-
-  @ApiProperty()
-  titleLocale: Locale;
+  PERMISSION_DENIED = "PERMISSION_DENIED"
 }
 
 export class DiscussionDto {
@@ -36,7 +22,7 @@ export class DiscussionDto {
   content: string;
 
   @ApiProperty()
-  problem?: GetDiscussionAndRepliesResponseProblemDto;
+  problem?: ProblemMetaDto;
 
   @ApiProperty()
   publisher: UserMetaDto;

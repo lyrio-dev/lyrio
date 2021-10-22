@@ -65,6 +65,8 @@ preference:
     discussionReplies: 40
     discussionRepliesHead: 20
     discussionRepliesMore: 20
+    contestList: 10
+    contestRanklist: 50
   misc:
     appLogo: default
     appLogoForTheme:
@@ -73,7 +75,6 @@ preference:
     googleAnalyticsId: null
     gravatarCdn: https://gravatar.com
     redirectLegacyUrls: false
-    legacyContestsEntryUrl: null
     homepageUserListOnMainView: true
     sortUserByRating: false
     renderMarkdownInUserBio: false
@@ -102,6 +103,8 @@ queryLimit:
   userAuditLogs: 20
   discussions: 20
   discussionReplies: 50
+  contestList: 20
+  contestRanklist: 100
 judge:
   limit:
     compilerMessage: 524288

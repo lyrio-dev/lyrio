@@ -20,11 +20,11 @@ export * from "./get-discussion-and-replies-response.dto";
 export * from "./query-discussions-request.dto";
 export * from "./query-discussions-response.dto";
 
-export * from "./get-discussion-permissions-request.dto";
-export * from "./get-discussion-permissions-response.dto";
+export * from "./get-discussion-access-control-list-request.dto";
+export * from "./get-discussion-access-control-list-response.dto";
 
-export * from "./set-discussion-permissions-request.dto";
-export * from "./set-discussion-permissions-response.dto";
+export * from "./set-discussion-access-control-list-request.dto";
+export * from "./set-discussion-access-control-list-response.dto";
 
 export * from "./set-discussion-public-request.dto";
 export * from "./set-discussion-public-response.dto";

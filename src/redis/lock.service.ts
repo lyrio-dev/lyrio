@@ -49,7 +49,7 @@ export class LockService {
     doUnlock: () => Promise<boolean>,
     doRefresh: () => Promise<boolean>,
     callback: () => Promise<T>
-  ): Promise<T> {
+  ): Promise<T | (() => Promise<void>)> {
     // Try locking
     let retries = 0;
 
@@ -98,12 +98,21 @@ export class LockService {
       }
     };
 
-    try {
-      return await callback();
-    } finally {
-      await unlock();
-    }
+    if (callback) {
+      try {
+        return await callback();
+      } finally {
+        await unlock();
+      }
+    } else return unlock;
   }
+
+  /**
+   * Basic lock with Redis.
+   * @param name The lock name.
+   * @return The function to unlock.
+   */
+  async lock<T>(name: string, callback: () => Promise<T>): Promise<T>;
 
   /**
    * Basic lock with Redis.
@@ -111,7 +120,9 @@ export class LockService {
    * @param callback The function to execute while the lock is held.
    * @return The value returned in `callback`.
    */
-  async lock<T>(name: string, callback: () => Promise<T>): Promise<T> {
+  async lock(name: string): Promise<() => Promise<void>>;
+
+  async lock<T>(name: string, callback?: () => Promise<T>): Promise<T | (() => Promise<void>)> {
     // Generate a unique lock token
     const lockToken = uuid();
 
@@ -130,10 +141,26 @@ export class LockService {
    * Only one writer can hold the same lock at the same time with no reader.
    * @param name The lock name.
    * @param type The operation type, `"Read"` or `"Write"`.
+   * @return The function to unlock.
+   */
+  async lockReadWrite(name: string, type: "Read" | "Write"): Promise<() => Promise<void>>;
+
+  /**
+   * Lock a read-write-lock for a reader or writer.
+   * Multiple readers can hold the same lock at the same time with no writer.
+   * Only one writer can hold the same lock at the same time with no reader.
+   * @param name The lock name.
+   * @param type The operation type, `"Read"` or `"Write"`.
    * @param callback The function to execute while the lock is held.
    * @return The value returned in `callback`.
    */
-  async lockReadWrite<T>(name: string, type: "Read" | "Write", callback: () => Promise<T>): Promise<T> {
+  async lockReadWrite<T>(name: string, type: "Read" | "Write", callback: () => Promise<T>): Promise<T>;
+
+  async lockReadWrite<T>(
+    name: string,
+    type: "Read" | "Write",
+    callback?: () => Promise<T>
+  ): Promise<T | (() => Promise<void>)> {
     const keys = [REDIS_KEY_RWLOCK_WRITE_INTENT, REDIS_KEY_RWLOCK_WRITE_LOCK, REDIS_KEY_RWLOCK_READERS].map(key =>
       key.format(name)
     );

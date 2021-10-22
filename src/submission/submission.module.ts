@@ -16,6 +16,7 @@ import { SubmissionController } from "./submission.controller";
 import { SubmissionProgressService } from "./submission-progress.service";
 import { SubmissionProgressGateway } from "./submission-progress.gateway";
 import { SubmissionStatisticsService } from "./submission-statistics.service";
+import { ContestModule } from "@/contest/contest.module";
 
 @Module({
   imports: [
@@ -27,7 +28,8 @@ import { SubmissionStatisticsService } from "./submission-statistics.service";
     forwardRef(() => JudgeModule),
     forwardRef(() => UserModule),
     forwardRef(() => AuditModule),
-    forwardRef(() => FileModule)
+    forwardRef(() => FileModule),
+    forwardRef(() => ContestModule)
   ],
   providers: [SubmissionService, SubmissionProgressService, SubmissionProgressGateway, SubmissionStatisticsService],
   controllers: [SubmissionController],

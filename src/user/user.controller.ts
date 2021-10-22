@@ -28,7 +28,6 @@ import {
   SearchUserResponseDto,
   GetUserListRequestDto,
   GetUserListResponseDto,
-  GetUserListResponseError,
   GetUserDetailRequestDto,
   GetUserDetailResponseDto,
   GetUserDetailResponseError,
@@ -256,9 +255,7 @@ export class UserController {
     @Body() request: GetUserListRequestDto
   ): Promise<GetUserListResponseDto> {
     if (request.takeCount > this.configService.config.queryLimit.userList)
-      return {
-        error: GetUserListResponseError.TAKE_TOO_MANY
-      };
+      request.takeCount = this.configService.config.queryLimit.userList;
 
     const [users, count] = await this.userService.getUserList(request.sortBy, request.skipCount, request.takeCount);
 
@@ -472,9 +469,7 @@ export class UserController {
     @Body() request: QueryAuditLogsRequestDto
   ): Promise<QueryAuditLogsResponseDto> {
     if (request.takeCount > this.configService.config.queryLimit.userAuditLogs)
-      return {
-        error: QueryAuditLogsResponseError.TAKE_TOO_MANY
-      };
+      request.takeCount = this.configService.config.queryLimit.userAuditLogs;
 
     if (!currentUser)
       return {

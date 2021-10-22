@@ -1,7 +1,7 @@
 import { Injectable, Inject, forwardRef } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
 
-import { Repository, Connection, QueryBuilder } from "typeorm";
+import { Repository, Connection, QueryBuilder, LessThan } from "typeorm";
 import { ValidationError } from "class-validator";
 import { v4 as uuid } from "uuid";
 import moment from "moment-timezone";
@@ -30,6 +30,9 @@ import { AlternativeUrlFor, FileService } from "@/file/file.service";
 import { ConfigService } from "@/config/config.service";
 import { FileEntity } from "@/file/file.entity";
 import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.service";
+import { ContestEntity } from "@/contest/contest.entity";
+import { ContestOptions } from "@/contest/contest-options.interface";
+import { ContestPermissionType, ContestService, ContestUserRole } from "@/contest/contest.service";
 
 import { SubmissionProgress, SubmissionProgressType } from "./submission-progress.interface";
 import { SubmissionContent } from "./submission-content.interface";
@@ -38,13 +41,13 @@ import { SubmissionStatisticsService } from "./submission-statistics.service";
 import { SubmissionEntity } from "./submission.entity";
 import { SubmissionDetailEntity } from "./submission-detail.entity";
 import { SubmissionStatus } from "./submission-status.enum";
+import { SubmissionProgressVisibilities, SubmissionProgressVisibility } from "./submission-progress.gateway";
 
 import { FileUploadInfoDto, SignedFileUploadRequestDto } from "@/file/dto";
 
 import { SubmissionBasicMetaDto } from "./dto";
 
 export enum SubmissionPermissionType {
-  View = "View",
   Cancel = "Cancel",
   Rejudge = "Rejudge",
   ManagePublicness = "ManagePublicness",
@@ -61,6 +64,11 @@ interface SubmissionTaskExtraInfo extends JudgeTaskExtraInfo {
     uuid: string;
     url: string;
   };
+
+  // Pretests
+  pretestsOnly: boolean;
+  reportPretestsResult: boolean;
+  noSkipBySamples: boolean;
 }
 
 function makeSubmissionPriority(
@@ -97,7 +105,7 @@ function makeSubmissionPriority(
   let t3: number;
   // All time occupied recently is by this user means no other users are submitting, no need to decrease its priority
   if (Number.isNaN(k) || k < 1) t3 = T3_MIN;
-  // If a user's occupied time > average + 3 * standard deviation, we decrease its priotity to the lowest
+  // If a user's occupied time > average + 3 * standard deviation, we decrease its priority to the lowest
   else if (k > 3) t3 = T3_MAX;
   // If a user's occupied time > average + 1 * standard deviation, we start decreasing its priority
   else t3 = ((k ** 2 - K_MIN) / (K_MAX - K_MIN)) * (T3_MAX - T3_MIN) + T3_MIN;
@@ -130,7 +138,9 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     private readonly fileService: FileService,
     private readonly configService: ConfigService,
     @Inject(forwardRef(() => UserPrivilegeService))
-    private readonly userPrivilegeService: UserPrivilegeService
+    private readonly userPrivilegeService: UserPrivilegeService,
+    @Inject(forwardRef(() => ContestService))
+    private readonly contestService: ContestService
   ) {
     this.judgeQueueService.registerTaskType(JudgeTaskType.Submission, this);
 
@@ -160,45 +170,106 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     return submissionIds.map(submissionId => map[submissionId]);
   }
 
+  /**
+   * @return Whether the user has permission to view the submission.
+   * @return The submission's progress visibilities for this user (used for contests).
+   */
+  async getSubmissionVisibilityOfUser(
+    user: UserEntity,
+    submission: SubmissionEntity,
+    problem?: ProblemEntity,
+    hasManageProblemPrivilege?: boolean,
+    contest?: ContestEntity
+  ): Promise<[hasViewPermission: boolean, progressVisibilities: SubmissionProgressVisibilities]> {
+    if (!submission.contestId) {
+      if (user.id === submission.submitterId) return [true, null];
+      if (submission.isPublic) return [true, null];
+      if (!user) return [false, null];
+    } else {
+      contest ??= await this.contestService.findContestById(submission.contestId);
+      const role = await this.contestService.getUserRoleInContest(user, contest);
+
+      if (role === ContestUserRole.Inspector || role === ContestUserRole.Admin) return [true, null];
+
+      const ended = await this.contestService.isEndedFor(contest, user);
+
+      if (!ended) {
+        // The contest is running
+        // The user is a participant
+        const contestOptions = await this.contestService.getContestOptions(contest.id);
+
+        if (
+          // Seeing self' submissions
+          submission.submitterId === user?.id ||
+          // Seeing others' submissions
+          (contestOptions.allowSeeingOthersSubmissionDetail && submission.isPublic)
+        ) {
+          return [true, contestOptions];
+        }
+      } else {
+        // The contest is ended
+        if (submission.isPublic || submission.submitterId === user?.id) return [true, null];
+      }
+    }
+
+    if (
+      await this.problemService.userHasPermission(
+        user,
+        problem ?? (await this.problemService.findProblemById(submission.problemId)),
+        ProblemPermissionType.Modify,
+        hasManageProblemPrivilege
+      )
+    )
+      return [true, null];
+  }
+
   async userHasPermission(
     user: UserEntity,
     submission: SubmissionEntity,
     type: SubmissionPermissionType,
     problem?: ProblemEntity,
-    hasPrivilege?: boolean
+    hasManageProblemPrivilege?: boolean,
+    contest?: ContestEntity
   ): Promise<boolean> {
     switch (type) {
-      // Everyone can read a public submission
-      // Submitter and those who has the Modify permission of the submission's problem can View a non-public submission
-      case SubmissionPermissionType.View:
-        if (submission.isPublic) return true;
-        if (!user) return false;
-        if (user.id === submission.submitterId) return true;
-        return await this.problemService.userHasPermission(
-          user,
-          problem ?? (await this.problemService.findProblemById(submission.problemId)),
-          ProblemPermissionType.Modify,
-          hasPrivilege
-        );
-
       // Submitter and those who has the Modify permission of the submission's problem can Cancel a submission
+      // Contest manager can also cancel a submission
       case SubmissionPermissionType.Cancel:
         if (!user) return false;
         if (user.id === submission.submitterId) return true;
+        if (
+          submission.contestId &&
+          (await this.contestService.userHasPermission(
+            user,
+            contest ?? (await this.contestService.findContestById(submission.contestId)),
+            ContestPermissionType.Modify
+          ))
+        )
+          return true;
         return await this.problemService.userHasPermission(
           user,
           problem ?? (await this.problemService.findProblemById(submission.problemId)),
           ProblemPermissionType.Modify,
-          hasPrivilege
+          hasManageProblemPrivilege
         );
 
       // Those who has the Modify permission of the submission's problem can Rejudge a submission
+      // Contest manager can also rejudge a submission
       case SubmissionPermissionType.Rejudge:
+        if (
+          submission.contestId &&
+          (await this.contestService.userHasPermission(
+            user,
+            contest ?? (await this.contestService.findContestById(submission.contestId)),
+            ContestPermissionType.Modify
+          ))
+        )
+          return true;
         return await this.problemService.userHasPermission(
           user,
           problem ?? (await this.problemService.findProblemById(submission.problemId)),
           ProblemPermissionType.Modify,
-          hasPrivilege
+          hasManageProblemPrivilege
         );
 
       // Admins can manage a submission's publicness or delete a submission
@@ -207,7 +278,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
         if (!user) return false;
         else if (user.isAdmin) return true;
         else if (
-          hasPrivilege ??
+          hasManageProblemPrivilege ??
           (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageProblem))
         )
           return true;
@@ -218,9 +289,64 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     }
   }
 
+  async getUserPermissions(
+    user: UserEntity,
+    submission: SubmissionEntity,
+    problem?: ProblemEntity,
+    hasManageProblemPrivilege?: boolean,
+    contest?: ContestEntity
+  ): Promise<SubmissionPermissionType[]> {
+    if (!user) return [];
+
+    hasManageProblemPrivilege ??= await this.userPrivilegeService.userHasPrivilege(
+      user,
+      UserPrivilegeType.ManageProblem
+    );
+    if (hasManageProblemPrivilege)
+      return [
+        SubmissionPermissionType.Cancel,
+        SubmissionPermissionType.Rejudge,
+        SubmissionPermissionType.ManagePublicness,
+        SubmissionPermissionType.Delete
+      ];
+
+    problem ??= await this.problemService.findProblemById(submission.problemId);
+    if (submission.contestId) contest ??= await this.contestService.findContestById(submission.contestId);
+
+    const managerProblemOrContest =
+      (submission.contestId &&
+        (await this.contestService.userHasPermission(
+          user,
+          contest ?? (await this.contestService.findContestById(submission.contestId)),
+          ContestPermissionType.Modify
+        ))) ||
+      (await this.problemService.userHasPermission(
+        user,
+        problem ?? (await this.problemService.findProblemById(submission.problemId)),
+        ProblemPermissionType.Modify,
+        hasManageProblemPrivilege
+      ));
+
+    if (managerProblemOrContest) return [SubmissionPermissionType.Cancel, SubmissionPermissionType.Rejudge];
+
+    if (submission.submitterId === user.id) return [SubmissionPermissionType.Cancel];
+  }
+
+  async getSubmissionsOfContest(contestId: number, problemId?: number): Promise<SubmissionEntity[]> {
+    return await this.submissionRepository.find(
+      problemId
+        ? {
+            contestId,
+            problemId
+          }
+        : { contestId }
+    );
+  }
+
   async querySubmissions(
     problemId: number,
     submitterId: number,
+    contestId: number | false,
     codeLanguage: string,
     status: SubmissionStatus,
     minId: number,
@@ -234,6 +360,14 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
       queryBuilder.andWhere("isPublic = :isPublic", {
         isPublic: true
       });
+    }
+
+    if (contestId != null) {
+      if (contestId === false) queryBuilder.andWhere("contestId IS NULL");
+      else
+        queryBuilder.andWhere("contestId = :contestId", {
+          contestId: contestId
+        });
     }
 
     if (problemId) {
@@ -310,8 +444,10 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
   async createSubmission(
     submitter: UserEntity,
     problem: ProblemEntity,
+    contest: ContestEntity,
     content: SubmissionContent,
-    uploadInfo: FileUploadInfoDto
+    uploadInfo: FileUploadInfoDto,
+    now?: Date
   ): Promise<
     [
       errors: ValidationError[],
@@ -360,9 +496,10 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
       submission.answerSize = pair.answerSize;
       submission.score = null;
       submission.status = SubmissionStatus.Pending;
-      submission.submitTime = new Date();
+      submission.submitTime = now || new Date();
       submission.problemId = problem.id;
       submission.submitterId = submitter.id;
+      submission.contestId = contest?.id;
       await transactionalEntityManager.save(submission);
 
       const submissionDetail = new SubmissionDetailEntity();
@@ -376,8 +513,11 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     });
 
     if (submission) {
-      await this.problemService.updateProblemStatistics(problem.id, 1, 0);
-      await this.userService.updateUserSubmissionCount(submitter.id, 1);
+      // Don't update sstatistics for contest submissions
+      if (!submission.contestId) {
+        await this.problemService.updateProblemStatistics(problem.id, 1, 0);
+        await this.userService.updateUserSubmissionCount(submitter.id, 1);
+      }
 
       try {
         await this.judgeSubmission(submission);
@@ -391,8 +531,14 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     return [null, fileUploadErrorOrRequest, null];
   }
 
-  async getSubmissionBasicMeta(submission: SubmissionEntity): Promise<SubmissionBasicMetaDto> {
-    return {
+  /**
+   * @param progressVisibility used in contest, controls what part of submission result can be seen by user.
+   */
+  async getSubmissionBasicMeta(
+    submission: SubmissionEntity,
+    progressVisibility?: SubmissionProgressVisibility
+  ): Promise<SubmissionBasicMetaDto> {
+    const result: SubmissionBasicMetaDto = {
       id: submission.id,
       isPublic: submission.isPublic,
       codeLanguage: submission.codeLanguage,
@@ -403,11 +549,109 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
       timeUsed: submission.timeUsed,
       memoryUsed: submission.memoryUsed
     };
+
+    if (progressVisibility === SubmissionProgressVisibility.Hidden) {
+      result.score = result.status = result.timeUsed = result.memoryUsed = null;
+    } else if (progressVisibility === SubmissionProgressVisibility.PretestsOnly) {
+      result.score = submission.pretestsScore;
+      result.status = submission.pretestsStatus;
+      result.timeUsed = submission.pretestsTimeUsed;
+      result.memoryUsed = submission.pretestsMemoryUsed;
+
+      if (submission.status === SubmissionStatus.Pending) {
+        if (submission.pretestsScore !== null) {
+          result.score = submission.pretestsScore;
+          result.status = submission.pretestsStatus;
+          result.timeUsed = submission.pretestsTimeUsed;
+          result.memoryUsed = submission.pretestsMemoryUsed;
+        }
+      }
+    }
+
+    return result;
   }
 
   async getSubmissionDetail(submission: SubmissionEntity): Promise<SubmissionDetailEntity> {
     return await this.submissionDetailRepository.findOne({
       submissionId: submission.id
+    });
+  }
+
+  /**
+   * @param progressVisibilities used in contest, controls what part of submission result can be seen by user.
+   */
+  async processSubmissionProgress(
+    progress: SubmissionProgress,
+    progressVisibilities?: SubmissionProgressVisibilities
+  ): Promise<SubmissionProgress> {
+    if (
+      !progressVisibilities ||
+      (progressVisibilities?.submissionMetaVisibility === SubmissionProgressVisibility.Visible &&
+        progressVisibilities?.submissionTestcaseResultVisibility === SubmissionProgressVisibility.Visible &&
+        progressVisibilities?.submissionTestcaseDetailVisibility === SubmissionProgressVisibility.Visible)
+    )
+      return progress;
+
+    if (progressVisibilities?.submissionMetaVisibility === SubmissionProgressVisibility.Hidden) return null;
+
+    const newProgress = { ...progress };
+
+    if (progressVisibilities?.submissionMetaVisibility === SubmissionProgressVisibility.PretestsOnly) {
+      if (progress.pretestsFinished) newProgress.progressType = SubmissionProgressType.Finished;
+      newProgress.score = progress.pretestsScore;
+      newProgress.status = progress.pretestsStatus;
+      newProgress.timeUsed = progress.pretestsTimeUsed;
+      newProgress.memoryUsed = progress.pretestsMemoryUsed;
+
+      delete newProgress.totalOccupiedTime;
+    }
+
+    const pretestsSubtasks = (progress.subtasks || []).filter(s => s.isPretest);
+    const pretestsTestcases = new Set<string>(
+      [...pretestsSubtasks.map(s => s.testcases).flat(), ...(newProgress.samples || [])]
+        .map(t => t?.testcaseHash)
+        .filter(h => h)
+    );
+
+    if (progressVisibilities?.submissionTestcaseResultVisibility === SubmissionProgressVisibility.PretestsOnly) {
+      newProgress.subtasks = pretestsSubtasks;
+      newProgress.testcaseResult = Object.fromEntries(
+        Object.entries(progress.testcaseResult || {}).filter(([key]) => pretestsTestcases.has(key))
+      );
+    } else if (progressVisibilities?.submissionTestcaseResultVisibility === SubmissionProgressVisibility.Hidden) {
+      newProgress.testcaseResult = {};
+      newProgress.subtasks = [];
+      newProgress.samples = [];
+    }
+
+    // TODO: add problem type support
+    const whiteListProperties = ["testcaseInfo", "status", "score", "time", "memory"];
+
+    if (progressVisibilities?.submissionTestcaseDetailVisibility !== SubmissionProgressVisibility.Visible) {
+      newProgress.testcaseResult = Object.fromEntries(
+        Object.entries(newProgress.testcaseResult).map(([testcaseHash, testcaseResult]) => {
+          if (
+            progressVisibilities?.submissionTestcaseDetailVisibility === SubmissionProgressVisibility.Hidden ||
+            !pretestsTestcases.has(testcaseHash)
+          ) {
+            return [
+              testcaseHash,
+              Object.fromEntries(Object.entries(testcaseResult).filter(([key]) => whiteListProperties.includes(key)))
+            ];
+          }
+
+          return [testcaseHash, testcaseResult];
+        })
+      );
+    }
+
+    return newProgress;
+  }
+
+  async getUserContestSubmissions(userId: number, contestId: number, beforeTime?: Date): Promise<SubmissionEntity[]> {
+    return await this.submissionRepository.find({
+      where: { submitterId: userId, contestId, ...(beforeTime ? { submitTime: LessThan(beforeTime) } : {}) },
+      order: { id: "ASC" }
     });
   }
 
@@ -477,6 +721,10 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     submission.status = SubmissionStatus.Pending;
     submission.timeUsed = null;
     submission.memoryUsed = null;
+    submission.pretestsStatus = null;
+    submission.pretestsScore = null;
+    submission.pretestsTimeUsed = null;
+    submission.pretestsMemoryUsed = null;
     await this.submissionRepository.save(submission);
 
     const [
@@ -544,7 +792,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
       )
     );
 
-    await this.onSubmissionUpdated(oldSubmission, submission);
+    await this.onSubmissionUpdated(oldSubmission, submission, { pretests: true, full: true });
   }
 
   async rejudgeSubmission(submission: SubmissionEntity): Promise<void> {
@@ -583,7 +831,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
         await transactionalEntityManager.save(submissionDetail);
       });
 
-      await this.onSubmissionUpdated(oldSubmission, submission);
+      await this.onSubmissionUpdated(oldSubmission, submission, { pretests: true, full: true });
 
       return true;
     });
@@ -618,12 +866,17 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
         await transactionalEntityManager.remove(submission);
       });
 
-      await this.submissionStatisticsService.onSubmissionUpdated(submission, null);
-      if (submission.status === SubmissionStatus.Accepted) {
-        await this.problemService.updateProblemStatistics(submission.problemId, -1, -1);
-        await this.userService.updateUserAcceptedCount(submission.submitterId, submission.problemId, "AC_TO_NON_AC");
+      await this.submissionStatisticsService.updateSubmissionStatistics(submission, null);
+
+      if (!submission.contestId) {
+        if (submission.status === SubmissionStatus.Accepted) {
+          await this.problemService.updateProblemStatistics(submission.problemId, -1, -1);
+          await this.userService.updateUserAcceptedCount(submission.submitterId, submission.problemId, "AC_TO_NON_AC");
+        } else {
+          await this.problemService.updateProblemStatistics(submission.problemId, -1, 0);
+        }
       } else {
-        await this.problemService.updateProblemStatistics(submission.problemId, -1, 0);
+        await this.contestService.onSubmissionUpdated(submission, null, { pretests: true, full: true });
       }
     });
     if (deleteFileActually) deleteFileActually();
@@ -632,52 +885,76 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
   /**
    * This function updates related info, the problem must be locked for Read first, then the submission must be locked.
    */
-  private async onSubmissionUpdated(oldSubmission: SubmissionEntity, submission: SubmissionEntity): Promise<void> {
-    await this.submissionStatisticsService.onSubmissionUpdated(oldSubmission, submission);
+  private async onSubmissionUpdated(
+    oldSubmission: SubmissionEntity,
+    submission: SubmissionEntity,
+    resultUpdated: { pretests: boolean; full: boolean }
+  ): Promise<void> {
+    await this.submissionStatisticsService.updateSubmissionStatistics(oldSubmission, submission);
 
-    const oldAccepted = oldSubmission.status === SubmissionStatus.Accepted;
-    const newAccepted = submission.status === SubmissionStatus.Accepted;
-    if (!oldAccepted && newAccepted) {
-      await this.problemService.updateProblemStatistics(submission.problemId, 0, 1);
-      await this.userService.updateUserAcceptedCount(submission.submitterId, submission.problemId, "NON_AC_TO_AC");
-    } else if (oldAccepted && !newAccepted) {
-      await this.problemService.updateProblemStatistics(submission.problemId, 0, -1);
-      await this.userService.updateUserAcceptedCount(submission.submitterId, submission.problemId, "AC_TO_NON_AC");
+    if (!submission.contestId) {
+      if (!resultUpdated.full) return;
+
+      const oldAccepted = oldSubmission.status === SubmissionStatus.Accepted;
+      const newAccepted = submission.status === SubmissionStatus.Accepted;
+      if (!oldAccepted && newAccepted) {
+        await this.problemService.updateProblemStatistics(submission.problemId, 0, 1);
+        await this.userService.updateUserAcceptedCount(submission.submitterId, submission.problemId, "NON_AC_TO_AC");
+      } else if (oldAccepted && !newAccepted) {
+        await this.problemService.updateProblemStatistics(submission.problemId, 0, -1);
+        await this.userService.updateUserAcceptedCount(submission.submitterId, submission.problemId, "AC_TO_NON_AC");
+      }
+    } else {
+      await this.contestService.onSubmissionUpdated(oldSubmission, submission, resultUpdated);
     }
   }
 
   /**
    * This function updates related info, the problem must be locked for Read first, then the submission must be locked.
+   *
+   * If only pretests are finished, update meta only.
    */
   private async onSubmissionFinished(
     submission: SubmissionEntity,
-    problem: ProblemEntity,
+    previousProgress: SubmissionProgress,
     progress: SubmissionProgress
   ): Promise<void> {
+    const updatePretestsResultOnly =
+      progress.pretestsFinished && progress.progressType !== SubmissionProgressType.Finished;
+
     const oldSubmission = { ...submission };
 
-    const submissionDetail = await this.getSubmissionDetail(submission);
-    submissionDetail.result = progress;
+    submission.pretestsStatus = progress.pretestsStatus;
+    submission.pretestsScore = progress.pretestsScore;
+    submission.pretestsTimeUsed = progress.pretestsTimeUsed;
+    submission.pretestsMemoryUsed = progress.pretestsMemoryUsed;
 
-    submission.taskId = null;
-    submission.status = progress.status;
-    submission.score = progress.score;
-    submission.totalOccupiedTime = progress.totalOccupiedTime;
+    if (updatePretestsResultOnly) {
+      await this.submissionRepository.save(submission);
+      logger.log(`Submission ${submission.id}'s pretests finished with status ${progress.pretestsStatus}`);
+    } else {
+      const submissionDetail = await this.getSubmissionDetail(submission);
+      submissionDetail.result = progress;
 
-    const timeAndMemory = this.problemTypeFactoryService
-      .type(problem.type)
-      .getTimeAndMemoryUsedFromFinishedSubmissionProgress(submissionDetail.result);
-    submission.timeUsed = timeAndMemory.timeUsed;
-    submission.memoryUsed = timeAndMemory.memoryUsed;
+      submission.taskId = null;
+      submission.status = progress.status;
+      submission.score = progress.score;
+      submission.totalOccupiedTime = progress.totalOccupiedTime;
+      submission.timeUsed = progress.timeUsed;
+      submission.memoryUsed = progress.memoryUsed;
 
-    await this.connection.transaction(async transactionalEntityManager => {
-      await transactionalEntityManager.save(submission);
-      await transactionalEntityManager.save(submissionDetail);
+      await this.connection.transaction(async transactionalEntityManager => {
+        await transactionalEntityManager.save(submission);
+        await transactionalEntityManager.save(submissionDetail);
+      });
+
+      logger.log(`Submission ${submission.id} finished with status ${submission.status}`);
+    }
+
+    await this.onSubmissionUpdated(oldSubmission, submission, {
+      pretests: !previousProgress?.pretestsFinished && progress.pretestsFinished,
+      full: progress.progressType === SubmissionProgressType.Finished
     });
-
-    logger.log(`Submission ${submission.id} finished with status ${submission.status}`);
-
-    await this.onSubmissionUpdated(oldSubmission, submission);
   }
 
   /**
@@ -690,27 +967,30 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
       return false;
     }
 
+    const previousProgress = await this.submissionProgressService.getPendingSubmissionProgress(submission.id);
+    const pretestsJustFinished = !previousProgress?.pretestsFinished && progress.pretestsFinished;
     const finished = progress.progressType === SubmissionProgressType.Finished;
 
     // Don't lock the problem if not finished since we don't modify the database.
     // eslint-disable-next-line @typescript-eslint/no-shadow
-    await this.lockSubmission(submission, finished, async (submission, problem?) => {
+    await this.lockSubmission(submission, finished || pretestsJustFinished, async submission => {
       if (!submission || submission.taskId !== taskId) {
         logger.warn(`Invalid task Id ${taskId} of task progress, maybe there's a too-early rejudge?`);
       }
 
       // First update database, then report progress
-      if (finished) {
-        await this.onSubmissionFinished(submission, problem, progress);
+      if (finished || pretestsJustFinished) {
+        await this.onSubmissionFinished(submission, previousProgress, progress);
       }
 
+      // The submission progress is updated here.
       await this.submissionProgressService.emitSubmissionEvent(submission.id, SubmissionEventType.Progress, progress);
     });
 
     return true;
   }
 
-  async getTaskToBeSentToJudgeByTaskId(taskId: string, priotity: number): Promise<JudgeTask<SubmissionTaskExtraInfo>> {
+  async getTaskToBeSentToJudgeByTaskId(taskId: string, priority: number): Promise<JudgeTask<SubmissionTaskExtraInfo>> {
     try {
       const submission = await this.findSubmissionByTaskId(taskId);
       if (!submission) return null;
@@ -723,11 +1003,14 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
 
       const problemTypeService = this.problemTypeFactoryService.type(problem.type);
 
+      const contestOptions =
+        submission.contestId && (await this.contestService.getContestOptions(submission.contestId));
+
       return new JudgeTask<SubmissionTaskExtraInfo>(
         submission.taskId,
         JudgeTaskType.Submission,
         JudgeTaskPriorityType.High,
-        priotity,
+        priority,
         {
           problemType: problem.type,
           judgeInfo: preprocessedJudgeInfo,
@@ -753,7 +1036,10 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
                     })
                   : null
               }
-            : null
+            : null,
+          pretestsOnly: contestOptions.runPretestsOnly,
+          reportPretestsResult: !!submission.contestId,
+          noSkipBySamples: !!submission.contestId
         }
       );
     } catch (e) {
@@ -815,12 +1101,27 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     return new Map(submissions.map(submission => [submission.problemId, submission]));
   }
 
-  async problemHasAnySubmission(problem: ProblemEntity): Promise<boolean> {
+  async problemHasAnySubmission(problemId: number, contestId?: number): Promise<boolean> {
     return (
       (await this.submissionRepository.count({
-        problemId: problem.id
+        where: contestId
+          ? {
+              problemId,
+              contestId
+            }
+          : {
+              problemId
+            },
+        take: 1
       })) !== 0
     );
+  }
+
+  async getEarlistSubmissionOfContest(contestId: number): Promise<SubmissionEntity> {
+    return await this.submissionRepository.findOne({
+      where: { contestId },
+      order: { submitTime: "ASC" }
+    });
   }
 
   /**

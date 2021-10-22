@@ -3,7 +3,7 @@
 import { CodeLanguage } from "@/code-language/code-language.type";
 import { ProblemFileEntity } from "@/problem/problem-file.entity";
 
-import { restrictProperties } from "./restrict-properties";
+import { restrictProperties } from "../../common/restrict-properties";
 
 interface CheckerTypeIntegers {
   type: "integers";

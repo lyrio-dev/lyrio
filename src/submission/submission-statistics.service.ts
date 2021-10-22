@@ -67,6 +67,8 @@ export class SubmissionStatisticsService {
 
   private async parseFromRedis<T>(key: string): Promise<T> {
     const str = await this.redisService.cacheGet(key);
+    if (!str) return null;
+
     try {
       return JSON.parse(str);
     } catch (e) {
@@ -167,7 +169,7 @@ export class SubmissionStatisticsService {
    *
    * A newly-added submission won't call this function.
    */
-  async onSubmissionUpdated(oldSubmission: SubmissionEntity, submission?: SubmissionEntity): Promise<void> {
+  async updateSubmissionStatistics(oldSubmission: SubmissionEntity, submission?: SubmissionEntity): Promise<void> {
     // Submission score statistics
     if (!submission || oldSubmission.score !== submission.score) {
       await this.redisService.cacheDelete(REDIS_KEY_SUBMISSION_SCORE_STATISTICS.format(oldSubmission.problemId));

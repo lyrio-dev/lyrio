@@ -13,11 +13,16 @@ import { ProblemEntity } from "@/problem/problem.entity";
 import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
 import { AlternativeUrlFor, FileService } from "@/file/file.service";
 import { ProblemTypeFactoryService } from "@/problem-type/problem-type-factory.service";
+import { ContestService, ContestUserRole } from "@/contest/contest.service";
 
 import { SubmissionStatus } from "./submission-status.enum";
 import { SubmissionStatisticsService } from "./submission-statistics.service";
 import { SubmissionProgressService } from "./submission-progress.service";
-import { SubmissionProgressGateway, SubmissionProgressSubscriptionType } from "./submission-progress.gateway";
+import {
+  SubmissionProgressGateway,
+  SubmissionProgressSubscriptionType,
+  SubmissionProgressVisibilities
+} from "./submission-progress.gateway";
 import { SubmissionPermissionType, SubmissionService } from "./submission.service";
 
 import {
@@ -65,7 +70,8 @@ export class SubmissionController {
     private readonly submissionProgressService: SubmissionProgressService,
     private readonly submissionStatisticsService: SubmissionStatisticsService,
     private readonly auditService: AuditService,
-    private readonly fileService: FileService
+    private readonly fileService: FileService,
+    private readonly contestService: ContestService
   ) {}
 
   @Recaptcha()
@@ -87,41 +93,76 @@ export class SubmissionController {
           error: SubmitResponseError.NO_SUCH_PROBLEM
         };
 
-      // TODO: add "submit" permission
-      if (!(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.View)))
+      const [contest, unlockContest] = request.contestId
+        ? await this.contestService.lockContestById(request.contestId, "Read")
+        : [];
+
+      try {
+        if (request.contestId && !contest)
+          return {
+            error: SubmitResponseError.NO_SUCH_CONTEST
+          };
+
+        // Check permission
+        if (
+          contest
+            ? !(
+                (await this.contestService.isProblemUsedInContest(problem, contest)) &&
+                (await this.contestService.isRegistered(contest, currentUser))
+              )
+            : !(await this.problemService.userHasPermission(currentUser, problem, ProblemPermissionType.View))
+        )
+          return {
+            error: SubmitResponseError.PERMISSION_DENIED
+          };
+
+        const now = new Date();
+
+        if (contest) {
+          if (!this.contestService.isStarted(contest, now))
+            return {
+              error: SubmitResponseError.CONTEST_NOT_STARTED
+            };
+          if (await this.contestService.isEndedFor(contest, currentUser, now))
+            return {
+              error: SubmitResponseError.CONTEST_ENDED
+            };
+        }
+
+        const [, submittable] = await this.problemService.getProblemJudgeInfo(problem);
+        if (!submittable)
+          return {
+            error: SubmitResponseError.PERMISSION_DENIED
+          };
+
+        const [validationError, fileErrorOrUploadRequest, submission] = await this.submissionService.createSubmission(
+          currentUser,
+          problem,
+          contest,
+          request.content,
+          request.uploadInfo,
+          now
+        );
+
+        if (validationError && validationError.length > 0) throw new BadRequestException(validationError);
+
+        // If file upload is required
+        if (typeof fileErrorOrUploadRequest === "string")
+          return {
+            error: fileErrorOrUploadRequest as SubmitResponseError
+          };
+        else if (fileErrorOrUploadRequest)
+          return {
+            signedUploadRequest: fileErrorOrUploadRequest
+          };
+
+        // Submitted successfully
         return {
-          error: SubmitResponseError.PERMISSION_DENIED
+          submissionId: submission.id
         };
-
-      const [, submittable] = await this.problemService.getProblemJudgeInfo(problem);
-      if (!submittable)
-        return {
-          error: SubmitResponseError.PERMISSION_DENIED
-        };
-
-      const [validationError, fileErrorOrUploadRequest, submission] = await this.submissionService.createSubmission(
-        currentUser,
-        problem,
-        request.content,
-        request.uploadInfo
-      );
-
-      if (validationError && validationError.length > 0) throw new BadRequestException(validationError);
-
-      // If file upload is required
-      if (typeof fileErrorOrUploadRequest === "string")
-        return {
-          error: fileErrorOrUploadRequest as SubmitResponseError
-        };
-      else if (fileErrorOrUploadRequest)
-        return {
-          signedUploadRequest: fileErrorOrUploadRequest
-        };
-
-      // Submitted successfully
-      return {
-        submissionId: submission.id
-      };
+      } finally {
+        if (unlockContest) await unlockContest();
+      }
     });
   }
 
@@ -134,19 +175,58 @@ export class SubmissionController {
     @CurrentUser() currentUser: UserEntity,
     @Body() request: QuerySubmissionRequestDto
   ): Promise<QuerySubmissionResponseDto> {
+    const filterContest = request.contestId && (await this.contestService.findContestById(request.contestId));
+
+    if (!request.contestId && filterContest) return { error: QuerySubmissionResponseError.NO_SUCH_CONTEST };
+
+    const contestOptions = filterContest && (await this.contestService.getContestOptions(filterContest.id));
+    const userRoleInContest =
+      filterContest && (await this.contestService.getUserRoleInContest(currentUser, filterContest));
+    const contestEnded = filterContest && (await this.contestService.isEndedFor(filterContest, currentUser));
+
+    const hasManageProblemPrivilege = await this.userPrivilegeService.userHasPrivilege(
+      currentUser,
+      UserPrivilegeType.ManageProblem
+    );
+    // Querying contest but uesr have no role in contest
+    if (filterContest && !userRoleInContest)
+      return {
+        error: QuerySubmissionResponseError.PERMISSION_DENIED
+      };
+
     let filterProblem: ProblemEntity = null;
-    if (request.problemId || request.problemDisplayId) {
-      filterProblem = request.problemId
-        ? await this.problemService.findProblemById(request.problemId)
-        : await this.problemService.findProblemByDisplayId(request.problemDisplayId);
+    if (request.problemId || request.problemDisplayId || (filterContest && request.contestProblemAlias)) {
+      if (request.problemId) filterProblem = await this.problemService.findProblemById(request.problemId);
+      else if (request.problemDisplayId) filterProblem = await this.problemService.findProblemByDisplayId(request.problemDisplayId);
+      else if (request.contestProblemAlias) {
+        const contestProblem = await this.contestService.getContestProblem(filterContest, request.contestProblemAlias);
+        if (contestProblem) filterProblem = await this.problemService.findProblemById(contestProblem.problemId);
+      }
+
       if (!filterProblem)
         return {
           error: QuerySubmissionResponseError.NO_SUCH_PROBLEM
         };
+
+      if (!(await this.problemService.userHasPermission(currentUser, filterProblem, ProblemPermissionType.View)))
+        return {
+          error: QuerySubmissionResponseError.PERMISSION_DENIED
+        };
     }
 
     let filterSubmitter: UserEntity = null;
-    if (request.submitter) {
+    if (
+      filterContest &&
+      !contestEnded &&
+      userRoleInContest === ContestUserRole.Participant &&
+      !contestOptions?.allowSeeingOthersSubmissions
+    ) {
+      filterSubmitter = currentUser;
+      if (!filterSubmitter)
+        return {
+          error: QuerySubmissionResponseError.NO_SUCH_USER
+        };
+    } else if (request.submitter) {
       filterSubmitter = await this.userService.findUserByUsername(request.submitter);
       if (!filterSubmitter)
         return {
@@ -154,26 +234,51 @@ export class SubmissionController {
         };
     }
 
-    const hasManageProblemPrivilege = await this.userPrivilegeService.userHasPrivilege(
-      currentUser,
-      UserPrivilegeType.ManageProblem
-    );
-    const hasViewProblemPermission =
-      hasManageProblemPrivilege ||
-      (filterProblem &&
-        (await this.problemService.userHasPermission(currentUser, filterProblem, ProblemPermissionType.View)));
     const isSubmissionsOwned = filterSubmitter && currentUser && filterSubmitter.id === currentUser.id;
+    const showContestSubmissions = isSubmissionsOwned || filterProblem || hasManageProblemPrivilege;
     const queryResult = await this.submissionService.querySubmissions(
       filterProblem ? filterProblem.id : null,
       filterSubmitter ? filterSubmitter.id : null,
+      // If the user has view permission of a problem, it can view contest submissions
+      // Otherwise hide contest submissions from global submissions page
+      // null means not filtering, false means filter non-contest submissions only
+      filterContest ? filterContest.id : showContestSubmissions ? null : false,
       request.codeLanguage,
       request.status,
       request.minId,
       request.maxId,
-      !(hasManageProblemPrivilege || hasViewProblemPermission || isSubmissionsOwned),
+      !(hasManageProblemPrivilege || isSubmissionsOwned),
       request.takeCount > this.configService.config.queryLimit.submissions
         ? this.configService.config.queryLimit.submissions
         : request.takeCount
+    );
+
+    // For contest participants, restrict the submissions' result visibility
+    const progressVisibilitiesOfContest = new Map(
+      await Promise.all(
+        queryResult.result
+          .map(s => s.contestId)
+          .filter(id => id)
+          .map<Promise<[number, SubmissionProgressVisibilities]>>(async contestId => {
+            // If filtering problems outside of contest, all submissions' progress are visible
+            if (filterProblem && !filterContest) return [contestId, null];
+
+            // The user is querying one of:
+            // 1. Some submissions of a contest, which it has permissions to access
+            //    (Other's submissions has been filtered out if not accessable)
+            // 2. Some submissions by itself, in a contest
+
+            if (contestId === filterContest?.id) return [contestId, contestOptions];
+
+            const contest = await this.contestService.findContestById(contestId);
+            const role = await this.contestService.getUserRoleInContest(currentUser, contest); // The role won't be null
+            if (role !== ContestUserRole.Participant) return [contestId, null];
+
+            if (await this.contestService.isEndedFor(contest, currentUser)) return [contestId, null];
+
+            return [contestId, await this.contestService.getContestOptions(contestId)];
+          })
+      )
     );
 
     const submissionMetas: SubmissionMetaDto[] = new Array(queryResult.result.length);
@@ -185,27 +290,20 @@ export class SubmissionController {
     await Promise.all(
       queryResult.result.map(async (_, i) => {
         const submission = queryResult.result[i];
-        const titleLocale = problems[i].locales.includes(request.locale) ? request.locale : problems[i].locales[0];
-
-        submissionMetas[i] = {
-          id: submission.id,
-          isPublic: submission.isPublic,
-          codeLanguage: submission.codeLanguage,
-          answerSize: submission.answerSize,
-          score: submission.score,
-          status: submission.status,
-          submitTime: submission.submitTime,
-          problem: await this.problemService.getProblemMeta(problems[i]),
-          problemTitle: await this.problemService.getProblemLocalizedTitle(problems[i], titleLocale),
-          submitter: await this.userService.getUserMeta(submitters[i], currentUser),
-          timeUsed: submission.timeUsed,
-          memoryUsed: submission.memoryUsed
-        };
 
         // For progress reporting
         const progress =
           submission.status === SubmissionStatus.Pending &&
           (await this.submissionProgressService.getPendingSubmissionProgress(submission.id));
+
+        submissionMetas[i] = {
+          ...(await this.submissionService.getSubmissionBasicMeta(
+            submission,
+            progressVisibilitiesOfContest.get(submission.contestId)?.submissionMetaVisibility
+          )),
+          problem: await this.problemService.getProblemMeta(problems[i], request.locale),
+          submitter: await this.userService.getUserMeta(submitters[i], currentUser)
+        };
 
         if (progress) {
           submissionMetas[i].progressType = progress.progressType;
@@ -219,13 +317,16 @@ export class SubmissionController {
 
     return {
       submissions: submissionMetas,
-      progressSubscriptionKey:
-        pendingSubmissionIds.length === 0
-          ? null
-          : this.submissionProgressGateway.encodeSubscription({
-              type: SubmissionProgressSubscriptionType.Meta,
-              submissionIds: pendingSubmissionIds
-            }),
+      contest: request.contestId && (await this.contestService.getContestMeta(request.contestId)),
+      progressSubscriptionKey: this.submissionProgressGateway.encodeSubscription({
+        type: SubmissionProgressSubscriptionType.Meta,
+        items: queryResult.result
+          .filter(s => s.status === SubmissionStatus.Pending)
+          .map(s => ({
+            submissionId: s.id,
+            visibilities: progressVisibilitiesOfContest.get(s.contestId)
+          }))
+      }),
       hasSmallerId: queryResult.hasSmallerId,
       hasLargerId: queryResult.hasLargerId
     };
@@ -251,77 +352,34 @@ export class SubmissionController {
       this.userPrivilegeService.userHasPrivilege(currentUser, UserPrivilegeType.ManageProblem)
     ]);
 
-    if (
-      !(await this.submissionService.userHasPermission(
-        currentUser,
-        submission,
-        SubmissionPermissionType.View,
-        problem,
-        hasPrivilege
-      ))
-    )
+    const [hasViewPermission, progressVisibilities] = await this.submissionService.getSubmissionVisibilityOfUser(
+      currentUser,
+      submission
+    );
+
+    if (!hasViewPermission)
       return {
         error: GetSubmissionDetailResponseError.PERMISSION_DENIED
       };
-    const titleLocale = problem.locales.includes(request.locale) ? request.locale : problem.locales[0];
+
     const pending = submission.status === SubmissionStatus.Pending;
 
-    const [
-      submitter,
-      submissionDetail,
-      progress,
-      permissionRejudge,
-      permissionCancel,
-      permissionSetPublic,
-      permissionDelete
-    ] = await Promise.all([
+    const [submitter, submissionDetail, progress, contest, permissions] = await Promise.all([
       this.userService.findUserById(submission.submitterId),
       this.submissionService.getSubmissionDetail(submission),
       pending && this.submissionProgressService.getPendingSubmissionProgress(submission.id),
-      this.submissionService.userHasPermission(
-        currentUser,
-        submission,
-        SubmissionPermissionType.Rejudge,
-        problem,
-        hasPrivilege
-      ),
-      this.submissionService.userHasPermission(
-        currentUser,
-        submission,
-        SubmissionPermissionType.Cancel,
-        problem,
-        hasPrivilege
-      ),
-      this.submissionService.userHasPermission(
-        currentUser,
-        submission,
-        SubmissionPermissionType.ManagePublicness,
-        problem,
-        hasPrivilege
-      ),
-      this.submissionService.userHasPermission(
-        currentUser,
-        submission,
-        SubmissionPermissionType.Delete,
-        problem,
-        hasPrivilege
-      )
+      submission.contestId && this.contestService.getContestMeta(submission.contestId),
+      this.submissionService.getUserPermissions(currentUser, submission, problem, hasPrivilege)
     ]);
 
     return {
       meta: {
-        id: submission.id,
-        isPublic: submission.isPublic,
-        codeLanguage: submission.codeLanguage,
-        answerSize: submission.answerSize,
-        score: submission.score,
-        status: submission.status,
-        submitTime: submission.submitTime,
-        problem: await this.problemService.getProblemMeta(problem),
-        problemTitle: await this.problemService.getProblemLocalizedTitle(problem, titleLocale),
-        submitter: await this.userService.getUserMeta(submitter, currentUser),
-        timeUsed: submission.timeUsed,
-        memoryUsed: submission.memoryUsed
+        ...(await this.submissionService.getSubmissionBasicMeta(
+          submission,
+          progressVisibilities?.submissionMetaVisibility
+        )),
+        problem: await this.problemService.getProblemMeta(problem, request.locale),
+        submitter: await this.userService.getUserMeta(submitter, currentUser)
       },
       content: submissionDetail.content,
       progress: progress || submissionDetail.result,
@@ -329,12 +387,15 @@ export class SubmissionController {
         ? null
         : this.submissionProgressGateway.encodeSubscription({
             type: SubmissionProgressSubscriptionType.Detail,
-            submissionIds: [submission.id]
+            items: [
+              {
+                submissionId: submission.id,
+                visibilities: progressVisibilities
+              }
+            ]
           }),
-      permissionRejudge,
-      permissionCancel,
-      permissionSetPublic,
-      permissionDelete
+      contest,
+      permissions
     };
   }
 
@@ -353,7 +414,7 @@ export class SubmissionController {
         error: DownloadSubmissionFileResponseError.NO_SUCH_SUBMISSION
       };
 
-    if (!(await this.submissionService.userHasPermission(currentUser, submission, SubmissionPermissionType.View)))
+    if (!(await this.submissionService.getSubmissionVisibilityOfUser(currentUser, submission))[0])
       return {
         error: DownloadSubmissionFileResponseError.PERMISSION_DENIED
       };
@@ -383,9 +444,7 @@ export class SubmissionController {
     @Body() request: QuerySubmissionStatisticsRequestDto
   ): Promise<QuerySubmissionStatisticsResponseDto> {
     if (request.takeCount > this.configService.config.queryLimit.submissionStatistics)
-      return {
-        error: QuerySubmissionStatisticsResponseError.TAKE_TOO_MANY
-      };
+      request.takeCount = this.configService.config.queryLimit.submissionStatistics;
 
     let problem: ProblemEntity;
     if (request.problemId) problem = await this.problemService.findProblemById(request.problemId);
@@ -403,17 +462,14 @@ export class SubmissionController {
         error: QuerySubmissionStatisticsResponseError.PERMISSION_DENIED
       };
 
-    const titleLocale = problem.locales.includes(request.locale) ? request.locale : problem.locales[0];
-
-    const [[submissions, count], scores, problemTitle] = await Promise.all([
+    const [[submissions, count], scores] = await Promise.all([
       this.submissionStatisticsService.querySubmissionStatisticsAndCount(
         problem,
         request.statisticsType,
         request.skipCount,
         request.takeCount
       ),
-      this.submissionStatisticsService.querySubmissionScoreStatistics(problem),
-      this.problemService.getProblemLocalizedTitle(problem, titleLocale)
+      this.submissionStatisticsService.querySubmissionScoreStatistics(problem)
     ]);
 
     const submissionMetas: SubmissionMetaDto[] = new Array(submissions.length);
@@ -431,8 +487,7 @@ export class SubmissionController {
           score: submission.score,
           status: submission.status,
           submitTime: submission.submitTime,
-          problem: await this.problemService.getProblemMeta(problem),
-          problemTitle,
+          problem: await this.problemService.getProblemMeta(problem, request.locale),
           submitter: await this.userService.getUserMeta(submitters[i], currentUser),
           timeUsed: submission.timeUsed,
           memoryUsed: submission.memoryUsed

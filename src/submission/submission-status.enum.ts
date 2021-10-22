@@ -4,6 +4,7 @@ export enum SubmissionStatus {
   ConfigurationError = "ConfigurationError",
   SystemError = "SystemError",
   Canceled = "Canceled",
+  Skipped = "Skipped",
 
   CompilationError = "CompilationError",
 
@@ -19,3 +20,16 @@ export enum SubmissionStatus {
 
   JudgementFailed = "JudgementFailed"
 }
+
+/**
+ * These statuses are invalid and will NOT be counted in contests.
+ */
+export const invalidSubmissionStatus = new Set([
+  SubmissionStatus.Pending,
+  SubmissionStatus.ConfigurationError,
+  SubmissionStatus.SystemError,
+  SubmissionStatus.Canceled,
+  SubmissionStatus.Skipped,
+  SubmissionStatus.CompilationError,
+  SubmissionStatus.JudgementFailed
+]);

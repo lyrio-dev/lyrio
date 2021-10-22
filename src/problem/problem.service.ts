@@ -4,14 +4,17 @@ import { InjectConnection, InjectRepository } from "@nestjs/typeorm";
 import { Connection, Repository, EntityManager, Brackets, In } from "typeorm";
 
 import { UserEntity } from "@/user/user.entity";
-import { GroupEntity } from "@/group/group.entity";
 import { LocalizedContentService } from "@/localized-content/localized-content.service";
 import { LocalizedContentEntity, LocalizedContentType } from "@/localized-content/localized-content.entity";
 import { Locale } from "@/common/locale.type";
 import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.service";
-import { PermissionService, PermissionObjectType } from "@/permission/permission.service";
+import {
+  PermissionService,
+  PermissionObjectType,
+  AccessControlList,
+  AccessControlListWithSubjectMeta
+} from "@/permission/permission.service";
 import { UserService } from "@/user/user.service";
-import { GroupService } from "@/group/group.service";
 import { FileService } from "@/file/file.service";
 import { ConfigService } from "@/config/config.service";
 import { RedisService } from "@/redis/redis.service";
@@ -40,7 +43,8 @@ import {
   ProblemLocalizedContentDto,
   ProblemFileDto,
   ProblemMetaDto,
-  LocalizedProblemTagDto
+  LocalizedProblemTagDto,
+  ProblemTitleDto
 } from "./dto";
 
 export enum ProblemPermissionType {
@@ -84,7 +88,7 @@ export class ProblemService {
     private readonly userPrivilegeService: UserPrivilegeService,
     @Inject(forwardRef(() => UserService))
     private readonly userService: UserService,
-    private readonly groupService: GroupService,
+    @Inject(forwardRef(() => PermissionService))
     private readonly permissionService: PermissionService,
     private readonly fileService: FileService,
     @Inject(forwardRef(() => SubmissionService))
@@ -96,12 +100,7 @@ export class ProblemService {
   ) {
     this.auditService.registerObjectTypeQueryHandler(AuditLogObjectType.Problem, async (problemId, locale) => {
       const problem = await this.findProblemById(problemId);
-      return !problem
-        ? null
-        : await Promise.all([
-            this.getProblemMeta(problem),
-            this.getProblemLocalizedTitle(problem, problem.locales.includes(locale) ? locale : problem.locales[0])
-          ]);
+      return !problem ? null : await this.getProblemMeta(problem, locale);
     });
 
     this.auditService.registerObjectTypeQueryHandler(AuditLogObjectType.ProblemTag, async (problemTagId, locale) => {
@@ -111,7 +110,7 @@ export class ProblemService {
   }
 
   async findProblemById(id: number): Promise<ProblemEntity> {
-    return await this.problemRepository.findOne(id);
+    return id && await this.problemRepository.findOne(id);
   }
 
   async findProblemsByExistingIds(problemIds: number[]): Promise<ProblemEntity[]> {
@@ -128,7 +127,11 @@ export class ProblemService {
     });
   }
 
-  async getProblemMeta(problem: ProblemEntity, includeStatistics?: boolean): Promise<ProblemMetaDto> {
+  async getProblemMeta(
+    problem: ProblemEntity,
+    titlePreferredLocale?: Locale,
+    statistics?: boolean | { submitted: number; accepted: number }
+  ): Promise<ProblemMetaDto> {
     const meta: ProblemMetaDto = {
       id: problem.id,
       displayId: problem.displayId,
@@ -139,9 +142,20 @@ export class ProblemService {
       locales: problem.locales
     };
 
-    if (includeStatistics) {
-      meta.acceptedSubmissionCount = problem.acceptedSubmissionCount;
-      meta.submissionCount = problem.submissionCount;
+    if (titlePreferredLocale) {
+      const locale = problem.locales.includes(titlePreferredLocale) ? titlePreferredLocale : problem.locales[0];
+      meta.titleLocale = locale;
+      meta.title = await this.getProblemLocalizedTitle(problem, locale);
+    }
+
+    if (statistics) {
+      if (typeof statistics === "object") {
+        meta.statisticsSubmitted = statistics.submitted;
+        meta.statisticsAccepted = statistics.accepted;
+      } else {
+        meta.statisticsSubmitted = problem.submissionCount;
+        meta.statisticsAccepted = problem.acceptedSubmissionCount;
+      }
     }
 
     return meta;
@@ -564,66 +578,37 @@ export class ProblemService {
     return [preprocessed, submittable];
   }
 
-  /**
-   * @param problem Should be locked by `ProblemService.lockProblemById(id, "Read")`.
-   */
-  async setProblemPermissions(
+  async setProblemAccessControlList(
     problem: ProblemEntity,
-    userPermissions: [user: UserEntity, permission: ProblemPermissionLevel][],
-    groupPermissions: [group: GroupEntity, permission: ProblemPermissionLevel][]
+    accessControlList: AccessControlList<ProblemPermissionLevel>
   ): Promise<void> {
     await this.lockProblemById(
       problem.id,
       "Read",
       // eslint-disable-next-line @typescript-eslint/no-shadow
       async problem =>
-        await this.permissionService.replaceUsersAndGroupsPermissionForObject(
-          problem.id,
-          PermissionObjectType.Problem,
-          userPermissions,
-          groupPermissions
-        )
+        await this.permissionService.setAccessControlList(problem.id, PermissionObjectType.Problem, accessControlList)
     );
   }
 
-  async getProblemPermissionsWithId(
+  async getProblemAccessControlListWithSubjectId(
     problem: ProblemEntity
-  ): Promise<
-    [[userId: number, permission: ProblemPermissionLevel][], [groupId: number, permission: ProblemPermissionLevel][]]
-  > {
-    return await this.permissionService.getUserAndGroupPermissionListOfObject<ProblemPermissionLevel>(
+  ): Promise<AccessControlList<ProblemPermissionLevel>> {
+    return await this.permissionService.getAccessControlList<ProblemPermissionLevel>(
       problem.id,
       PermissionObjectType.Problem
     );
   }
 
-  async getProblemPermissions(
-    problem: ProblemEntity
-  ): Promise<
-    [
-      [user: UserEntity, permission: ProblemPermissionLevel][],
-      [group: GroupEntity, permission: ProblemPermissionLevel][]
-    ]
-  > {
-    const [userPermissionList, groupPermissionList] = await this.getProblemPermissionsWithId(problem);
-    return [
-      await Promise.all(
-        userPermissionList.map(
-          async ([userId, permission]): Promise<[user: UserEntity, permission: ProblemPermissionLevel]> => [
-            await this.userService.findUserById(userId),
-            permission
-          ]
-        )
-      ),
-      await Promise.all(
-        groupPermissionList.map(
-          async ([groupId, permission]): Promise<[group: GroupEntity, problem: ProblemPermissionLevel]> => [
-            await this.groupService.findGroupById(groupId),
-            permission
-          ]
-        )
-      )
-    ];
+  async getProblemAccessControlListWithSubjectMeta(
+    problem: ProblemEntity,
+    currentUser: UserEntity
+  ): Promise<AccessControlListWithSubjectMeta<ProblemPermissionLevel>> {
+    return await this.permissionService.getAccessControlListWithSubjectMeta<ProblemPermissionLevel>(
+      problem.id,
+      PermissionObjectType.Problem,
+      currentUser
+    );
   }
 
   async setProblemDisplayId(problem: ProblemEntity, displayId: number): Promise<boolean> {
@@ -890,7 +875,7 @@ export class ProblemService {
   }
 
   async findProblemTagById(id: number): Promise<ProblemTagEntity> {
-    return await this.problemTagRepository.findOne(id);
+    return id && await this.problemTagRepository.findOne(id);
   }
 
   async findProblemTagsByExistingIds(problemTagIds: number[]): Promise<ProblemTagEntity[]> {
@@ -1030,12 +1015,37 @@ export class ProblemService {
     id: number,
     type: "Read" | "Write",
     callback: (problem: ProblemEntity) => Promise<T>
-  ): Promise<T> {
-    return await this.lockService.lockReadWrite(
-      `AcquireProblem_${id}`,
-      type,
-      async () => await callback(await this.findProblemById(id))
-    );
+  ): Promise<T>;
+
+  /**
+   * Lock a problem by ID with Read/Write Lock.
+   * @param type `"Read"` to ensure the problem exists while holding the lock, `"Write"` is for deleting the problem.
+   */
+  async lockProblemById(
+    id: number,
+    type: "Read" | "Write"
+  ): Promise<[problem: ProblemEntity, unlock: () => Promise<void>]>;
+
+  async lockProblemById<T>(
+    id: number,
+    type: "Read" | "Write",
+    callback?: (problem: ProblemEntity) => Promise<T>
+  ): Promise<T | [problem: ProblemEntity, unlock: () => Promise<void>]> {
+    const lockName = `AcquireProblem_${id}`;
+    if (callback)
+      return await this.lockService.lockReadWrite(
+        lockName,
+        type,
+        async () => await callback(await this.findProblemById(id))
+      );
+    else {
+      const unlock = await this.lockService.lockReadWrite(lockName, type);
+      try {
+        return [await this.findProblemById(id), unlock];
+      } finally {
+        await unlock();
+      }
+    }
   }
 
   /**
@@ -1058,11 +1068,10 @@ export class ProblemService {
       await transactionalEntityManager.remove(problemFiles);
 
       // delete permissions
-      await this.permissionService.replaceUsersAndGroupsPermissionForObject(
+      await this.permissionService.setAccessControlList(
         problem.id,
         PermissionObjectType.Problem,
-        [],
-        [],
+        null,
         transactionalEntityManager
       );
 
@@ -1080,7 +1089,7 @@ export class ProblemService {
    * @param problem Must be locked by `ProblemService.lockProblemById(id, "Write")`.
    */
   async changeProblemType(problem: ProblemEntity, type: ProblemType): Promise<boolean> {
-    if (await this.submissionService.problemHasAnySubmission(problem)) return false;
+    if (await this.submissionService.problemHasAnySubmission(problem.id)) return false;
     problem.type = type;
     await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
       await transactionalEntityManager.save(problem);

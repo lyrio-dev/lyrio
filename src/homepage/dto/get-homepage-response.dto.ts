@@ -18,9 +18,6 @@ export class GetHomepageResponseProblemDto {
   meta: ProblemMetaDto;
 
   @ApiProperty()
-  title: string;
-
-  @ApiProperty()
   submission: SubmissionBasicMetaDto;
 }
 

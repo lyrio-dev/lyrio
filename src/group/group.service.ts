@@ -39,11 +39,11 @@ export class GroupService {
   }
 
   async groupExists(id: number): Promise<boolean> {
-    return (await this.groupRepository.count({ id })) !== 0;
+    return id && (await this.groupRepository.count({ id })) !== 0;
   }
 
   async findGroupById(id: number): Promise<GroupEntity> {
-    return await this.groupRepository.findOne(id);
+    return id && await this.groupRepository.findOne(id);
   }
 
   async findGroupsByExistingIds(groupIds: number[]): Promise<GroupEntity[]> {

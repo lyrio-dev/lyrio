@@ -8,7 +8,6 @@ import { ProblemMetaDto } from "@/problem/dto";
 import { UserMetaDto } from "@/user/dto";
 
 export enum QueryDiscussionsResponseError {
-  TAKE_TOO_MANY = "TAKE_TOO_MANY",
   NO_SUCH_PROBLEM = "NO_SUCH_PROBLEM",
   NO_SUCH_USER = "NO_SUCH_USER",
   PERMISSION_DENIED = "PERMISSION_DENIED"
@@ -22,23 +21,12 @@ export class QueryDiscussionsResponsePermissionDto {
   filterNonpublic?: boolean;
 }
 
-export class QueryDiscussionsResponseProblemDto {
-  @ApiProperty()
-  meta: ProblemMetaDto;
-
-  @ApiProperty()
-  title: string;
-
-  @ApiProperty()
-  titleLocale: Locale;
-}
-
 export class QueryDiscussionsResponseDiscussionDto {
   @ApiProperty()
   meta: DiscussionMetaDto;
 
   @ApiProperty()
-  problem?: QueryDiscussionsResponseProblemDto;
+  problem?: ProblemMetaDto;
 
   @ApiProperty()
   publisher: UserMetaDto;
@@ -62,5 +50,5 @@ export class QueryDiscussionsResponseDto {
   filterPublisher?: UserMetaDto;
 
   @ApiProperty()
-  filterProblem?: QueryDiscussionsResponseProblemDto;
+  filterProblem?: ProblemMetaDto;
 }

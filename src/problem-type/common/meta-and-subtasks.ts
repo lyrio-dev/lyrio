@@ -5,7 +5,7 @@ import toposort from "toposort";
 import { ProblemFileEntity } from "@/problem/problem-file.entity";
 import { isValidFilename } from "@/common/validators";
 
-import { restrictProperties } from "./restrict-properties";
+import { restrictProperties } from "../../common/restrict-properties";
 
 interface JudgeInfoWithMetaAndSubtasks {
   timeLimit?: number;
@@ -24,6 +24,7 @@ interface JudgeInfoWithMetaAndSubtasks {
     scoringType: "Sum" | "GroupMin" | "GroupMul";
     points?: number;
     dependencies?: number[];
+    includedInPretests?: boolean;
 
     testcases: {
       inputFile?: string;
@@ -127,7 +128,20 @@ export function validateMetaAndSubtasks(
 
     if (!Array.isArray(testcases) || testcases.length === 0) throw ["SUBTASK_HAS_NO_TESTCASES", i + 1];
 
-    restrictProperties(subtask, ["timeLimit", "memoryLimit", "scoringType", "points", "dependencies", "testcases"]);
+    if ("includedInPretests" in subtask) {
+      if (!subtask.includedInPretests) delete subtask.includedInPretests;
+      else subtask.includedInPretests = !!subtask.includedInPretests;
+    }
+
+    restrictProperties(subtask, [
+      "timeLimit",
+      "memoryLimit",
+      "scoringType",
+      "points",
+      "dependencies",
+      "testcases",
+      "includedInPretests"
+    ]);
 
     testcases.forEach((testcase, j) => {
       // eslint-disable-next-line @typescript-eslint/no-shadow

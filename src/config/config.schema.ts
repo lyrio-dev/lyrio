@@ -282,6 +282,18 @@ class PreferenceConfigPagination {
   @ConfigRelation("queryLimit.discussionReplies", ConfigRelationType.LessThanOrEqual)
   @ApiProperty()
   readonly discussionRepliesMore: number;
+
+  @IsInt()
+  @Min(1)
+  @ConfigRelation("queryLimit.contestList", ConfigRelationType.LessThanOrEqual)
+  @ApiProperty()
+  readonly contestList: number;
+
+  @IsInt()
+  @Min(1)
+  @ConfigRelation("queryLimit.contestRanklist", ConfigRelationType.LessThanOrEqual)
+  @ApiProperty()
+  readonly contestRanklist: number;
 }
 
 // These config items will be sent to client
@@ -306,11 +318,6 @@ class PreferenceConfigMisc {
   @IsBoolean()
   @ApiProperty()
   readonly redirectLegacyUrls: boolean;
-
-  @IsString()
-  @IsOptional()
-  @ApiProperty()
-  readonly legacyContestsEntryUrl: boolean;
 
   @IsBoolean()
   @ApiProperty()
@@ -453,6 +460,16 @@ class QueryLimitConfig {
   @Min(1)
   @ApiProperty()
   readonly discussionReplies: number;
+
+  @IsInt()
+  @Min(1)
+  @ApiProperty()
+  readonly contestRanklist: number;
+
+  @IsInt()
+  @Min(1)
+  @ApiProperty()
+  readonly contestList: number;
 }
 
 class JudgeLimitConfig {
