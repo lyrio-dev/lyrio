@@ -136,8 +136,10 @@ export class ProblemController {
     );
 
     if (request.keyword && request.keywordMatchesId) {
-      const matchId = request.keyword.substr(0, 1).toUpperCase() === "P" ? Number(request.keyword.slice(1)) || 0 : 0;
-      const matchDisplayId = Number(request.keyword) || 0;
+      const safeParseInteger = (str: string) => (Number.isSafeInteger(Number(str)) ? Number(str) : 0);
+      const matchId =
+        request.keyword.substr(0, 1).toUpperCase() === "P" ? safeParseInteger(request.keyword.slice(1)) || 0 : 0;
+      const matchDisplayId = safeParseInteger(request.keyword) || 0;
       if (!problems.some(problem => problem.id === matchId || problem.displayId === matchDisplayId)) {
         const problem = matchId
           ? await this.problemService.findProblemById(matchId)
