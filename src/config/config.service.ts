@@ -13,9 +13,9 @@ export class ConfigService {
   readonly preferenceConfigToBeSentToUser: PreferenceConfig;
 
   constructor() {
-    const filePath = process.env.SYZOJ_NG_CONFIG_FILE;
+    const filePath = process.env.LYRIO_CONFIG_FILE;
     if (!filePath) {
-      throw new Error("Please specify configuration file with environment variable SYZOJ_NG_CONFIG_FILE");
+      throw new Error("Please specify configuration file with environment variable LYRIO_CONFIG_FILE");
     }
 
     const config = yaml.load(fs.readFileSync(filePath).toString());

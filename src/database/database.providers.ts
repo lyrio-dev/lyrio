@@ -12,7 +12,7 @@ export const databaseProviders = [
       password: configService.config.services.database.password,
       database: configService.config.services.database.database,
       entities: [`${__dirname}/../**/*.entity{.ts,.js}`],
-      logging: !!process.env.SYZOJ_NG_LOG_SQL,
+      logging: !!process.env.LYRIO_LOG_SQL,
       synchronize: true
     }),
     inject: [ConfigService]

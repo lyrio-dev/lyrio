@@ -1,8 +1,8 @@
 {
-  "name": "syzoj-ng",
+  "name": "@lyrio/lyrio",
   "version": "0.0.1",
-  "description": "The next generation SYZOJ server",
-  "repository": "https://github.com/syzoj/syzoj-ng",
+  "description": "The backend service of Lyrio",
+  "repository": "https://github.com/lyrio-dev/lyrio",
   "license": "MIT",
   "author": "Menci",
   "scripts": {

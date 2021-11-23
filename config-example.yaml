@@ -9,25 +9,25 @@ services:
     type: mariadb
     host: 127.0.0.1
     port: 3306
-    username: syzoj-ng
-    password: syzoj-ng
-    database: syzoj-ng
+    username: lyrio
+    password: lyrio
+    database: lyrio
   minio:
-    endpoint: http://syzoj-ng-minio.test
+    endpoint: http://lyrio-minio.test
     endpointForUser: null
     endpointForJudge: null
     accessKey: minioadmin
     secretKey: minioadmin
-    bucket: syzoj-ng-files
+    bucket: lyrio-files
   redis: redis://127.0.0.1:6379
   mail:
-    address: no-reply@syzoj-ng.test
-    transport: smtp://username:password@syzoj-ng-smtp.test:25
+    address: no-reply@lyrio.test
+    transport: smtp://username:password@lyrio-smtp.test:25
 security:
   crossOrigin:
     enabled: true
     whiteList:
-      - http://syzoj-ng-app.test
+      - http://lyrio-ui.test
   sessionSecret: don't leak this
   maintainceKey: also don't leak this
   recaptcha:
@@ -38,7 +38,7 @@ security:
     maxRequests: 200
     durationSeconds: 10
 preference:
-  siteName: SYZOJ NG
+  siteName: Lyrio
   security:
     recaptchaEnabled: false
     recaptchaKey: null
