@@ -47,7 +47,9 @@ export class MigrationController {
     const userMigrationInfo = request.oldUsername
       ? await this.userMigrationService.findUserMigrationInfoByOldUsername(request.oldUsername)
       : await this.userMigrationService.findUserMigrationInfoByUserId(
-          (await this.userService.findUserByEmail(request.email))?.id
+          (
+            await this.userService.findUserByEmail(request.email)
+          )?.id
         );
     if (!userMigrationInfo)
       return {
@@ -108,7 +110,9 @@ export class MigrationController {
     const userMigrationInfo = request.oldUsername
       ? await this.userMigrationService.findUserMigrationInfoByOldUsername(request.oldUsername)
       : await this.userMigrationService.findUserMigrationInfoByUserId(
-          (await this.userService.findUserByEmail(request.email))?.id
+          (
+            await this.userService.findUserByEmail(request.email)
+          )?.id
         );
     if (!userMigrationInfo)
       return {

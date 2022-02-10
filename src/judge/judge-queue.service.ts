@@ -58,10 +58,8 @@ export class JudgeQueueService {
 
   private readonly redisForConsume: Redis;
 
-  private readonly taskServices: Map<
-    JudgeTaskType,
-    JudgeTaskService<JudgeTaskProgress, JudgeTaskExtraInfo>
-  > = new Map();
+  private readonly taskServices: Map<JudgeTaskType, JudgeTaskService<JudgeTaskProgress, JudgeTaskExtraInfo>> =
+    new Map();
 
   constructor(private readonly redisService: RedisService) {
     this.redisForPush = this.redisService.getClient();

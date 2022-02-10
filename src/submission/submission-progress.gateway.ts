@@ -153,7 +153,7 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
       const lastMessage = lastMessageBySubmissionId.get(submissionId);
       const delta = diff(lastMessage, message);
       lastMessageBySubmissionId.set(submissionId, message);
-      if (delta) this.server.to(clientId).send(submissionId, delta);
+      if (delta) this.server.to(clientId).emit("message", submissionId, delta);
     };
 
     logger.log(`Sending to ${typeof to === "string" ? to : (to as Socket).id}: ${JSON.stringify(message)}`);
@@ -174,7 +174,7 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
   }
 
   async handleConnection(client: Socket): Promise<void> {
-    const subscription = this.decodeSubscription(client.handshake.query.subscriptionKey);
+    const subscription = this.decodeSubscription(client.handshake.query.subscriptionKey as string);
     if (!subscription) {
       client.disconnect(true);
       return;

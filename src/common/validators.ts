@@ -58,7 +58,12 @@ export function IsValidFilename(validationOptions?: ValidationOptions) {
   return If(value => typeof value === "string" && isValidFilename(value), validationOptions);
 }
 
-const singleEmojiRegex = new RegExp(`^(${emojiRegex()})$`);
+function regexToString(regex: RegExp) {
+  const str = regex.toString();
+  return str.substring(str.indexOf("/") + 1, str.lastIndexOf("/"));
+}
+
+const singleEmojiRegex = new RegExp(`^(${regexToString(emojiRegex())})$`);
 export const MAX_EMOJI_LENGTH = 28;
 export function isEmoji(str: string) {
   return singleEmojiRegex.test(str) && str.length >= 1 && Buffer.byteLength(str, "utf-8") <= MAX_EMOJI_LENGTH;

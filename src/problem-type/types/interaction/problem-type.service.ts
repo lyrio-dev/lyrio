@@ -26,7 +26,8 @@ export class ProblemTypeInteractionService
       ProblemJudgeInfoInteraction,
       SubmissionContentInteraction,
       SubmissionTestcaseResultInteraction
-    > {
+    >
+{
   constructor(private configService: ConfigService, private codeLanguageService: CodeLanguageService) {}
 
   getDefaultJudgeInfo(): ProblemJudgeInfoInteraction {

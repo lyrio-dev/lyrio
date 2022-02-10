@@ -26,7 +26,8 @@ export class ProblemTypeTraditionalService
       ProblemJudgeInfoTraditional,
       SubmissionContentTraditional,
       SubmissionTestcaseResultTraditional
-    > {
+    >
+{
   constructor(private configService: ConfigService, private codeLanguageService: CodeLanguageService) {}
 
   getDefaultJudgeInfo(): ProblemJudgeInfoTraditional {

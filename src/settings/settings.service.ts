@@ -20,7 +20,7 @@ export class SettingsService {
       key: getSettingsKey(Class)
     });
 
-    const result = item ? item.value : ((Class as unknown) as { defaultValue: T }).defaultValue;
+    const result = item ? item.value : (Class as unknown as { defaultValue: T }).defaultValue;
 
     return plainToClass(Class, result);
   }

@@ -1,7 +1,7 @@
 import fs from "fs-extra";
 
 import { validateSync } from "class-validator";
-import { classToClass, plainToClass } from "class-transformer";
+import { plainToClass } from "class-transformer";
 import yaml from "js-yaml";
 
 import { AppConfig, PreferenceConfig } from "./config.schema";
@@ -28,7 +28,8 @@ export class ConfigService {
     const appConfig = plainToClass(AppConfig, inputConfig);
     const errors = validateSync(appConfig, {
       validationError: {
-        target: false
+        target: true,
+        value: true
       }
     });
 
@@ -36,13 +37,13 @@ export class ConfigService {
       throw new Error(`Config validation error: ${JSON.stringify(errors, null, 2)}`);
     }
 
-    checkConfigRelation((appConfig as unknown) as Record<string, unknown>);
+    checkConfigRelation(appConfig as unknown as Record<string, unknown>);
 
     return appConfig;
   }
 
   private getPreferenceConfigToBeSentToUser(): PreferenceConfig {
-    const preference = classToClass(this.config.preference);
+    const preference = JSON.parse(JSON.stringify(this.config.preference)) as PreferenceConfig;
 
     // Delete some properties unnessesary to send to user to save bandwidth
     delete preference.serverSideOnly;

@@ -207,11 +207,12 @@ export class DiscussionService {
     if (hasPrivilege ?? (await this.userPrivilegeService.userHasPrivilege(user, UserPrivilegeType.ManageDiscussion)))
       return Object.values(DiscussionPermissionType);
 
-    const permissionLevel = await this.permissionService.getUserOrItsGroupsMaxPermissionLevel<DiscussionPermissionLevel>(
-      user,
-      discussion.id,
-      PermissionObjectType.Discussion
-    );
+    const permissionLevel =
+      await this.permissionService.getUserOrItsGroupsMaxPermissionLevel<DiscussionPermissionLevel>(
+        user,
+        discussion.id,
+        PermissionObjectType.Discussion
+      );
     const result: DiscussionPermissionType[] = [];
     if (discussion.isPublic || permissionLevel >= DiscussionPermissionLevel.Read || discussion.publisherId === user.id)
       result.push(DiscussionPermissionType.View);

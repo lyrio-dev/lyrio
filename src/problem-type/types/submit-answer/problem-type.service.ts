@@ -25,7 +25,8 @@ export class ProblemTypeSubmitAnswerService
       ProblemJudgeInfoSubmitAnswer,
       SubmissionContentSubmitAnswer,
       SubmissionTestcaseResultSubmitAnswer
-    > {
+    >
+{
   constructor(private configService: ConfigService, private codeLanguageService: CodeLanguageService) {}
 
   getDefaultJudgeInfo(): ProblemJudgeInfoSubmitAnswer {

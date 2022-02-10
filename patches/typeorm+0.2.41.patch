@@ -1,0 +1,16 @@
+diff --git a/node_modules/typeorm/metadata/ColumnMetadata.js b/node_modules/typeorm/metadata/ColumnMetadata.js
+index dfbc7b4..c7df6ca 100644
+--- a/node_modules/typeorm/metadata/ColumnMetadata.js
++++ b/node_modules/typeorm/metadata/ColumnMetadata.js
+@@ -332,9 +332,9 @@ var ColumnMetadata = /** @class */ (function () {
+             return Object.keys(map).length > 0 ? map : undefined;
+         }
+         else { // no embeds - no problems. Simply return column property name and its value of the entity
+-            if (this.relationMetadata && entity[this.relationMetadata.propertyName] && entity[this.relationMetadata.propertyName] instanceof Object) {
++            if (this.relationMetadata && entity[this.propertyName] && entity[this.propertyName] instanceof Object) {
+                 var map = this.relationMetadata.joinColumns.reduce(function (map, joinColumn) {
+-                    var value = joinColumn.referencedColumn.getEntityValueMap(entity[_this.relationMetadata.propertyName]);
++                    var value = joinColumn.referencedColumn.getEntityValueMap(entity[_this.propertyName]);
+                     if (value === undefined)
+                         return map;
+                     return OrmUtils_1.OrmUtils.mergeDeep(map, value);
