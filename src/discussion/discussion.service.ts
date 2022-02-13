@@ -528,7 +528,7 @@ export class DiscussionService {
       .set({
         sortTime: new Date(
           Math.max(
-            +queryResultMaxReplyTime?.maxReplyTime || 0,
+            +(queryResultMaxReplyTime?.maxReplyTime || 0),
             +(editTime || queryResultPublishOrEditTime.publishOrEditTime)
           )
         )

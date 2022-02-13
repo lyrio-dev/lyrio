@@ -18,6 +18,7 @@ plugins:
   - "@typescript-eslint"
 rules:
   # Code style is controlled by Prettier, not ESLint.
+  brace-style: off
   comma-dangle: off
   curly: off
   function-paren-newline: off
@@ -40,6 +41,8 @@ rules:
   "@typescript-eslint/no-dupe-class-members": error
   no-unused-vars: off
   "@typescript-eslint/no-unused-vars": error
+  no-use-before-define: off
+  "@typescript-eslint/no-use-before-define": error
   no-return-await: off
   "@typescript-eslint/return-await": [error, always]
   no-shadow: off
@@ -109,6 +112,9 @@ rules:
 
   # Only language newbies will be confused by non-evil ++ and -- operators.
   no-plusplus: off
+
+  # Nobody thinks that value would be read
+  no-promise-executor-return: off
 
   # Airbnb uses it to disallow for...in, for...of, with and labels.
   # But I use for...of since it's clearer than `Array.prototype.forEach()`.

@@ -76,7 +76,7 @@ export class LockService {
       }
 
       // `unlock` may be called during the `await` above, so if that happens do not set the timer
-      // eslint-disable-next-line no-use-before-define
+      // eslint-disable-next-line @typescript-eslint/no-use-before-define
       if (!unlocked) setRefreshTimer();
     };
 
