@@ -194,6 +194,13 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
     await Promise.all(
       subscription.submissionIds.map(async submissionId => {
         const submission = await this.submissionService.findSubmissionById(submissionId);
+
+        // Submission deleted?
+        if (!submission) {
+          this.leaveRoom(client, this.getRoom(subscription.type, submissionId));
+          return;
+        }
+
         if (submission.status === SubmissionStatus.Pending) return;
 
         // This submission has already finished
