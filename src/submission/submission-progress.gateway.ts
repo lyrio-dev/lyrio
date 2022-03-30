@@ -41,6 +41,7 @@ interface SubmissionProgressMessage {
 // TODO: This should be refactored if we add hack, custom judge, etc
 //       Maybe refactor to a general "task progress"
 @WebSocketGateway({
+  maxHttpBufferSize: 1e9,
   namespace: "submission-progress",
   path: "/api/socket",
   transports: ["websocket"],

@@ -44,7 +44,13 @@ const REDIS_LOCK_JUDGE_CLIENT_CONNECT_DISCONNECT = "judge-client-connect-disconn
 
 const REDIS_CHANNEL_CANCEL_TASK = "cancel-task";
 
-@WebSocketGateway({ namespace: "judge", path: "/api/socket", transports: ["websocket"], parser: SocketIOParser })
+@WebSocketGateway({
+  maxHttpBufferSize: 1e9,
+  namespace: "judge",
+  path: "/api/socket",
+  transports: ["websocket"],
+  parser: SocketIOParser
+})
 export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   private server: Server;
