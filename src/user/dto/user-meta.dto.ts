@@ -25,6 +25,15 @@ export class UserMetaDto {
   isAdmin: boolean;
 
   @ApiProperty()
+  isProblemAdmin: boolean;
+
+  @ApiProperty()
+  isContestAdmin: boolean;
+
+  @ApiProperty()
+  isDiscussionAdmin: boolean;
+
+  @ApiProperty()
   acceptedProblemCount: number;
 
   @ApiProperty()
