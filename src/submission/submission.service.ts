@@ -596,6 +596,10 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     await this.submissionRepository.save(submission);
   }
 
+  async setSubmissionsPublic(problemId: number, isPublic: boolean): Promise<void> {
+    await this.submissionRepository.update({ problemId }, { isPublic });
+  }
+
   async deleteSubmission(submission: SubmissionEntity): Promise<void> {
     // This function updates related info, lock the problem for Read first, then lock the submission
     let deleteFileActually: () => void = null;

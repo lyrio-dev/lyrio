@@ -650,6 +650,7 @@ export class ProblemService {
     problem.isPublic = isPublic;
     if (isPublic) problem.publicTime = new Date();
     await this.problemRepository.save(problem);
+    await this.submissionService.setSubmissionsPublic(problem.id, isPublic);
   }
 
   private async checkAddProblemFileLimit(
