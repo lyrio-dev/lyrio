@@ -293,8 +293,13 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     const largestId = result[0].id;
     const smallestId = result[result.length - 1].id;
     const [hasSmallerId, hasLargerId] = await Promise.all([
-      queryBuilderWithoutPagination.clone().andWhere("id < :smallestId", { smallestId }).take(1).getCount(),
-      queryBuilderWithoutPagination.clone().andWhere("id > :largestId", { largestId }).take(1).getCount()
+      queryBuilderWithoutPagination
+        .clone()
+        .select("1")
+        .andWhere("id < :smallestId", { smallestId })
+        .take(1)
+        .getRawOne(),
+      queryBuilderWithoutPagination.clone().select("1").andWhere("id > :largestId", { largestId }).take(1).getRawOne()
     ]);
 
     return {
