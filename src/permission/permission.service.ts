@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
 
-import { Repository, EntityManager, Connection, FindConditions } from "typeorm";
+import { Repository, EntityManager, Connection, FindOptionsWhere } from "typeorm";
 
 import { UserEntity } from "@/user/user.entity";
 import { GroupEntity } from "@/group/group.entity";
@@ -79,7 +79,7 @@ export class PermissionService {
     objectType?: PermissionObjectType,
     transactionalEntityManager?: EntityManager
   ): Promise<void> {
-    const match: FindConditions<PermissionForUserEntity> = {};
+    const match: FindOptionsWhere<PermissionForUserEntity> = {};
     if (objectId) match.objectId = objectId;
     if (objectType) match.objectType = objectType;
     if (user) match.userId = user.id;
@@ -94,7 +94,7 @@ export class PermissionService {
     objectType?: PermissionObjectType,
     transactionalEntityManager?: EntityManager
   ): Promise<void> {
-    const match: FindConditions<PermissionForGroupEntity> = {};
+    const match: FindOptionsWhere<PermissionForGroupEntity> = {};
     if (objectId) match.objectId = objectId;
     if (objectType) match.objectType = objectType;
     if (group) match.groupId = group.id;
@@ -108,7 +108,7 @@ export class PermissionService {
     objectId: number,
     objectType: PermissionObjectType
   ): Promise<PermissionLevel> {
-    const permissionForUser = await this.permissionForUserRepository.findOne({
+    const permissionForUser = await this.permissionForUserRepository.findOneBy({
       objectId,
       objectType,
       userId: user.id
@@ -122,7 +122,7 @@ export class PermissionService {
     objectId: number,
     objectType: PermissionObjectType
   ): Promise<PermissionLevel> {
-    const permissionForGroup = await this.permissionForGroupRepository.findOne({
+    const permissionForGroup = await this.permissionForGroupRepository.findOneBy({
       objectId,
       objectType,
       groupId: group.id
@@ -237,7 +237,7 @@ export class PermissionService {
     permissionLevel: PermissionLevel
   ): Promise<number[]> {
     return (
-      await this.permissionForUserRepository.find({
+      await this.permissionForUserRepository.findBy({
         objectId,
         objectType,
         permissionLevel
@@ -251,7 +251,7 @@ export class PermissionService {
     permissionLevel: PermissionLevel
   ): Promise<number[]> {
     return (
-      await this.permissionForGroupRepository.find({
+      await this.permissionForGroupRepository.findBy({
         objectId,
         objectType,
         permissionLevel
@@ -275,7 +275,7 @@ export class PermissionService {
     objectType: PermissionObjectType
   ): Promise<[userId: number, permissionLevel: PermissionLevel][]> {
     return (
-      await this.permissionForUserRepository.find({
+      await this.permissionForUserRepository.findBy({
         objectId,
         objectType
       })
@@ -287,7 +287,7 @@ export class PermissionService {
     objectType: PermissionObjectType
   ): Promise<[groupId: number, permissionLevel: PermissionLevel][]> {
     return (
-      await this.permissionForGroupRepository.find({
+      await this.permissionForGroupRepository.findBy({
         objectId,
         objectType
       })

@@ -45,7 +45,7 @@ export const migrationUser: MigrationInterface = {
           userMigrationInfo.usernameMustChange = true;
         }
 
-        if (isEmail(oldUser.email) && (await entityManager.count(UserEntity, { email: oldUser.email })) === 0)
+        if (isEmail(oldUser.email) && (await entityManager.countBy(UserEntity, { email: oldUser.email })) === 0)
           user.email = oldUser.email;
         else user.email = `${randomUsername(oldUser.id)}@syzoj2-users.test`;
 

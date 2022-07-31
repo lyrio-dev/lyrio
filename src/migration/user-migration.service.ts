@@ -26,13 +26,13 @@ export class UserMigrationService {
   ) {}
 
   async findUserMigrationInfoByOldUsername(oldUsername: string): Promise<UserMigrationInfoEntity> {
-    return await this.userMigrationInfoRepository.findOne({
+    return await this.userMigrationInfoRepository.findOneBy({
       oldUsername
     });
   }
 
   async findUserMigrationInfoByUserId(userId: number): Promise<UserMigrationInfoEntity> {
-    return await this.userMigrationInfoRepository.findOne({
+    return await this.userMigrationInfoRepository.findOneBy({
       userId
     });
   }

@@ -88,19 +88,19 @@ export class DiscussionService {
   }
 
   async discussionExists(id: number): Promise<boolean> {
-    return (await this.discussionRepository.count({ id })) !== 0;
+    return (await this.discussionRepository.countBy({ id })) !== 0;
   }
 
   async discussionReplyExists(id: number): Promise<boolean> {
-    return (await this.discussionReplyRepository.count({ id })) !== 0;
+    return (await this.discussionReplyRepository.countBy({ id })) !== 0;
   }
 
   async findDiscussionById(id: number): Promise<DiscussionEntity> {
-    return await this.discussionRepository.findOne(id);
+    return await this.discussionRepository.findOneBy({id});
   }
 
   async findDiscussionReplyById(id: number): Promise<DiscussionReplyEntity> {
-    return await this.discussionReplyRepository.findOne(id);
+    return await this.discussionReplyRepository.findOneBy({id});
   }
 
   async findDiscussionsByExistingIds(discussionIds: number[]): Promise<DiscussionEntity[]> {
@@ -297,7 +297,7 @@ export class DiscussionService {
       discussion.editTime = new Date();
       await transactionalEntityManager.save(discussion);
 
-      const discussionContent = await transactionalEntityManager.findOne(DiscussionContentEntity, {
+      const discussionContent = await transactionalEntityManager.findOneBy(DiscussionContentEntity, {
         discussionId: discussion.id
       });
       discussionContent.content = newContent;
@@ -308,7 +308,7 @@ export class DiscussionService {
   }
 
   async getDiscussionContent(discussion: DiscussionEntity): Promise<string> {
-    const discussionContent = await this.discussionContentRepository.findOne({ discussionId: discussion.id });
+    const discussionContent = await this.discussionContentRepository.findOneBy({ discussionId: discussion.id });
     return discussionContent.content;
   }
 
@@ -701,6 +701,6 @@ export class DiscussionService {
   }
 
   async getDiscussionCountOfProblem(problem: ProblemEntity): Promise<number> {
-    return await this.discussionRepository.count({ problemId: problem.id });
+    return await this.discussionRepository.countBy({ problemId: problem.id });
   }
 }

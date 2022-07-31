@@ -111,7 +111,7 @@ export class ProblemService {
   }
 
   async findProblemById(id: number): Promise<ProblemEntity> {
-    return await this.problemRepository.findOne(id);
+    return await this.problemRepository.findOneBy({id});
   }
 
   async findProblemsByExistingIds(problemIds: number[]): Promise<ProblemEntity[]> {
@@ -123,7 +123,7 @@ export class ProblemService {
   }
 
   async findProblemByDisplayId(displayId: number): Promise<ProblemEntity> {
-    return await this.problemRepository.findOne({
+    return await this.problemRepository.findOneBy({
       displayId
     });
   }
@@ -424,7 +424,7 @@ export class ProblemService {
     tags: ProblemTagEntity[]
   ): Promise<boolean> {
     await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
-      const problemSample = await transactionalEntityManager.findOne(ProblemSampleEntity, {
+      const problemSample = await transactionalEntityManager.findOneBy(ProblemSampleEntity, {
         problemId: problem.id
       });
       problemSample.data = request.samples;
@@ -495,7 +495,7 @@ export class ProblemService {
       throw e;
     }
 
-    const problemJudgeInfo = await this.problemJudgeInfoRepository.findOne({
+    const problemJudgeInfo = await this.problemJudgeInfoRepository.findOneBy({
       problemId: problem.id
     });
 
@@ -531,12 +531,12 @@ export class ProblemService {
   }
 
   async getProblemSamples(problem: ProblemEntity): Promise<ProblemSampleData> {
-    const problemSample = await this.problemSampleRepository.findOne({ problemId: problem.id });
+    const problemSample = await this.problemSampleRepository.findOneBy({ problemId: problem.id });
     return problemSample.data;
   }
 
   async getProblemJudgeInfo(problem: ProblemEntity): Promise<[judgeInfo: ProblemJudgeInfo, submittable: boolean]> {
-    const problemJudgeInfo = await this.problemJudgeInfoRepository.findOne({ problemId: problem.id });
+    const problemJudgeInfo = await this.problemJudgeInfoRepository.findOneBy({ problemId: problem.id });
     return [problemJudgeInfo.judgeInfo, problemJudgeInfo.submittable];
   }
 
@@ -636,7 +636,7 @@ export class ProblemService {
       return true;
     } catch (e) {
       if (
-        await this.problemRepository.count({
+        await this.problemRepository.countBy({
           displayId
         })
       )
@@ -660,7 +660,7 @@ export class ProblemService {
     filename: string,
     transactionalEntityManager: EntityManager
   ): Promise<"TOO_MANY_FILES" | "TOTAL_SIZE_TOO_LARGE"> {
-    const currentFiles = await transactionalEntityManager.find(ProblemFileEntity, { problemId: problem.id, type });
+    const currentFiles = await transactionalEntityManager.findBy(ProblemFileEntity, { problemId: problem.id, type });
     const fileSizes = await this.fileService.getFileSizes(
       currentFiles.map(file => file.uuid),
       transactionalEntityManager
@@ -751,7 +751,7 @@ export class ProblemService {
         // SignedFileUploadRequestDto object or error
         if (!(result instanceof FileEntity)) return result;
 
-        const oldProblemFile = await transactionalEntityManager.findOne(ProblemFileEntity, {
+        const oldProblemFile = await transactionalEntityManager.findOneBy(ProblemFileEntity, {
           problemId: problem.id,
           type,
           filename
@@ -785,7 +785,7 @@ export class ProblemService {
 
       let deleteFilesActually: () => void = null;
       await this.connection.transaction("READ COMMITTED", async transactionalEntityManager => {
-        const problemFiles = await transactionalEntityManager.find(ProblemFileEntity, {
+        const problemFiles = await transactionalEntityManager.findBy(ProblemFileEntity, {
           problemId: problem.id,
           type,
           filename: In(filenames)
@@ -815,11 +815,11 @@ export class ProblemService {
     transcationalEntityManager?: EntityManager
   ): Promise<ProblemFileEntity[]> {
     const problemFiles = transcationalEntityManager
-      ? await transcationalEntityManager.find(ProblemFileEntity, {
+      ? await transcationalEntityManager.findBy(ProblemFileEntity, {
           problemId: problem.id,
           type
         })
-      : await this.problemFileRepository.find({
+      : await this.problemFileRepository.findBy({
           problemId: problem.id,
           type
         });
@@ -856,7 +856,7 @@ export class ProblemService {
     return await this.lockManageProblemFile(problem.id, type, async problem => {
       if (!problem) return false;
 
-      const problemFile = await this.problemFileRepository.findOne({
+      const problemFile = await this.problemFileRepository.findOneBy({
         problemId: problem.id,
         type,
         filename
@@ -865,9 +865,8 @@ export class ProblemService {
       if (!problemFile) return false;
 
       // Since filename is a PRIMARY key, use .save() will create another record
-      await this.problemFileRepository.update(problemFile, {
-        filename: newFilename
-      });
+      problemFile.filename = newFilename;
+      await this.problemFileRepository.save(problemFile);
 
       if (type === ProblemFileType.TestData)
         await this.redisService.cacheDelete(REDIS_KEY_PROBLEM_PREPROCESSED_JUDGE_INFO.format(problem.id));
@@ -891,7 +890,7 @@ export class ProblemService {
   }
 
   async findProblemTagById(id: number): Promise<ProblemTagEntity> {
-    return await this.problemTagRepository.findOne(id);
+    return await this.problemTagRepository.findOneBy({id});
   }
 
   async findProblemTagsByExistingIds(problemTagIds: number[]): Promise<ProblemTagEntity[]> {
@@ -1012,7 +1011,7 @@ export class ProblemService {
   }
 
   async getProblemTagIdsByProblem(problem: ProblemEntity): Promise<number[]> {
-    const problemTagMaps = await this.problemTagMapRepository.find({
+    const problemTagMaps = await this.problemTagMapRepository.findBy({
       problemId: problem.id
     });
 
@@ -1049,7 +1048,7 @@ export class ProblemService {
       await this.userService.onDeleteProblem(problem.id, transactionalEntityManager);
 
       // delete files
-      const problemFiles = await transactionalEntityManager.find(ProblemFileEntity, {
+      const problemFiles = await transactionalEntityManager.findBy(ProblemFileEntity, {
         problemId: problem.id
       });
       deleteFilesActually = await this.fileService.deleteFile(

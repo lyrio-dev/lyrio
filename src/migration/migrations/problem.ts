@@ -543,7 +543,7 @@ export const migrationProblem: MigrationInterface = {
           const fileUuid = uuidFromProblemAndFilename(oldProblem.id, type, filename);
 
           // Find existing record in new database first to continue a failed migration
-          const fileEntity = (await entityManager.findOne(FileEntity, { uuid: fileUuid })) || new FileEntity();
+          const fileEntity = (await entityManager.findOneBy(FileEntity, { uuid: fileUuid })) || new FileEntity();
           if (!fileEntity.uuid) {
             fileEntity.size = size;
             fileEntity.uploadTime = new Date();
@@ -731,8 +731,8 @@ export const migrationProblem: MigrationInterface = {
         await entityManager.save(map);
       } catch (e) {
         if (
-          (await entityManager.count(ProblemEntity, { id: map.problemId })) !== 0 &&
-          (await entityManager.count(ProblemTagEntity, { id: map.problemTagId })) !== 0
+          (await entityManager.countBy(ProblemEntity, { id: map.problemId })) !== 0 &&
+          (await entityManager.countBy(ProblemTagEntity, { id: map.problemTagId })) !== 0
         )
           Logger.error(`Failed to save ProblemTagMap: ${JSON.stringify(map)}, ${e.message}`);
       }

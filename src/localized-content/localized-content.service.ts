@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 
-import { Repository, EntityManager, FindConditions } from "typeorm";
+import { Repository, EntityManager, FindOptionsWhere } from "typeorm";
 
 import { Locale } from "@/common/locale.type";
 import { RedisService } from "@/redis/redis.service";
@@ -52,7 +52,7 @@ export class LocalizedContentService {
     locale?: Locale,
     transactionalEntityManager?: EntityManager
   ): Promise<void> {
-    const match: FindConditions<LocalizedContentEntity> = {
+    const match: FindOptionsWhere<LocalizedContentEntity> = {
       objectId,
       type
     };
@@ -70,7 +70,7 @@ export class LocalizedContentService {
     const cachedResult = await this.redisService.cacheGet(key);
     if (cachedResult) return cachedResult;
 
-    const localizedContent = await this.localizedContentRepository.findOne({
+    const localizedContent = await this.localizedContentRepository.findOneBy({
       objectId,
       type,
       locale
@@ -83,7 +83,7 @@ export class LocalizedContentService {
   }
 
   async getOfAllLocales(objectId: number, type: LocalizedContentType): Promise<Partial<Record<Locale, string>>> {
-    const localizedContents = await this.localizedContentRepository.find({
+    const localizedContents = await this.localizedContentRepository.findBy({
       objectId,
       type
     });
@@ -94,7 +94,7 @@ export class LocalizedContentService {
   }
 
   async getOfAnyLocale(objectId: number, type: LocalizedContentType): Promise<[locale: Locale, content: string]> {
-    const localizedContent = await this.localizedContentRepository.findOne({
+    const localizedContent = await this.localizedContentRepository.findOneBy({
       objectId,
       type
     });
@@ -103,7 +103,7 @@ export class LocalizedContentService {
   }
 
   async countLocales(objectId: number, type: LocalizedContentType): Promise<number> {
-    return await this.localizedContentRepository.count({
+    return await this.localizedContentRepository.countBy({
       objectId,
       type
     });

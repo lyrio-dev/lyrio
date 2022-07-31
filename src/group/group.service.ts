@@ -39,11 +39,11 @@ export class GroupService {
   }
 
   async groupExists(id: number): Promise<boolean> {
-    return (await this.groupRepository.count({ id })) !== 0;
+    return (await this.groupRepository.countBy({ id })) !== 0;
   }
 
   async findGroupById(id: number): Promise<GroupEntity> {
-    return await this.groupRepository.findOne(id);
+    return await this.groupRepository.findOneBy({id});
   }
 
   async findGroupsByExistingIds(groupIds: number[]): Promise<GroupEntity[]> {
@@ -55,7 +55,7 @@ export class GroupService {
   }
 
   async findGroupMembership(userId: number, groupId: number): Promise<GroupMembershipEntity> {
-    return await this.groupMembershipRepository.findOne({
+    return await this.groupMembershipRepository.findOneBy({
       userId,
       groupId
     });
@@ -71,7 +71,7 @@ export class GroupService {
 
   async isGroupAdmin(userId: number, groupId: number): Promise<boolean> {
     return (
-      (await this.groupMembershipRepository.count({
+      (await this.groupMembershipRepository.countBy({
         userId,
         groupId,
         isGroupAdmin: true
@@ -81,7 +81,7 @@ export class GroupService {
 
   async getGroupIdsByUserId(userId: number): Promise<number[]> {
     return (
-      await this.groupMembershipRepository.find({
+      await this.groupMembershipRepository.findBy({
         userId
       })
     ).map(memberShip => memberShip.groupId);
@@ -99,7 +99,7 @@ export class GroupService {
 
       return [null, group];
     } catch (e) {
-      if (await this.groupRepository.count({ name })) return [CreateGroupResponseError.DUPLICATE_GROUP_NAME, null];
+      if (await this.groupRepository.countBy({ name })) return [CreateGroupResponseError.DUPLICATE_GROUP_NAME, null];
 
       throw e;
     }
@@ -115,7 +115,7 @@ export class GroupService {
       await this.groupRepository.save(group);
       return true;
     } catch (e) {
-      if (await this.groupRepository.count({ name })) return false;
+      if (await this.groupRepository.countBy({ name })) return false;
 
       throw e;
     }
@@ -135,7 +135,7 @@ export class GroupService {
       });
     } catch (e) {
       if (
-        await this.groupMembershipRepository.count({
+        await this.groupMembershipRepository.countBy({
           userId,
           groupId: group.id
         })
@@ -169,7 +169,7 @@ export class GroupService {
   async setIsGroupAdmin(userId: number, groupId: number, isGroupAdmin: boolean): Promise<SetGroupAdminResponseError> {
     if (!(await this.userService.userExists(userId))) return SetGroupAdminResponseError.NO_SUCH_USER;
 
-    const groupMembership = await this.groupMembershipRepository.findOne({
+    const groupMembership = await this.groupMembershipRepository.findOneBy({
       userId,
       groupId
     });
@@ -199,7 +199,7 @@ export class GroupService {
   }
 
   async getUserJoinedGroups(user: UserEntity): Promise<[groups: GroupEntity[], groupsWithAdminPermission: number[]]> {
-    const groupMemberships = await this.groupMembershipRepository.find({
+    const groupMemberships = await this.groupMembershipRepository.findBy({
       userId: user.id
     });
     const groups = await this.findGroupsByExistingIds(groupMemberships.map(groupMembership => groupMembership.groupId));
@@ -216,13 +216,13 @@ export class GroupService {
   }
 
   async getGroupMemberList(group: GroupEntity): Promise<GroupMembershipEntity[]> {
-    return await this.groupMembershipRepository.find({
+    return await this.groupMembershipRepository.findBy({
       groupId: group.id
     });
   }
 
   async getUserJoinedGroupsCount(user: UserEntity): Promise<number> {
-    return await this.groupMembershipRepository.count({
+    return await this.groupMembershipRepository.countBy({
       userId: user.id
     });
   }

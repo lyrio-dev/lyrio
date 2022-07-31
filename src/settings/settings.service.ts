@@ -16,7 +16,7 @@ export class SettingsService {
   ) {}
 
   async get<T>(Class: ClassConstructor<T>): Promise<T> {
-    const item = await this.settingsRepository.findOne({
+    const item = await this.settingsRepository.findOneBy({
       key: getSettingsKey(Class)
     });
 

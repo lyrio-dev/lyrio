@@ -311,7 +311,7 @@ export const migrationSubmission: MigrationInterface = {
             const fileUuid = uuidFromSubmission(oldSubmission.id);
 
             // Find existing record in new database first to continue a failed migration
-            const fileEntity = (await entityManager.findOne(FileEntity, { uuid: fileUuid })) || new FileEntity();
+            const fileEntity = (await entityManager.findOneBy(FileEntity, { uuid: fileUuid })) || new FileEntity();
             if (!fileEntity.uuid) {
               fileEntity.size = stat.size;
               fileEntity.uploadTime = new Date();

@@ -141,13 +141,13 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
   }
 
   async findSubmissionById(submissionId: number): Promise<SubmissionEntity> {
-    return await this.submissionRepository.findOne({
+    return await this.submissionRepository.findOneBy({
       id: submissionId
     });
   }
 
   async findSubmissionByTaskId(taskId: string): Promise<SubmissionEntity> {
-    return await this.submissionRepository.findOne({
+    return await this.submissionRepository.findOneBy({
       taskId
     });
   }
@@ -409,7 +409,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
   }
 
   async getSubmissionDetail(submission: SubmissionEntity): Promise<SubmissionDetailEntity> {
-    return await this.submissionDetailRepository.findOne({
+    return await this.submissionDetailRepository.findOneBy({
       submissionId: submission.id
     });
   }
@@ -500,7 +500,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
       // eslint-disable-next-line @typescript-eslint/no-shadow
       const [userPendingCount, userOccupiedTimeRecently, avgAndStdEveryUsersOccupiedTimeRecently] = await Promise.all([
         // userPendingCount
-        this.submissionRepository.count({
+        this.submissionRepository.countBy({
           status: SubmissionStatus.Pending,
           submitterId: submission.submitterId
         }),
@@ -793,7 +793,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
   }
 
   async getUserProblemAcceptedSubmissionCount(userId: number, problemId: number): Promise<number> {
-    return await this.submissionRepository.count({
+    return await this.submissionRepository.countBy({
       submitterId: userId,
       problemId,
       status: SubmissionStatus.Accepted
@@ -824,7 +824,7 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
 
   async problemHasAnySubmission(problem: ProblemEntity): Promise<boolean> {
     return (
-      (await this.submissionRepository.count({
+      (await this.submissionRepository.countBy({
         problemId: problem.id
       })) !== 0
     );

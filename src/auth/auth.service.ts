@@ -36,7 +36,7 @@ export class AuthService {
   }
 
   async findUserAuthByUserId(userId: number): Promise<UserAuthEntity> {
-    return await this.userAuthRepository.findOne({
+    return await this.userAuthRepository.findOneBy({
       userId
     });
   }

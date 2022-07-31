@@ -3,7 +3,7 @@ import fs from "fs-extra";
 
 import { Injectable } from "@nestjs/common";
 
-import { Redis, ValueType } from "ioredis";
+import { Redis } from "ioredis";
 import { v4 as uuid } from "uuid";
 
 import { RedisService } from "@/redis/redis.service";
@@ -11,8 +11,8 @@ import { delay } from "@/common/delay";
 
 // Refer to scripts/lock.lua and scripts/read-write-lock.lua for details
 interface RedisWithLock extends Redis {
-  callLock(...args: ValueType[]): Promise<boolean>;
-  callReadWriteLock(...args: ValueType[]): Promise<boolean>;
+  callLock(...args: (string | number)[]): Promise<boolean>;
+  callReadWriteLock(...args: (string | number)[]): Promise<boolean>;
 }
 
 const LOCK_TTL = 5000;

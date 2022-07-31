@@ -185,7 +185,7 @@ export class FileService implements OnModuleInit {
     if (uploadInfo.uuid) {
       // The client says the file is uploaded
 
-      if ((await transactionalEntityManager.count(FileEntity, { uuid: uploadInfo.uuid })) !== 0)
+      if ((await transactionalEntityManager.countBy(FileEntity, { uuid: uploadInfo.uuid })) !== 0)
         return "FILE_UUID_EXISTS";
 
       // Check file existance
@@ -273,7 +273,7 @@ export class FileService implements OnModuleInit {
   async getFileSizes(uuids: string[], transcationalEntityManager: EntityManager): Promise<number[]> {
     if (uuids.length === 0) return [];
     const uniqueUuids = Array.from(new Set(uuids));
-    const files = await transcationalEntityManager.find(FileEntity, {
+    const files = await transcationalEntityManager.findBy(FileEntity, {
       uuid: In(uniqueUuids)
     });
     const map = Object.fromEntries(files.map(file => [file.uuid, file]));
@@ -318,7 +318,7 @@ export class FileService implements OnModuleInit {
         promises.push(
           (async () => {
             const uuid = object.name;
-            if (!(await this.fileRepository.count({ uuid }))) {
+            if (!(await this.fileRepository.countBy({ uuid }))) {
               deleteList.push(uuid);
             }
           })()

@@ -60,13 +60,13 @@ export class UserService {
   }
 
   async findUserById(id: number): Promise<UserEntity> {
-    return await this.userRepository.findOne({
+    return await this.userRepository.findOneBy({
       id
     });
   }
 
   async findUserInformationByUserId(id: number): Promise<UserInformationDto> {
-    return await this.userInformationRepository.findOne({
+    return await this.userInformationRepository.findOneBy({
       userId: id
     });
   }
@@ -80,13 +80,13 @@ export class UserService {
   }
 
   async findUserByUsername(username: string): Promise<UserEntity> {
-    return await this.userRepository.findOne({
+    return await this.userRepository.findOneBy({
       username
     });
   }
 
   async findUserByEmail(email: string): Promise<UserEntity> {
-    return await this.userRepository.findOne({
+    return await this.userRepository.findOneBy({
       email
     });
   }
@@ -145,12 +145,12 @@ export class UserService {
   }
 
   async userExists(id: number): Promise<boolean> {
-    return (await this.userRepository.count({ id })) !== 0;
+    return (await this.userRepository.countBy({ id })) !== 0;
   }
 
   async checkUsernameAvailability(username: string): Promise<boolean> {
     return (
-      (await this.userRepository.count({
+      (await this.userRepository.countBy({
         username
       })) === 0
     );
@@ -158,7 +158,7 @@ export class UserService {
 
   async checkEmailAvailability(email: string): Promise<boolean> {
     return (
-      (await this.userRepository.count({
+      (await this.userRepository.countBy({
         email
       })) === 0
     );
@@ -327,7 +327,7 @@ export class UserService {
   async getUserRank(user: UserEntity): Promise<number> {
     return (
       1 +
-      (await this.userRepository.count(
+      (await this.userRepository.countBy(
         this.configService.config.preference.misc.sortUserByRating
           ? {
               rating: MoreThan(user.rating)
@@ -340,12 +340,12 @@ export class UserService {
   }
 
   async getUserPreference(user: UserEntity): Promise<UserPreference> {
-    const userPreference = await this.userPreferenceRepository.findOne({ userId: user.id });
+    const userPreference = await this.userPreferenceRepository.findOneBy({ userId: user.id });
     return userPreference.preference;
   }
 
   async updateUserPreference(user: UserEntity, preference: UserPreference): Promise<void> {
-    const userPreference = await this.userPreferenceRepository.findOne({ userId: user.id });
+    const userPreference = await this.userPreferenceRepository.findOneBy({ userId: user.id });
     userPreference.preference = preference;
     await this.userPreferenceRepository.save(userPreference);
   }

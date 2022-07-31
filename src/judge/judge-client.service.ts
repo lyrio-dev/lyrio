@@ -34,11 +34,11 @@ export class JudgeClientService {
   }
 
   async findJudgeClientById(id: number): Promise<JudgeClientEntity> {
-    return await this.judgeClientRepository.findOne({ id });
+    return await this.judgeClientRepository.findOneBy({ id });
   }
 
   async findJudgeClientByKey(key: string): Promise<JudgeClientEntity> {
-    return await this.judgeClientRepository.findOne({ key });
+    return await this.judgeClientRepository.findOneBy({ key });
   }
 
   async listJudgeClients(): Promise<JudgeClientEntity[]> {

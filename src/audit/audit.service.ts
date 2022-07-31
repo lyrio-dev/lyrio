@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 
-import { FindConditions, Like, Repository } from "typeorm";
+import { FindOptionsWhere, Like, Repository } from "typeorm";
 
 import { logger } from "@/logger";
 import { getCurrentRequest } from "@/auth/auth.middleware";
@@ -142,7 +142,7 @@ export class AuditService {
     skipCount: number,
     takeCount: number
   ): Promise<[results: AuditLogQueryResult[], count: number]> {
-    const where: FindConditions<AuditLogEntity> = {};
+    const where: FindOptionsWhere<AuditLogEntity> = {};
     if (userId != null) where.userId = userId;
     if (actionQuery != null) where.action = Like(`${escapeLike(actionQuery)}%`);
     if (ip != null) where.ip = ip;

@@ -26,7 +26,7 @@ export class UserPrivilegeService {
     return (
       user &&
       (user.isAdmin ||
-        (await this.userPrivilegeRepository.count({
+        (await this.userPrivilegeRepository.countBy({
           userId: user.id,
           privilegeType
         })) !== 0)
@@ -34,7 +34,7 @@ export class UserPrivilegeService {
   }
 
   async getUserPrivileges(userId: number): Promise<UserPrivilegeType[]> {
-    return (await this.userPrivilegeRepository.find({ userId })).map(userPrivilege => userPrivilege.privilegeType);
+    return (await this.userPrivilegeRepository.findBy({ userId })).map(userPrivilege => userPrivilege.privilegeType);
   }
 
   async setUserPrivileges(
