@@ -43,7 +43,7 @@ export class GroupService {
   }
 
   async findGroupById(id: number): Promise<GroupEntity> {
-    return await this.groupRepository.findOneBy({id});
+    return await this.groupRepository.findOneBy({ id });
   }
 
   async findGroupsByExistingIds(groupIds: number[]): Promise<GroupEntity[]> {

@@ -299,6 +299,11 @@ class PreferenceConfigMisc {
   @ApiProperty()
   readonly googleAnalyticsId: string;
 
+  @IsUrl()
+  @IsOptional()
+  @ApiProperty()
+  readonly plausibleApiEndpoint: string;
+
   @IsString()
   @ApiProperty()
   readonly gravatarCdn: string;

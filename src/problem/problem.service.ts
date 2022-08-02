@@ -111,7 +111,7 @@ export class ProblemService {
   }
 
   async findProblemById(id: number): Promise<ProblemEntity> {
-    return await this.problemRepository.findOneBy({id});
+    return await this.problemRepository.findOneBy({ id });
   }
 
   async findProblemsByExistingIds(problemIds: number[]): Promise<ProblemEntity[]> {
@@ -890,7 +890,7 @@ export class ProblemService {
   }
 
   async findProblemTagById(id: number): Promise<ProblemTagEntity> {
-    return await this.problemTagRepository.findOneBy({id});
+    return await this.problemTagRepository.findOneBy({ id });
   }
 
   async findProblemTagsByExistingIds(problemTagIds: number[]): Promise<ProblemTagEntity[]> {

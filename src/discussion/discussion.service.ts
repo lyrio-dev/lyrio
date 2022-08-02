@@ -96,11 +96,11 @@ export class DiscussionService {
   }
 
   async findDiscussionById(id: number): Promise<DiscussionEntity> {
-    return await this.discussionRepository.findOneBy({id});
+    return await this.discussionRepository.findOneBy({ id });
   }
 
   async findDiscussionReplyById(id: number): Promise<DiscussionReplyEntity> {
-    return await this.discussionReplyRepository.findOneBy({id});
+    return await this.discussionReplyRepository.findOneBy({ id });
   }
 
   async findDiscussionsByExistingIds(discussionIds: number[]): Promise<DiscussionEntity[]> {

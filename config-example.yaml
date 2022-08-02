@@ -71,6 +71,7 @@ preference:
       pure: original
       far: inverted
     googleAnalyticsId: null
+    plausibleApiEndpoint: null
     gravatarCdn: https://gravatar.com
     redirectLegacyUrls: false
     legacyContestsEntryUrl: null
