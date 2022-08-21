@@ -329,8 +329,7 @@ export class FileService implements OnModuleInit {
 
   async runMaintainceTasks(): Promise<void> {
     // Delete unused files
-    // TODO: Use listObjectsV2 instead, which returns at most 1000 objects in a time
-    const stream = this.minioClient.listObjects(this.bucket);
+    const stream = this.minioClient.listObjectsV2(this.bucket);
     const deleteList: string[] = [];
     await new Promise((resolve, reject) => {
       const promises: Promise<void>[] = [];
