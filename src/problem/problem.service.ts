@@ -1,7 +1,7 @@
 import { Injectable, forwardRef, Inject } from "@nestjs/common";
 import { InjectConnection, InjectRepository } from "@nestjs/typeorm";
 
-import { Connection, Repository, EntityManager, Brackets, In } from "typeorm";
+import { Connection, Repository, EntityManager, Brackets, In, FindOptionsWhere } from "typeorm";
 
 import { UserEntity } from "@/user/user.entity";
 import { GroupEntity } from "@/group/group.entity";
@@ -856,17 +856,19 @@ export class ProblemService {
     return await this.lockManageProblemFile(problem.id, type, async problem => {
       if (!problem) return false;
 
-      const problemFile = await this.problemFileRepository.findOneBy({
+      const findOptions: FindOptionsWhere<ProblemFileEntity> = {
         problemId: problem.id,
         type,
         filename
-      });
+      };
+      const problemFile = await this.problemFileRepository.findOneBy(findOptions);
 
       if (!problemFile) return false;
 
       // Since filename is a PRIMARY key, use .save() will create another record
-      problemFile.filename = newFilename;
-      await this.problemFileRepository.save(problemFile);
+      await this.problemFileRepository.update(findOptions, {
+        filename: newFilename
+      });
 
       if (type === ProblemFileType.TestData)
         await this.redisService.cacheDelete(REDIS_KEY_PROBLEM_PREPROCESSED_JUDGE_INFO.format(problem.id));
