@@ -14,7 +14,7 @@ import SocketIOParser from "socket.io-msgpack-parser";
 import { Redis } from "ioredis";
 
 import { logger } from "@/logger";
-import { AlternativeUrlFor, FileService } from "@/file/file.service";
+import { MinioSignFor, FileService } from "@/file/file.service";
 import { SubmissionProgress } from "@/submission/submission-progress.interface";
 import { ConfigService } from "@/config/config.service";
 import { EventReportService, EventReportType } from "@/event-report/event-report.service";
@@ -232,7 +232,7 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
             uuid: fileUuid,
             downloadFilename: null,
             noExpire: true,
-            useAlternativeEndpointFor: AlternativeUrlFor.Judge
+            signFor: MinioSignFor.Judge
           })
       )
     );

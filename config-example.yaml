@@ -13,9 +13,11 @@ services:
     password: lyrio
     database: lyrio
   minio:
-    endpoint: http://lyrio-minio.test
-    endpointForUser: null
-    endpointForJudge: null
+    default:
+      endpoint: http://lyrio-minio.test
+      signEndpoint: null
+    forUser: null
+    forJudge: null
     accessKey: minioadmin
     secretKey: minioadmin
     bucket: lyrio-files

@@ -11,7 +11,7 @@ import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.s
 import { ConfigService } from "@/config/config.service";
 import { ProblemEntity } from "@/problem/problem.entity";
 import { AuditLogObjectType, AuditService } from "@/audit/audit.service";
-import { AlternativeUrlFor, FileService } from "@/file/file.service";
+import { MinioSignFor, FileService } from "@/file/file.service";
 import { ProblemTypeFactoryService } from "@/problem-type/problem-type-factory.service";
 
 import { SubmissionStatus } from "./submission-status.enum";
@@ -368,7 +368,7 @@ export class SubmissionController {
       url: await this.fileService.signDownloadLink({
         uuid: submissionDetail.fileUuid,
         downloadFilename: request.filename,
-        useAlternativeEndpointFor: AlternativeUrlFor.User
+        signFor: MinioSignFor.User
       })
     };
   }

@@ -6,7 +6,7 @@ import { Recaptcha } from "@nestlab/google-recaptcha";
 import { ConfigService } from "@/config/config.service";
 import { UserService } from "@/user/user.service";
 import { GroupService } from "@/group/group.service";
-import { AlternativeUrlFor, FileService } from "@/file/file.service";
+import { MinioSignFor, FileService } from "@/file/file.service";
 import { CurrentUser } from "@/common/user.decorator";
 import { UserEntity } from "@/user/user.entity";
 import { GroupEntity } from "@/group/group.entity";
@@ -786,7 +786,7 @@ export class ProblemController {
           downloadUrl: await this.fileService.signDownloadLink({
             uuid: problemFile.uuid,
             downloadFilename: problemFile.filename,
-            useAlternativeEndpointFor: AlternativeUrlFor.User
+            signFor: MinioSignFor.User
           })
         }))
       )

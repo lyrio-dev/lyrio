@@ -58,17 +58,29 @@ class ServicesConfigDatabase {
   readonly database: string;
 }
 
-class ServicesConfigMinio {
+class ServicesConfigMinioConnectionInfo {
   @IsUrl({ require_tld: false })
   readonly endpoint: string;
 
   @IsUrl({ require_tld: false })
   @IsOptional()
-  readonly endpointForUser: string;
+  readonly signEndpoint: string;
+}
 
-  @IsUrl({ require_tld: false })
+class ServicesConfigMinio {
+  @ValidateNested()
+  @Type(() => ServicesConfigMinioConnectionInfo)
+  readonly default: ServicesConfigMinioConnectionInfo;
+
+  @ValidateNested()
+  @Type(() => ServicesConfigMinioConnectionInfo)
   @IsOptional()
-  readonly endpointForJudge: string;
+  readonly forUser: ServicesConfigMinioConnectionInfo;
+
+  @ValidateNested()
+  @Type(() => ServicesConfigMinioConnectionInfo)
+  @IsOptional()
+  readonly forJudge: ServicesConfigMinioConnectionInfo;
 
   @IsString()
   readonly accessKey: string;
