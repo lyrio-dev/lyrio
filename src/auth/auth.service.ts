@@ -1,7 +1,7 @@
 import { Injectable, Inject, forwardRef } from "@nestjs/common";
-import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
+import { InjectRepository, InjectDataSource } from "@nestjs/typeorm";
 
-import { Repository, Connection, EntityManager } from "typeorm";
+import { Repository, DataSource, EntityManager } from "typeorm";
 import * as bcrypt from "bcrypt";
 
 import { UserEntity } from "@/user/user.entity";
@@ -19,8 +19,8 @@ import { RegisterResponseError } from "./dto";
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectConnection()
-    private readonly connection: Connection,
+    @InjectDataSource()
+    private readonly connection: DataSource,
     @InjectRepository(UserAuthEntity)
     private readonly userAuthRepository: Repository<UserAuthEntity>,
     @Inject(forwardRef(() => UserService))

@@ -1,7 +1,7 @@
 import { Injectable, forwardRef, Inject } from "@nestjs/common";
-import { InjectConnection, InjectRepository } from "@nestjs/typeorm";
+import { InjectDataSource, InjectRepository } from "@nestjs/typeorm";
 
-import { Connection, Repository, EntityManager, Brackets, In, FindOptionsWhere } from "typeorm";
+import { DataSource, Repository, EntityManager, Brackets, In, FindOptionsWhere } from "typeorm";
 
 import { UserEntity } from "@/user/user.entity";
 import { GroupEntity } from "@/group/group.entity";
@@ -64,8 +64,8 @@ const REDIS_KEY_PROBLEM_PREPROCESSED_JUDGE_INFO = "problem-preprocessed-judge-in
 @Injectable()
 export class ProblemService {
   constructor(
-    @InjectConnection()
-    private readonly connection: Connection,
+    @InjectDataSource()
+    private readonly connection: DataSource,
     @InjectRepository(ProblemEntity)
     private readonly problemRepository: Repository<ProblemEntity>,
     @InjectRepository(ProblemJudgeInfoEntity)

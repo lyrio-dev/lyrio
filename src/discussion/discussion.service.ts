@@ -1,7 +1,7 @@
 import { Injectable, Inject, forwardRef } from "@nestjs/common";
-import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
+import { InjectRepository, InjectDataSource } from "@nestjs/typeorm";
 
-import { Repository, Connection, EntityManager, Brackets } from "typeorm";
+import { Repository, DataSource, EntityManager, Brackets } from "typeorm";
 
 import { UserService } from "@/user/user.service";
 import { UserEntity } from "@/user/user.entity";
@@ -53,8 +53,8 @@ type GetReactionsResult = [reactionsCount: Record<string, number>, currentUserRe
 @Injectable()
 export class DiscussionService {
   constructor(
-    @InjectConnection()
-    private readonly connection: Connection,
+    @InjectDataSource()
+    private readonly connection: DataSource,
     @InjectRepository(DiscussionEntity)
     private readonly discussionRepository: Repository<DiscussionEntity>,
     @InjectRepository(DiscussionContentEntity)

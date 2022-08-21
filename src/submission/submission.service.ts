@@ -1,7 +1,7 @@
 import { Injectable, Inject, forwardRef } from "@nestjs/common";
-import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
+import { InjectRepository, InjectDataSource } from "@nestjs/typeorm";
 
-import { Repository, Connection, QueryBuilder } from "typeorm";
+import { Repository, DataSource, QueryBuilder } from "typeorm";
 import { ValidationError } from "class-validator";
 import { v4 as uuid } from "uuid";
 import moment from "moment-timezone";
@@ -111,8 +111,8 @@ function makeSubmissionPriority(
 @Injectable()
 export class SubmissionService implements JudgeTaskService<SubmissionProgress, SubmissionTaskExtraInfo> {
   constructor(
-    @InjectConnection()
-    private connection: Connection,
+    @InjectDataSource()
+    private connection: DataSource,
     @InjectRepository(SubmissionEntity)
     private readonly submissionRepository: Repository<SubmissionEntity>,
     @InjectRepository(SubmissionDetailEntity)

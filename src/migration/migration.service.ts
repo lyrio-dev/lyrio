@@ -1,10 +1,10 @@
 import fs from "fs-extra";
 
 import { Injectable, Logger } from "@nestjs/common";
-import { InjectConnection } from "@nestjs/typeorm";
+import { InjectDataSource } from "@nestjs/typeorm";
 import { NestExpressApplication } from "@nestjs/platform-express";
 
-import { Connection, EntityManager } from "typeorm";
+import { DataSource, EntityManager } from "typeorm";
 import yaml from "js-yaml";
 import MariaDB from "mariadb";
 import { Redis } from "ioredis";
@@ -25,8 +25,8 @@ export class MigrationService {
   private redis: Redis;
 
   constructor(
-    @InjectConnection()
-    private readonly connection: Connection,
+    @InjectDataSource()
+    private readonly connection: DataSource,
     private readonly redisService: RedisService
   ) {
     this.redis = this.redisService.getClient();

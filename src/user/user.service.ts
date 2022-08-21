@@ -1,9 +1,9 @@
 import crypto from "crypto";
 
 import { Injectable, forwardRef, Inject } from "@nestjs/common";
-import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
+import { InjectRepository, InjectDataSource } from "@nestjs/typeorm";
 
-import { Repository, Connection, Like, MoreThan, EntityManager } from "typeorm";
+import { Repository, DataSource, Like, MoreThan, EntityManager } from "typeorm";
 
 import { escapeLike } from "@/database/database.utils";
 import { LockService } from "@/redis/lock.service";
@@ -33,8 +33,8 @@ import {
 @Injectable()
 export class UserService {
   constructor(
-    @InjectConnection()
-    private readonly connection: Connection,
+    @InjectDataSource()
+    private readonly connection: DataSource,
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(UserInformationEntity)

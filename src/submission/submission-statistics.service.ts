@@ -1,7 +1,7 @@
 import { Injectable, Inject, forwardRef } from "@nestjs/common";
-import { InjectConnection } from "@nestjs/typeorm";
+import { InjectDataSource } from "@nestjs/typeorm";
 
-import { Connection } from "typeorm";
+import { DataSource } from "typeorm";
 
 import { logger } from "@/logger";
 import { RedisService } from "@/redis/redis.service";
@@ -58,8 +58,8 @@ const SUBMISSION_STATISTICS_TOP_COUNT = 100;
 @Injectable()
 export class SubmissionStatisticsService {
   constructor(
-    @InjectConnection()
-    private readonly connection: Connection,
+    @InjectDataSource()
+    private readonly connection: DataSource,
     @Inject(forwardRef(() => SubmissionService))
     private readonly submissionService: SubmissionService,
     private readonly redisService: RedisService

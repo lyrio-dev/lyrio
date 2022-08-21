@@ -1,9 +1,9 @@
 import { createHash } from "crypto";
 
 import { Injectable, Inject, forwardRef } from "@nestjs/common";
-import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
+import { InjectRepository, InjectDataSource } from "@nestjs/typeorm";
 
-import { Repository, Connection } from "typeorm";
+import { Repository, DataSource } from "typeorm";
 import * as bcrypt from "bcrypt";
 
 import { UserEntity } from "@/user/user.entity";
@@ -15,8 +15,8 @@ import { UserMigrationInfoEntity } from "./user-migration-info.entity";
 @Injectable()
 export class UserMigrationService {
   constructor(
-    @InjectConnection()
-    private readonly connection: Connection,
+    @InjectDataSource()
+    private readonly connection: DataSource,
     @InjectRepository(UserMigrationInfoEntity)
     private readonly userMigrationInfoRepository: Repository<UserMigrationInfoEntity>,
     @Inject(forwardRef(() => AuthService))

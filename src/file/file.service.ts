@@ -2,9 +2,9 @@ import { URL } from "url";
 import { Readable } from "stream";
 
 import { Injectable, OnModuleInit } from "@nestjs/common";
-import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
+import { InjectRepository, InjectDataSource } from "@nestjs/typeorm";
 
-import { Repository, Connection, EntityManager, In } from "typeorm";
+import { Repository, DataSource, EntityManager, In } from "typeorm";
 import { v4 as UUID } from "uuid";
 import { Client as MinioClient } from "minio";
 
@@ -89,8 +89,8 @@ export class FileService implements OnModuleInit {
   private readonly replaceWithAlternativeUrlFor: Record<AlternativeUrlFor, (originalUrl: string) => string>;
 
   constructor(
-    @InjectConnection()
-    private readonly connection: Connection,
+    @InjectDataSource()
+    private readonly connection: DataSource,
     @InjectRepository(FileEntity)
     private readonly fileRepository: Repository<FileEntity>,
     private readonly configService: ConfigService

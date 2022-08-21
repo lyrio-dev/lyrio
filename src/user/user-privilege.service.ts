@@ -1,7 +1,7 @@
 import { Injectable, Inject, forwardRef } from "@nestjs/common";
-import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
+import { InjectRepository, InjectDataSource } from "@nestjs/typeorm";
 
-import { Repository, Connection } from "typeorm";
+import { Repository, DataSource } from "typeorm";
 
 import { UserEntity } from "./user.entity";
 import { UserPrivilegeEntity, UserPrivilegeType } from "./user-privilege.entity";
@@ -14,8 +14,8 @@ export { UserPrivilegeType } from "./user-privilege.entity";
 @Injectable()
 export class UserPrivilegeService {
   constructor(
-    @InjectConnection()
-    private readonly connection: Connection,
+    @InjectDataSource()
+    private readonly connection: DataSource,
     @InjectRepository(UserPrivilegeEntity)
     private readonly userPrivilegeRepository: Repository<UserPrivilegeEntity>,
     @Inject(forwardRef(() => UserService))

@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
-import { InjectRepository, InjectConnection } from "@nestjs/typeorm";
+import { InjectRepository, InjectDataSource } from "@nestjs/typeorm";
 
-import { Repository, EntityManager, Connection, FindOptionsWhere } from "typeorm";
+import { Repository, EntityManager, DataSource, FindOptionsWhere } from "typeorm";
 
 import { UserEntity } from "@/user/user.entity";
 import { GroupEntity } from "@/group/group.entity";
@@ -16,8 +16,8 @@ export { PermissionObjectType } from "./permission-object-type.enum";
 @Injectable()
 export class PermissionService {
   constructor(
-    @InjectConnection()
-    private connection: Connection,
+    @InjectDataSource()
+    private connection: DataSource,
     @InjectRepository(PermissionForUserEntity)
     private readonly permissionForUserRepository: Repository<PermissionForUserEntity>,
     @InjectRepository(PermissionForGroupEntity)
