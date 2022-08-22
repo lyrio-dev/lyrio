@@ -76,8 +76,8 @@ function parseSignEndpointUrl(endpoint: string): (originalUrl: string) => string
 }
 
 export enum MinioSignFor {
-  User,
-  Judge
+  User = "User",
+  Judge = "Judge"
 }
 
 @Injectable()
