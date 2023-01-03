@@ -12,6 +12,7 @@ import {
 import { Server, Socket } from "socket.io"; // eslint-disable-line import/no-extraneous-dependencies
 import SocketIOParser from "socket.io-msgpack-parser";
 import { Redis } from "ioredis";
+import proxyAddr from "proxy-addr";
 
 import { logger } from "@/logger";
 import { MinioSignFor, FileService } from "@/file/file.service";
@@ -142,7 +143,10 @@ export class JudgeGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // Now we are ready for consuming task
     client.emit("ready", judgeClient.name, this.configService.config.judge);
 
-    const message = `Judge client ${client.id} (${judgeClient.name}) connected from ${client.handshake.address}.`;
+    const message = `Judge client ${client.id} (${judgeClient.name}) connected from ${proxyAddr(
+      client.request,
+      this.configService.config.server.trustProxy
+    )}.`;
     logger.log(message);
     if ((await this.redis.del(REDIS_KEY_JUDGE_CLIENT_TEMPORARILY_DISCONNENTED.format(judgeClient.id))) === 0) {
       // If the judge client is NOT temporarily disconnected, report it with event-reporter
