@@ -76,7 +76,8 @@ function parseSignEndpointUrl(endpoint: string): (originalUrl: string) => string
 }
 
 export enum MinioSignFor {
-  User = "User",
+  UserUpload = "UserUpload",
+  UserDownload = "UserDownload",
   Judge = "Judge"
 }
 
@@ -108,13 +109,21 @@ export class FileService implements OnModuleInit {
     });
     this.bucket = config.bucket;
     this.minioSigner = {
-      [MinioSignFor.User]: {
+      [MinioSignFor.UserUpload]: {
         client: new MinioClient({
-          ...parseMainEndpointUrl(config?.forUser?.endpoint || config.default.endpoint),
+          ...parseMainEndpointUrl(config?.forUserUpload?.endpoint || config.default.endpoint),
           accessKey: config.accessKey,
           secretKey: config.secretKey
         }),
-        replaceUrl: parseSignEndpointUrl(config?.forUser?.signEndpoint || config.default.signEndpoint)
+        replaceUrl: parseSignEndpointUrl(config?.forUserUpload?.signEndpoint || config.default.signEndpoint)
+      },
+      [MinioSignFor.UserDownload]: {
+        client: new MinioClient({
+          ...parseMainEndpointUrl(config?.forUserDownload?.endpoint || config.default.endpoint),
+          accessKey: config.accessKey,
+          secretKey: config.secretKey
+        }),
+        replaceUrl: parseSignEndpointUrl(config?.forUserDownload?.signEndpoint || config.default.signEndpoint)
       },
       [MinioSignFor.Judge]: {
         client: new MinioClient({
@@ -236,7 +245,7 @@ export class FileService implements OnModuleInit {
    * Sign a upload request for given size. The alternative MinIO endpoint for user will be used in the POST URL.
    */
   private async signUploadRequest(minSize?: number, maxSize?: number): Promise<SignedFileUploadRequestDto> {
-    const signer = this.minioSigner[MinioSignFor.User];
+    const signer = this.minioSigner[MinioSignFor.UserUpload];
     const uuid = UUID();
     const policy = signer.client.newPostPolicy();
     policy.setBucket(this.bucket);

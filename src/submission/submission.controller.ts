@@ -368,7 +368,7 @@ export class SubmissionController {
       url: await this.fileService.signDownloadLink({
         uuid: submissionDetail.fileUuid,
         downloadFilename: request.filename,
-        signFor: MinioSignFor.User
+        signFor: MinioSignFor.UserDownload
       })
     };
   }

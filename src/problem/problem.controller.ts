@@ -786,7 +786,7 @@ export class ProblemController {
           downloadUrl: await this.fileService.signDownloadLink({
             uuid: problemFile.uuid,
             downloadFilename: problemFile.filename,
-            signFor: MinioSignFor.User
+            signFor: MinioSignFor.UserDownload
           })
         }))
       )

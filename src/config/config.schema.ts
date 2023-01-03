@@ -75,7 +75,12 @@ class ServicesConfigMinio {
   @ValidateNested()
   @Type(() => ServicesConfigMinioConnectionInfo)
   @IsOptional()
-  readonly forUser: ServicesConfigMinioConnectionInfo;
+  readonly forUserUpload: ServicesConfigMinioConnectionInfo;
+
+  @ValidateNested()
+  @Type(() => ServicesConfigMinioConnectionInfo)
+  @IsOptional()
+  readonly forUserDownload: ServicesConfigMinioConnectionInfo;
 
   @ValidateNested()
   @Type(() => ServicesConfigMinioConnectionInfo)
