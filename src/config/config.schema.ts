@@ -64,7 +64,7 @@ class ServicesConfigMinioConnectionInfo {
 
   @IsUrl({ require_tld: false })
   @IsOptional()
-  readonly signEndpoint: string;
+  readonly urlEndpoint: string;
 }
 
 class ServicesConfigMinio {

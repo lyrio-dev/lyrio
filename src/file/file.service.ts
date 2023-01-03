@@ -115,7 +115,7 @@ export class FileService implements OnModuleInit {
           accessKey: config.accessKey,
           secretKey: config.secretKey
         }),
-        replaceUrl: parseSignEndpointUrl(config?.forUserUpload?.signEndpoint || config.default.signEndpoint)
+        replaceUrl: parseSignEndpointUrl(config?.forUserUpload?.urlEndpoint || config.default.urlEndpoint)
       },
       [MinioSignFor.UserDownload]: {
         client: new MinioClient({
@@ -123,7 +123,7 @@ export class FileService implements OnModuleInit {
           accessKey: config.accessKey,
           secretKey: config.secretKey
         }),
-        replaceUrl: parseSignEndpointUrl(config?.forUserDownload?.signEndpoint || config.default.signEndpoint)
+        replaceUrl: parseSignEndpointUrl(config?.forUserDownload?.urlEndpoint || config.default.urlEndpoint)
       },
       [MinioSignFor.Judge]: {
         client: new MinioClient({
@@ -131,7 +131,7 @@ export class FileService implements OnModuleInit {
           accessKey: config.accessKey,
           secretKey: config.secretKey
         }),
-        replaceUrl: parseSignEndpointUrl(config?.forJudge?.signEndpoint || config.default.signEndpoint)
+        replaceUrl: parseSignEndpointUrl(config?.forJudge?.urlEndpoint || config.default.urlEndpoint)
       }
     };
   }
