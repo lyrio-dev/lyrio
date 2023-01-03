@@ -6,7 +6,7 @@ import { InjectRepository, InjectDataSource } from "@nestjs/typeorm";
 
 import { Repository, DataSource, EntityManager, In } from "typeorm";
 import { v4 as UUID } from "uuid";
-import { Client as MinioClient } from "minio";
+import { Client as MinioClient, ClientOptions } from "minio";
 
 import { logger } from "@/logger";
 import { ConfigService } from "@/config/config.service";
@@ -101,35 +101,36 @@ export class FileService implements OnModuleInit {
     private readonly configService: ConfigService
   ) {
     const config = this.configService.config.services.minio;
+    const commonOptions: Pick<ClientOptions, "accessKey" | "secretKey" | "region"> = {
+      accessKey: config.accessKey,
+      secretKey: config.secretKey,
+      region: "us-east-1"
+    };
 
     this.minioClient = new MinioClient({
       ...parseMainEndpointUrl(config.default.endpoint),
-      accessKey: config.accessKey,
-      secretKey: config.secretKey
+      ...commonOptions
     });
     this.bucket = config.bucket;
     this.minioSigner = {
       [MinioSignFor.UserUpload]: {
         client: new MinioClient({
           ...parseMainEndpointUrl(config?.forUserUpload?.endpoint || config.default.endpoint),
-          accessKey: config.accessKey,
-          secretKey: config.secretKey
+          ...commonOptions
         }),
         replaceUrl: parseSignEndpointUrl(config?.forUserUpload?.urlEndpoint || config.default.urlEndpoint)
       },
       [MinioSignFor.UserDownload]: {
         client: new MinioClient({
           ...parseMainEndpointUrl(config?.forUserDownload?.endpoint || config.default.endpoint),
-          accessKey: config.accessKey,
-          secretKey: config.secretKey
+          ...commonOptions
         }),
         replaceUrl: parseSignEndpointUrl(config?.forUserDownload?.urlEndpoint || config.default.urlEndpoint)
       },
       [MinioSignFor.Judge]: {
         client: new MinioClient({
           ...parseMainEndpointUrl(config?.forJudge?.endpoint || config.default.endpoint),
-          accessKey: config.accessKey,
-          secretKey: config.secretKey
+          ...commonOptions
         }),
         replaceUrl: parseSignEndpointUrl(config?.forJudge?.urlEndpoint || config.default.urlEndpoint)
       }
