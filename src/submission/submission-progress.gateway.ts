@@ -15,6 +15,7 @@ import { SubmissionStatus } from "./submission-status.enum";
 import { SubmissionEventType } from "./submission-progress.service";
 
 import { SubmissionBasicMetaDto } from "./dto";
+import { MetricsService } from "@/metrics/metrics.service";
 
 export enum SubmissionProgressSubscriptionType {
   Meta,
@@ -68,12 +69,23 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
   constructor(
     private readonly configService: ConfigService,
     @Inject(forwardRef(() => SubmissionService))
-    private readonly submissionService: SubmissionService
+    private readonly submissionService: SubmissionService,
+    private readonly metricsService: MetricsService
   ) {
     // Use a different key with session secret to prevent someone attempt to use the session key
     // as subscription key
     this.secret = `${this.configService.config.security.sessionSecret}SubmissionProgress`;
   }
+
+  private readonly metricCurrentClientCount = this.metricsService.gauge(
+    "syzoj_ng_submission_progress_current_client_count"
+  );
+  private readonly metricTotalClientConnected = this.metricsService.gauge(
+    "syzoj_ng_submission_progress_total_client_connected"
+  );
+  private readonly metricTotalMessageDelivered = this.metricsService.counter(
+    "syzoj_ng_submission_progress_total_message_delivered"
+  );
 
   // A subscription key is send to the client to let it connect to the WebSocket gateway to subscribe some
   // submission's progress. The authorization is done before the key is encoded, and when a client connect
@@ -154,7 +166,10 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
       const lastMessage = lastMessageBySubmissionId.get(submissionId);
       const delta = diff(lastMessage, message);
       lastMessageBySubmissionId.set(submissionId, message);
-      if (delta) this.server.to(clientId).emit("message", submissionId, delta);
+      if (delta) {
+        this.metricTotalMessageDelivered.inc();
+        this.server.to(clientId).emit("message", submissionId, delta);
+      }
     };
 
     logger.log(`Sending to ${typeof to === "string" ? to : (to as Socket).id}: ${JSON.stringify(message)}`);
@@ -166,6 +181,7 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
   handleDisconnect(client: Socket): void {
     const rooms = this.clientJoinedRooms.get(client.id);
     if (rooms) {
+      this.metricCurrentClientCount.dec();
       this.clientJoinedRooms.delete(client.id);
       for (const room of rooms) {
         this.rooms.get(room).delete(client.id);
@@ -182,6 +198,9 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
     }
 
     logger.log(`Subscription: ${JSON.stringify(subscription)}`);
+
+    this.metricCurrentClientCount.inc();
+    this.metricTotalClientConnected.inc();
 
     this.clientJoinedRooms.set(client.id, new Set());
     this.clientLastMessages.set(client.id, new Map());

@@ -4,12 +4,18 @@ import { Response } from "express"; // eslint-disable-line import/no-extraneous-
 
 import { RequestWithSession } from "./auth/auth.middleware";
 import { EventReportService, EventReportType } from "./event-report/event-report.service";
+import { MetricsService } from "./metrics/metrics.service";
 
 const logger = new Logger("ErrorFilter");
 
 @Catch()
 export class ErrorFilter implements ExceptionFilter {
-  constructor(private readonly eventReportService: EventReportService) {}
+  constructor(
+    private readonly eventReportService: EventReportService,
+    private readonly metricsService: MetricsService
+  ) {}
+
+  private readonly metricErrorCount = this.metricsService.counter("syzoj_ng_error_count", ["error"]);
 
   catch(error: Error, host: ArgumentsHost) {
     const contextType = host.getType();
@@ -32,6 +38,7 @@ export class ErrorFilter implements ExceptionFilter {
         logger.error(error.message, error.stack);
       } else logger.error(error);
 
+      this.metricErrorCount.inc({ error: error.constructor.name });
       this.eventReportService.report({
         type: EventReportType.Error,
         error,

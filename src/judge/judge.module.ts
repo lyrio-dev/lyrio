@@ -4,6 +4,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { RedisModule } from "@/redis/redis.module";
 import { FileModule } from "@/file/file.module";
 import { EventReportModule } from "@/event-report/event-report.module";
+import { MetricsModule } from "@/metrics/metrics.module";
 
 import { JudgeQueueService } from "./judge-queue.service";
 import { JudgeGateway } from "./judge.gateway";
@@ -16,7 +17,8 @@ import { JudgeClientEntity } from "./judge-client.entity";
     TypeOrmModule.forFeature([JudgeClientEntity]),
     forwardRef(() => RedisModule),
     forwardRef(() => FileModule),
-    forwardRef(() => EventReportModule)
+    forwardRef(() => EventReportModule),
+    forwardRef(() => MetricsModule)
   ],
   controllers: [JudgeClientController],
   providers: [JudgeGateway, JudgeClientService, JudgeQueueService],

@@ -4,6 +4,7 @@ import { Redis } from "ioredis";
 
 import { logger } from "@/logger";
 import { RedisService } from "@/redis/redis.service";
+import { MetricsService } from "@/metrics/metrics.service";
 
 import { JudgeTaskService } from "./judge-task-service.interface";
 import { JudgeTaskProgress } from "./judge-task-progress.interface";
@@ -26,6 +27,10 @@ export enum JudgeTaskType {
 export interface JudgeTaskMeta {
   taskId: string;
   type: JudgeTaskType;
+}
+
+export interface QueuedJudgeTaskMeta extends JudgeTaskMeta {
+  enqueueTime: number;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
@@ -61,10 +66,16 @@ export class JudgeQueueService {
   private readonly taskServices: Map<JudgeTaskType, JudgeTaskService<JudgeTaskProgress, JudgeTaskExtraInfo>> =
     new Map();
 
-  constructor(private readonly redisService: RedisService) {
+  constructor(private readonly redisService: RedisService, private readonly metricsService: MetricsService) {
     this.redisForPush = this.redisService.getClient();
     this.redisForConsume = this.redisService.getClient();
   }
+
+  private readonly metricJudgeTaskQueueTime = this.metricsService.histogram(
+    "syzoj_ng_judge_task_queue_time_seconds",
+    this.metricsService.histogram.BUCKETS_TIME_10M_30,
+    ["type", "priority_type"]
+  );
 
   registerTaskType<TaskProgress>(
     taskType: JudgeTaskType,
@@ -81,7 +92,8 @@ export class JudgeQueueService {
       priority,
       JSON.stringify({
         taskId,
-        type
+        type,
+        enqueueTime: Date.now()
       })
     );
   }
@@ -102,13 +114,24 @@ export class JudgeQueueService {
 
     const [, taskJson, priorityString] = redisResponse;
     const priority = Number(priorityString);
-    const taskMeta: JudgeTaskMeta = JSON.parse(taskJson);
+    const taskMeta: QueuedJudgeTaskMeta = JSON.parse(taskJson);
+    const dequeuedTime = Date.now();
     const task = await this.taskServices.get(taskMeta.type).getTaskToBeSentToJudgeByTaskId(taskMeta.taskId, priority);
     if (!task) {
       logger.verbose(
         `Consumed judge task { taskId: ${taskMeta.taskId}, type: ${taskMeta.type} }, but taskId is invalid, maybe canceled?`
       );
       return null;
+    }
+
+    if (taskMeta.enqueueTime) {
+      this.metricJudgeTaskQueueTime.observe(
+        {
+          type: task.type,
+          priority_type: task.priorityType
+        },
+        (Date.now() - dequeuedTime) / 1000
+      );
     }
 
     logger.verbose(

@@ -38,6 +38,19 @@ class ServerConfig {
   readonly clusters: number;
 }
 
+class MetricsConfig {
+  @IsIP()
+  readonly hostname: string;
+
+  @IsPortNumber()
+  readonly basePort: number;
+
+  @IsArray()
+  @IsIP(undefined, { each: true })
+  @IsOptional()
+  readonly allowedIps?: string[];
+}
+
 class ServicesConfigDatabase {
   @IsIn(["mysql", "mariadb"])
   readonly type: "mysql" | "mariadb";
@@ -542,6 +555,11 @@ export class AppConfig {
   @ValidateNested()
   @Type(() => ServerConfig)
   readonly server: ServerConfig;
+
+  @ValidateNested()
+  @Type(() => MetricsConfig)
+  @IsOptional()
+  readonly metrics?: MetricsConfig;
 
   @ValidateNested()
   @Type(() => ServicesConfig)

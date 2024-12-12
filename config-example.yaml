@@ -4,6 +4,10 @@ server:
   trustProxy:
     - loopback
   clusters: 0
+metrics:
+  hostname: 127.0.0.1
+  basePort: 2020
+  allowedIps: []
 services:
   database:
     type: mariadb

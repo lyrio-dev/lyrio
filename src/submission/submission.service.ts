@@ -42,6 +42,7 @@ import { SubmissionStatus } from "./submission-status.enum";
 import { FileUploadInfoDto, SignedFileUploadRequestDto } from "@/file/dto";
 
 import { SubmissionBasicMetaDto } from "./dto";
+import { MetricsService } from "@/metrics/metrics.service";
 
 export enum SubmissionPermissionType {
   View = "View",
@@ -130,7 +131,8 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     private readonly fileService: FileService,
     private readonly configService: ConfigService,
     @Inject(forwardRef(() => UserPrivilegeService))
-    private readonly userPrivilegeService: UserPrivilegeService
+    private readonly userPrivilegeService: UserPrivilegeService,
+    private readonly metricsService: MetricsService
   ) {
     this.judgeQueueService.registerTaskType(JudgeTaskType.Submission, this);
 
@@ -139,6 +141,11 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
       return !submission ? null : await this.getSubmissionBasicMeta(submission);
     });
   }
+
+  private readonly metricSubmissionJudgeTime = this.metricsService.histogram(
+    "syzoj_ng_submission_judge_time_seconds",
+    this.metricsService.histogram.BUCKETS_TIME_10M_30
+  );
 
   async findSubmissionById(submissionId: number): Promise<SubmissionEntity> {
     return await this.submissionRepository.findOneBy({
@@ -670,6 +677,8 @@ export class SubmissionService implements JudgeTaskService<SubmissionProgress, S
     submission.status = progress.status;
     submission.score = progress.score;
     submission.totalOccupiedTime = progress.totalOccupiedTime;
+
+    this.metricSubmissionJudgeTime.observe(submission.totalOccupiedTime);
 
     const timeAndMemory = this.problemTypeFactoryService
       .type(problem.type)
