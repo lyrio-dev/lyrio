@@ -9,13 +9,14 @@ import SocketIOParser from "socket.io-msgpack-parser";
 import { logger } from "@/logger";
 import { ConfigService } from "@/config/config.service";
 
+import { MetricsService } from "@/metrics/metrics.service";
+
 import { SubmissionProgress, SubmissionProgressType } from "./submission-progress.interface";
 import { SubmissionService } from "./submission.service";
 import { SubmissionStatus } from "./submission-status.enum";
 import { SubmissionEventType } from "./submission-progress.service";
 
 import { SubmissionBasicMetaDto } from "./dto";
-import { MetricsService } from "@/metrics/metrics.service";
 
 export enum SubmissionProgressSubscriptionType {
   Meta,
@@ -80,9 +81,11 @@ export class SubmissionProgressGateway implements OnGatewayConnection, OnGateway
   private readonly metricCurrentClientCount = this.metricsService.gauge(
     "syzoj_ng_submission_progress_current_client_count"
   );
+
   private readonly metricTotalClientConnected = this.metricsService.gauge(
     "syzoj_ng_submission_progress_total_client_connected"
   );
+
   private readonly metricTotalMessageDelivered = this.metricsService.counter(
     "syzoj_ng_submission_progress_total_message_delivered"
   );

@@ -31,6 +31,8 @@ import { ConfigService } from "@/config/config.service";
 import { FileEntity } from "@/file/file.entity";
 import { UserPrivilegeService, UserPrivilegeType } from "@/user/user-privilege.service";
 
+import { MetricsService } from "@/metrics/metrics.service";
+
 import { SubmissionProgress, SubmissionProgressType } from "./submission-progress.interface";
 import { SubmissionContent } from "./submission-content.interface";
 import { SubmissionProgressService, SubmissionEventType } from "./submission-progress.service";
@@ -42,7 +44,6 @@ import { SubmissionStatus } from "./submission-status.enum";
 import { FileUploadInfoDto, SignedFileUploadRequestDto } from "@/file/dto";
 
 import { SubmissionBasicMetaDto } from "./dto";
-import { MetricsService } from "@/metrics/metrics.service";
 
 export enum SubmissionPermissionType {
   View = "View",

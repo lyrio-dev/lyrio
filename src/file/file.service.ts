@@ -2,9 +2,9 @@ import { URL } from "url";
 import { Readable } from "stream";
 
 import { Injectable, OnModuleInit } from "@nestjs/common";
-import { InjectRepository, InjectDataSource } from "@nestjs/typeorm";
+import { InjectRepository } from "@nestjs/typeorm";
 
-import { Repository, DataSource, EntityManager, In } from "typeorm";
+import { Repository, EntityManager, In } from "typeorm";
 import { v4 as UUID } from "uuid";
 import { Client as MinioClient, ClientOptions } from "minio";
 

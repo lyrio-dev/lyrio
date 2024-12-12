@@ -12,6 +12,7 @@ export class MetricsService {
   private readonly registry = new PromClient.Registry();
 
   private readonly processName = cluster.isPrimary ? "Master" : `Worker #${cluster.worker.id}`;
+
   private readonly logger = new Logger(`${MetricsService.name}/${this.processName}`);
 
   constructor(private readonly configService: ConfigService) {
